@@ -36,7 +36,7 @@ object CaptureFrameAnalyzer {
                 canvas.drawLine(b.left.toFloat(),y,b.right.toFloat(),y,paint)
             }
         }
-        val directory=File(context.filesDir,"diagnostics").apply{mkdirs()}
+        val directory=File(context.getExternalFilesDir(null) ?: context.filesDir,"diagnostics").apply{mkdirs()}
         val output=File(directory,"dynamic_grid.png")
         FileOutputStream(output).use{diagnostic.compress(Bitmap.CompressFormat.PNG,100,it)}
         diagnostic.recycle();frame.recycle()
