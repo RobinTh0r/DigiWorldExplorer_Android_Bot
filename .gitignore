@@ -13,3 +13,4 @@ keystore.properties
 .tools/
 .testvenv/
 .workfix/
+android-main/
