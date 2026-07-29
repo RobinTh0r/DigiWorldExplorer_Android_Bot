@@ -27,7 +27,8 @@ object CellClassifier{
     if(bl>120&&g>90&&bl>r+25)hi++
     if(bl>70&&r>45&&bl>g+10)pyramid++
    }
-   fun q(v:Int)=v/n.toDouble();val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
+   fun q(v:Int):Double { return v/n.toDouble() }
+   val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
    val os=q(orange);val ps=q(pink);val gs=q(green);val item=maxOf(os,ps,gs)
    out[Cell(row,col)]=CellScores(maxOf(q(red),q(neutral),shadow),os,ps,gs,item,q(pyramid),q(hi))
   }
