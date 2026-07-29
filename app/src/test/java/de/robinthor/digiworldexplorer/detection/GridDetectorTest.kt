@@ -12,8 +12,8 @@ class GridDetectorTest {
         for(i in 0..5){val y=top+i*yStep;for(x in (w*.10).toInt() until (w*.90).toInt())paint(x,y)}
         val d=GridDetector.detect(w,h,pixels)
         assertNotNull(d);d!!
-        assertEquals(left,d.bounds.left,3);assertEquals(top,d.bounds.top,3)
-        assertEquals(left+5*xStep,d.bounds.right,3);assertEquals(top+5*yStep,d.bounds.bottom,3)
+        assertTrue(kotlin.math.abs(left-d.bounds.left)<=3);assertTrue(kotlin.math.abs(top-d.bounds.top)<=3)
+        assertTrue(kotlin.math.abs(left+5*xStep-d.bounds.right)<=3);assertTrue(kotlin.math.abs(top+5*yStep-d.bounds.bottom)<=3)
         assertTrue(d.confidence>=.70)
     }
     @Test fun rejectsFlatScreen(){
