@@ -1,0 +1,161 @@
+package de.robinthor.digiworldexplorer.capture
+
+import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.Service
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.graphics.PixelFormat
+import android.hardware.display.DisplayManager
+import android.hardware.display.VirtualDisplay
+import android.media.ImageReader
+import android.media.projection.MediaProjection
+import android.media.projection.MediaProjectionManager
+import android.os.Build
+import android.os.IBinder
+import android.view.WindowManager
+import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
+import de.robinthor.digiworldexplorer.R
+
+class ScreenCaptureService : Service() {
+    private var projection: MediaProjection? = null
+    private var virtualDisplay: VirtualDisplay? = null
+    private var imageReader: ImageReader? = null
+
+    private val projectionCallback = object : MediaProjection.Callback() {
+        override fun onStop() {
+            releaseCapture()
+            stopSelf()
+        }
+    }
+
+    override fun onCreate() {
+        super.onCreate()
+        createNotificationChannel()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_STOP) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
+
+        startCaptureForeground()
+        val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Int.MIN_VALUE)
+            ?: return START_NOT_STICKY
+        val resultData = intent.intentExtra(EXTRA_RESULT_DATA) ?: return START_NOT_STICKY
+        if (projection == null) {
+            beginCapture(resultCode, resultData)
+        }
+        return START_NOT_STICKY
+    }
+
+    override fun onDestroy() {
+        releaseCapture()
+        super.onDestroy()
+    }
+
+    override fun onBind(intent: Intent?): IBinder? = null
+
+    private fun startCaptureForeground() {
+        val stopIntent = Intent(this, ScreenCaptureService::class.java).setAction(ACTION_STOP)
+        val stopPendingIntent = android.app.PendingIntent.getService(
+            this,
+            1,
+            stopIntent,
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_menu_camera)
+            .setContentTitle(getString(R.string.app_name))
+            .setContentText("Bildschirmanalyse aktiv – Automatik pausiert")
+            .setOngoing(true)
+            .addAction(0, "Stopp", stopPendingIntent)
+            .build()
+        if (Build.VERSION.SDK_INT >= 29) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION,
+            )
+        } else {
+            startForeground(NOTIFICATION_ID, notification)
+        }
+    }
+
+    private fun beginCapture(resultCode: Int, resultData: Intent) {
+        val manager = getSystemService(MediaProjectionManager::class.java)
+        val mediaProjection = manager.getMediaProjection(resultCode, resultData)
+        mediaProjection.registerCallback(projectionCallback, mainExecutor)
+
+        val metrics = getSystemService(WindowManager::class.java).currentWindowMetrics
+        val bounds = metrics.bounds
+        val width = bounds.width().coerceAtLeast(1)
+        val height = bounds.height().coerceAtLeast(1)
+        val density = resources.configuration.densityDpi
+        val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+        val display = mediaProjection.createVirtualDisplay(
+            "DigiWorldCapture",
+            width,
+            height,
+            density,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            reader.surface,
+            null,
+            null,
+        )
+        projection = mediaProjection
+        imageReader = reader
+        virtualDisplay = display
+    }
+
+    private fun releaseCapture() {
+        virtualDisplay?.release()
+        virtualDisplay = null
+        imageReader?.close()
+        imageReader = null
+        projection?.unregisterCallback(projectionCallback)
+        projection?.stop()
+        projection = null
+    }
+
+    private fun createNotificationChannel() {
+        val channel = NotificationChannel(
+            CHANNEL_ID,
+            "Bildschirmanalyse",
+            NotificationManager.IMPORTANCE_LOW,
+        )
+        getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+    }
+
+    companion object {
+        private const val CHANNEL_ID = "screen_capture"
+        private const val NOTIFICATION_ID = 1001
+        private const val ACTION_START = "capture.start"
+        private const val ACTION_STOP = "capture.stop"
+        private const val EXTRA_RESULT_CODE = "capture.resultCode"
+        private const val EXTRA_RESULT_DATA = "capture.resultData"
+
+        fun start(context: Context, resultCode: Int, resultData: Intent) {
+            val intent = Intent(context, ScreenCaptureService::class.java)
+                .setAction(ACTION_START)
+                .putExtra(EXTRA_RESULT_CODE, resultCode)
+                .putExtra(EXTRA_RESULT_DATA, resultData)
+            ContextCompat.startForegroundService(context, intent)
+        }
+
+        fun stop(context: Context) {
+            context.startService(
+                Intent(context, ScreenCaptureService::class.java).setAction(ACTION_STOP),
+            )
+        }
+
+        @Suppress("DEPRECATION")
+        private fun Intent.intentExtra(name: String): Intent? =
+            if (Build.VERSION.SDK_INT >= 33) getParcelableExtra(name, Intent::class.java)
+            else getParcelableExtra(name)
+    }
+}

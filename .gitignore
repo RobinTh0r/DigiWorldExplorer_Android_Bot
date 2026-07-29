@@ -9,3 +9,7 @@ captures/
 *.keystore
 keystore.properties
 
+
+.tools/
+.testvenv/
+.workfix/

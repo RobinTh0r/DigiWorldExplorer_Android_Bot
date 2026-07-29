@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DigiWorld Explorer</string>
+    <string name="accessibility_service_name">DigiWorld Explorer Steuerung</string>
+    <string name="accessibility_service_description">Führt ausschließlich sichtbar gestartete, lokal berechnete Testgesten für DigiWorld aus.</string>
+</resources>
