@@ -29,6 +29,7 @@ class ScreenCaptureService : Service() {
     private var imageReader: ImageReader? = null
     private var captureThread: HandlerThread? = null
     private var analyzedFrame = false
+    private var framesSeen = 0
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
@@ -105,9 +106,9 @@ class ScreenCaptureService : Service() {
         val thread = HandlerThread("DigiWorldAnalysis").apply { start() }
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
-                if (!analyzedFrame) {
-                    CaptureFrameAnalyzer.analyze(this, image, width, height)
-                    analyzedFrame = true
+                framesSeen++
+                if (!analyzedFrame && framesSeen % 30 == 0) {
+                    analyzedFrame = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
                 }
             }
         }, Handler(thread.looper))
@@ -135,6 +136,7 @@ class ScreenCaptureService : Service() {
         captureThread?.quitSafely()
         captureThread = null
         analyzedFrame = false
+        framesSeen = 0
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()
         projection = null
