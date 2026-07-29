@@ -90,8 +90,8 @@ class ScreenCaptureService : Service() {
 
     private fun beginCapture(resultCode: Int, resultData: Intent) {
         val manager = getSystemService(MediaProjectionManager::class.java)
-        val mediaProjection = manager.getMediaProjection(resultCode, resultData)
-        mediaProjection.registerCallback(projectionCallback, mainExecutor)
+        val mediaProjection = manager.getMediaProjection(resultCode, resultData) ?: return
+        mediaProjection.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
 
         val metrics = getSystemService(WindowManager::class.java).currentWindowMetrics
         val bounds = metrics.bounds
