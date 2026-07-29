@@ -26,7 +26,7 @@ object GridDetector {
         val b=GridBounds(xf.second.roundToInt(),yf.second.roundToInt(),(xf.second+5*xf.first).roundToInt(),(yf.second+5*yf.first).roundToInt())
         val bw=b.right-b.left;val bh=b.bottom-b.top
         val aspect=bw/bh.coerceAtLeast(1).toDouble();val coverage=bw*bh/(width*height).toDouble()
-        if(aspect !in .85..1.55||coverage !in .20..45)return null
+        if(aspect !in .85..1.55||coverage !in .20..0.45)return null
         return GridDetection((.70+.005*minOf(xb.quality,yb.quality)).coerceAtMost(.98),b,"six equidistant grid edges")
     }
     private data class Six(val quality:Double,val positions:IntArray,val values:DoubleArray)
