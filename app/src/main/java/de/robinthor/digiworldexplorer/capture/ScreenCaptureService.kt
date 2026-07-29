@@ -99,6 +99,15 @@ class ScreenCaptureService : Service() {
         val height = bounds.height().coerceAtLeast(1)
         val density = resources.configuration.densityDpi
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
+        val thread = HandlerThread("DigiWorldAnalysis").apply { start() }
+        reader.setOnImageAvailableListener({ source ->
+            source.acquireLatestImage()?.use { image ->
+                if (!analyzedFrame) {
+                    CaptureFrameAnalyzer.analyze(this, image, width, height)
+                    analyzedFrame = true
+                }
+            }
+        }, Handler(thread.looper))
         val display = mediaProjection.createVirtualDisplay(
             "DigiWorldCapture",
             width,
