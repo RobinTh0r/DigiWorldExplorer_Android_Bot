@@ -15,6 +15,7 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.Handler
+import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
 import android.view.WindowManager
@@ -26,6 +27,8 @@ class ScreenCaptureService : Service() {
     private var projection: MediaProjection? = null
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
+    private var captureThread: HandlerThread? = null
+    private var analyzedFrame = false
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
@@ -120,6 +123,7 @@ class ScreenCaptureService : Service() {
         )
         projection = mediaProjection
         imageReader = reader
+        captureThread = thread
         virtualDisplay = display
     }
 
@@ -128,6 +132,9 @@ class ScreenCaptureService : Service() {
         virtualDisplay = null
         imageReader?.close()
         imageReader = null
+        captureThread?.quitSafely()
+        captureThread = null
+        analyzedFrame = false
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()
         projection = null
