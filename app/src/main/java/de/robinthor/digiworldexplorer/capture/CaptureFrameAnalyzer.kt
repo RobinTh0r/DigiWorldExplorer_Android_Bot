@@ -14,6 +14,8 @@ import java.io.File
 import java.io.FileOutputStream
 
 object CaptureFrameAnalyzer {
+    @Volatile private var calibrated: de.robinthor.digiworldexplorer.detection.GridDetection? = null
+    fun resetCalibration(){ calibrated=null; de.robinthor.digiworldexplorer.strategy.AutoMoveController.reset(); de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService.instance?.clearCalibrationOverlay() }
     data class Result(val detected:Boolean,val confidence:Double,val output:String)
 
     fun analyze(context:Context,image:Image,width:Int,height:Int):Result?=runCatching{
@@ -26,7 +28,7 @@ object CaptureFrameAnalyzer {
 
         val pixels=IntArray(width*height)
         frame.getPixels(pixels,0,width,0,0,width,height)
-        val detection=GridDetector.detect(width,height,pixels)
+        val detection=calibrated ?: GridDetector.detect(width,height,pixels)?.takeIf { it.confidence>=.82 }?.also { calibrated=it }
         val cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds) }
         val preview=detection?.let { PreviewClassifier.classify(width,height,pixels,it.bounds) } ?: emptyMap()
         val diagnostic=frame.copy(Bitmap.Config.ARGB_8888,true)

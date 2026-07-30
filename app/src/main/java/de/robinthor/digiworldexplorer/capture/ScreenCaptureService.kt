@@ -100,6 +100,7 @@ class ScreenCaptureService : Service() {
     }
 
     private fun beginCapture(resultCode: Int, resultData: Intent) {
+        CaptureFrameAnalyzer.resetCalibration()
         val manager = getSystemService(MediaProjectionManager::class.java)
         val mediaProjection = manager.getMediaProjection(resultCode, resultData) ?: return
         mediaProjection.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
@@ -144,6 +145,7 @@ class ScreenCaptureService : Service() {
         captureThread?.quitSafely()
         captureThread = null
         framesSeen = 0
+        CaptureFrameAnalyzer.resetCalibration()
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()
         projection = null
