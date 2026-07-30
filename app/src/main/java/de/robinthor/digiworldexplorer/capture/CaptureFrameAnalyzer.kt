@@ -41,8 +41,9 @@ object CaptureFrameAnalyzer {
         val directory=File(context.getExternalFilesDir(null) ?: context.filesDir,"diagnostics").apply{mkdirs()}
         if(detection!=null && cells!=null){
             val player=cells.maxByOrNull { it.value.player }
-            val items=cells.filter { it.value.item>.06 }.keys.sortedWith(compareBy({it.row},{it.col}))
-            val obstacles=cells.filter { it.value.obstacle() }.keys.sortedWith(compareBy({it.row},{it.col}))
+            val playerCell=player?.key
+            val items=cells.filter { (cell,score) -> cell!=playerCell && score.item>.06 }.keys.sortedWith(compareBy({it.row},{it.col}))
+            val obstacles=cells.filter { (cell,score) -> cell!=playerCell && score.obstacle() }.keys.sortedWith(compareBy({it.row},{it.col}))
             val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\n"
             File(directory,"latest_detection.txt").writeText(summary)
             android.util.Log.i("DigiWorldDetection",summary.replace("\n","; "))
