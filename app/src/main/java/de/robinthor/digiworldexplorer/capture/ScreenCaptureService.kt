@@ -22,6 +22,7 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.R
+import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 class ScreenCaptureService : Service() {
     private var projection: MediaProjection? = null
@@ -43,9 +44,10 @@ class ScreenCaptureService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == ACTION_STOP) {
-            stopSelf()
-            return START_NOT_STICKY
+        when (intent?.action) {
+            ACTION_STOP -> { AutomationState.stop(); stopSelf(); return START_NOT_STICKY }
+            ACTION_AUTO_ON -> { AutomationState.enabled=true; startCaptureForeground(); return START_NOT_STICKY }
+            ACTION_AUTO_OFF -> { AutomationState.stop(); startCaptureForeground(); return START_NOT_STICKY }
         }
 
         startCaptureForeground()
@@ -59,9 +61,9 @@ class ScreenCaptureService : Service() {
     }
 
     override fun onDestroy() {
-        releaseCapture()
-        super.onDestroy()
+        AutomationState.stop(); releaseCapture(); super.onDestroy()
     }
+    override fun onTaskRemoved(rootIntent: Intent?) { AutomationState.stop(); stopSelf(); super.onTaskRemoved(rootIntent) }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -73,12 +75,17 @@ class ScreenCaptureService : Service() {
             stopIntent,
             android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
         )
+        val autoOffPendingIntent = android.app.PendingIntent.getService(
+            this, 2, Intent(this, ScreenCaptureService::class.java).setAction(ACTION_AUTO_OFF),
+            android.app.PendingIntent.FLAG_IMMUTABLE or android.app.PendingIntent.FLAG_UPDATE_CURRENT,
+        )
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText("Bildschirmanalyse aktiv – Automatik pausiert")
+            .setContentText(if (AutomationState.enabled) "Automatik aktiv" else "Analyse aktiv – Automatik aus")
             .setOngoing(true)
-            .addAction(0, "Stopp", stopPendingIntent)
+            .addAction(0, "AUTOMATIK AUS", autoOffPendingIntent)
+            .addAction(0, "Alles stoppen", stopPendingIntent)
             .build()
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
@@ -154,6 +161,8 @@ class ScreenCaptureService : Service() {
         private const val NOTIFICATION_ID = 1001
         private const val ACTION_START = "capture.start"
         private const val ACTION_STOP = "capture.stop"
+        private const val ACTION_AUTO_ON = "capture.auto.on"
+        private const val ACTION_AUTO_OFF = "capture.auto.off"
         private const val EXTRA_RESULT_CODE = "capture.resultCode"
         private const val EXTRA_RESULT_DATA = "capture.resultData"
 
@@ -169,6 +178,10 @@ class ScreenCaptureService : Service() {
             context.startService(
                 Intent(context, ScreenCaptureService::class.java).setAction(ACTION_STOP),
             )
+        }
+
+        fun setAutomation(context: Context, enabled: Boolean) {
+            context.startService(Intent(context, ScreenCaptureService::class.java).setAction(if (enabled) ACTION_AUTO_ON else ACTION_AUTO_OFF))
         }
 
         @Suppress("DEPRECATION")

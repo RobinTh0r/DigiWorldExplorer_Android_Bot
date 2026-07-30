@@ -5,124 +5,24 @@ import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
-import android.os.Build
-import android.os.Bundle
+import android.os.*
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
+import de.robinthor.digiworldexplorer.strategy.AutomationState
 
-class MainActivity : ComponentActivity() {
-    private var status by mutableStateOf("Bereit – noch keine Bildschirmfreigabe")
-
-    private val captureConsent = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult(),
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            ScreenCaptureService.start(this, result.resultCode, result.data!!)
-            status = "Bildschirmfreigabe aktiv – Automatik bleibt pausiert"
-        } else {
-            status = "Bildschirmfreigabe wurde nicht erteilt"
-        }
-    }
-
-    private val notificationsPermission = registerForActivityResult(
-        ActivityResultContracts.RequestPermission(),
-    ) { }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        requestNotificationPermissionIfNeeded()
-        setContent {
-            MaterialTheme {
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    ControlScreen(
-                        status = status,
-                        onAccessibilitySettings = {
-                            startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                        },
-                        onStartCapture = { requestCapture() },
-                        onStop = {
-                            ScreenCaptureService.stop(this)
-                            status = "Gestoppt – Bildschirmfreigabe beendet"
-                        },
-                    )
-                }
-            }
-        }
-    }
-
-    private fun requestCapture() {
-        val manager = getSystemService(MediaProjectionManager::class.java)
-        captureConsent.launch(manager.createScreenCaptureIntent())
-    }
-
-    private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT >= 33 &&
-            ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) !=
-            PackageManager.PERMISSION_GRANTED
-        ) {
-            notificationsPermission.launch(Manifest.permission.POST_NOTIFICATIONS)
-        }
-    }
+class MainActivity:ComponentActivity(){
+ private var status by mutableStateOf("Bereit – Automatik ist aus");private var captureActive by mutableStateOf(false);private var autoActive by mutableStateOf(false)
+ private val consent=registerForActivityResult(ActivityResultContracts.StartActivityForResult()){r->if(r.resultCode==Activity.RESULT_OK&&r.data!=null){AutomationState.stop();ScreenCaptureService.start(this,r.resultCode,r.data!!);captureActive=true;autoActive=false;status="Analyse aktiv – Automatik ist aus"}else status="Bildschirmfreigabe nicht erteilt"}
+ private val notifications=registerForActivityResult(ActivityResultContracts.RequestPermission()){}
+ override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);AutomationState.stop();if(Build.VERSION.SDK_INT>=33&&ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED)notifications.launch(Manifest.permission.POST_NOTIFICATIONS);setContent{MaterialTheme{Surface(Modifier.fillMaxSize()){ControlScreen(status,captureActive,autoActive,{startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))},{consent.launch(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent())},{if(captureActive){ScreenCaptureService.setAutomation(this,true);autoActive=true;status="AUTOMATIK AKTIV – Stopp jederzeit möglich"}},{ScreenCaptureService.setAutomation(this,false);autoActive=false;status="Analyse aktiv – Automatik gestoppt"},{ScreenCaptureService.stop(this);captureActive=false;autoActive=false;status="Alles gestoppt"})}}}}
 }
-
-@androidx.compose.runtime.Composable
-private fun ControlScreen(
-    status: String,
-    onAccessibilitySettings: () -> Unit,
-    onStartCapture: () -> Unit,
-    onStop: () -> Unit,
-) {
-    Column(
-        modifier = Modifier.fillMaxSize().padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Text("DigiWorld Explorer", style = MaterialTheme.typography.headlineMedium)
-        Text("Android Development Spike", style = MaterialTheme.typography.titleMedium)
-        Spacer(Modifier.height(20.dp))
-        Card(modifier = Modifier.fillMaxWidth()) {
-            Column(Modifier.padding(18.dp)) {
-                Text("Status", style = MaterialTheme.typography.labelLarge)
-                Text(status)
-                Spacer(Modifier.height(8.dp))
-                Text("Sicherheitsmodus: Keine automatischen Gesten")
-            }
-        }
-        Spacer(Modifier.height(20.dp))
-        Button(onClick = onStartCapture, modifier = Modifier.fillMaxWidth()) {
-            Text("Bildschirmfreigabe starten")
-        }
-        Spacer(Modifier.height(10.dp))
-        OutlinedButton(onClick = onAccessibilitySettings, modifier = Modifier.fillMaxWidth()) {
-            Text("Bedienungshilfe öffnen")
-        }
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            OutlinedButton(onClick = onStop, modifier = Modifier.fillMaxWidth()) {
-                Text("Stopp")
-            }
-        }
-    }
-}
+@Composable private fun ControlScreen(status:String,capture:Boolean,auto:Boolean,onAccess:()->Unit,onCapture:()->Unit,onAuto:()->Unit,onAutoStop:()->Unit,onAllStop:()->Unit){Column(Modifier.fillMaxSize().padding(24.dp),verticalArrangement=Arrangement.Center){Text("DigiWorld Explorer",style=MaterialTheme.typography.headlineMedium);Spacer(Modifier.height(14.dp));Card(Modifier.fillMaxWidth()){Column(Modifier.padding(16.dp)){Text("Status",style=MaterialTheme.typography.labelLarge);Text(status);Text("Raster-Overlay: aktiv")}};Spacer(Modifier.height(16.dp));Button(onClick=onCapture,Modifier.fillMaxWidth()){Text(if(capture)"Bildschirmfreigabe erneuern" else "1. Bildschirmfreigabe starten")};OutlinedButton(onClick=onAccess,Modifier.fillMaxWidth()){Text("2. Bedienungshilfe öffnen")};Spacer(Modifier.height(10.dp));Button(onClick=onAuto,enabled=capture&&!auto,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.tertiary)){Text("3. AUTOMATIK STARTEN")};Button(onClick=onAutoStop,enabled=capture,modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=MaterialTheme.colorScheme.error)){Text("AUTOMATIK SOFORT STOPPEN")};OutlinedButton(onClick=onAllStop,Modifier.fillMaxWidth()){Text("Alles stoppen")};Spacer(Modifier.height(10.dp));Text("Auch über die Android-Benachrichtigung stoppbar. Wegwischen der App stoppt die Automatik.",style=MaterialTheme.typography.bodySmall)}}
