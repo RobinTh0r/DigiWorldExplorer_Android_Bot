@@ -23,6 +23,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status="Analyse";private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE;strokeWidth=4f;textSize=30f}
   init{background=ColorDrawable(Color.TRANSPARENT)}
   override fun onDraw(c:Canvas){super.onDraw(c);val b=bounds?:return;val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;p.color=Color.GREEN;p.style=Paint.Style.STROKE;for(i in 0..5){c.drawLine(b.left+i*cw,b.top.toFloat(),b.left+i*cw,b.bottom.toFloat(),p);c.drawLine(b.left.toFloat(),b.top+i*ch,b.right.toFloat(),b.top+i*ch,p)}
+   p.pathEffect=DashPathEffect(floatArrayOf(12f,8f),0f);c.drawRect(b.right.toFloat(),b.top.toFloat(),b.right+cw,b.bottom.toFloat(),p);for(i in 1..4)c.drawLine(b.right.toFloat(),b.top+i*ch,b.right+cw,b.top+i*ch,p);p.pathEffect=null
    fun box(cell:Cell,color:Int,w:Float){p.color=color;p.strokeWidth=w;val l=b.left+cell.col*cw+5;val t=b.top+cell.row*ch+5;c.drawRect(l,t,l+cw-10,t+ch-10,p)}
    obstacles.forEach{box(it,Color.RED,4f)};items.forEach{box(it,Color.MAGENTA,5f)};player?.let{box(it,Color.YELLOW,7f)};target?.let{box(it,Color.CYAN,7f)};p.style=Paint.Style.FILL;p.color=Color.GREEN;p.textSize=28f;c.drawText(status,b.left.toFloat(),(b.top-18).coerceAtLeast(32).toFloat(),p)} }
  companion object{@Volatile var instance:DigiWorldAccessibilityService?=null;private set}

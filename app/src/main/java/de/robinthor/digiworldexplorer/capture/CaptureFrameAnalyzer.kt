@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.media.Image
 import de.robinthor.digiworldexplorer.detection.CellClassifier
 import de.robinthor.digiworldexplorer.detection.GridDetector
+import de.robinthor.digiworldexplorer.detection.PreviewClassifier
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import java.io.File
 import java.io.FileOutputStream
@@ -27,6 +28,7 @@ object CaptureFrameAnalyzer {
         frame.getPixels(pixels,0,width,0,0,width,height)
         val detection=GridDetector.detect(width,height,pixels)
         val cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds) }
+        val preview=detection?.let { PreviewClassifier.classify(width,height,pixels,it.bounds) } ?: emptyMap()
         val diagnostic=frame.copy(Bitmap.Config.ARGB_8888,true)
         val canvas=Canvas(diagnostic)
         val paint=Paint().apply{color=Color.GREEN;style=Paint.Style.STROKE;strokeWidth=(width/180f).coerceAtLeast(3f)}
@@ -45,10 +47,10 @@ object CaptureFrameAnalyzer {
             val playerCell=player?.key
             val items=cells.filter { (cell,score) -> cell!=playerCell && score.item>.06 }.keys.sortedWith(compareBy({it.row},{it.col}))
             val obstacles=cells.filter { (cell,score) -> cell!=playerCell && score.obstacle() }.keys.sortedWith(compareBy({it.row},{it.col}))
-            val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\n"
+            val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\npreview="+preview+"\n"
             File(directory,"latest_detection.txt").writeText(summary)
             android.util.Log.i("DigiWorldDetection",summary.replace("\n","; "))
-            AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells)
+            AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells,preview)
         }
         val output=File(directory,"dynamic_grid.png")
         FileOutputStream(output).use{diagnostic.compress(Bitmap.CompressFormat.PNG,100,it)}

@@ -10,7 +10,7 @@ data class Action(val kind:ActionKind,val target:Cell,val direction:Direction,va
 
 object MovementPlanner{
  private data class Node(val cost:Int,val cell:Cell,val first:Action?):Comparable<Node>{override fun compareTo(o:Node)=cost.compareTo(o.cost)}
- fun choose(player:Cell,cells:Map<Cell,CellScores>,history:List<Cell>,dashAvailable:Boolean=false):Action?{
+ fun choose(player:Cell,cells:Map<Cell,CellScores>,history:List<Cell>,dashAvailable:Boolean=false,preview:Map<Cell,CellScores> = emptyMap()):Action?{
   val items=cells.filter{(cell,s)->cell!=player&&s.item>.06}.keys
   if(items.isNotEmpty())shortest(player,items,cells)?.let{return it.copy(reason="item route")}
   var consecutive=0
@@ -22,6 +22,7 @@ object MovementPlanner{
    val n=Cell(player.row+d.dr,player.col+d.dc);val s=cells[n]?:return@mapNotNull null
    var score=when(d){Direction.RIGHT->100;Direction.DOWN->20;Direction.UP->15;Direction.LEFT->-40}+ (s.highlight*20).toInt()
    if(n==previous)score-=80;if(oscillating&&n==history[history.lastIndex-1])score-=200
+   val look=preview[Cell(n.row,5)];if(look?.obstacle()==true)score-=35;if((look?.item?:0.0)>.06)score+=45
    score to Action(if(s.obstacle())ActionKind.ATTACK else ActionKind.MOVE,n,d,"explore right")
   }.maxByOrNull{it.first}?.second
  }
