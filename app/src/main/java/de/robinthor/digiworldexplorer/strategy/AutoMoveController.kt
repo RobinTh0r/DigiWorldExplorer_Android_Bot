@@ -4,7 +4,7 @@ import android.util.Log
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.detection.*
 object AutoMoveController{
- private const val MIN_GRID=.82;private const val MIN_PLAYER=.08;private const val TAP_DELAY=650L
+ private const val MIN_GRID=.82;private const val MIN_PLAYER=.08;private const val TAP_DELAY=500L
  private val main=Handler(Looper.getMainLooper());private val history=ArrayDeque<Cell>();private val recentItems=mutableMapOf<Cell,Int>()
  private var candidate:Cell?=null;private var stable=0;private var lastTap=0L;private var pending=false;private var previous:Cell?=null;private var expected:Cell?=null
  private val forbiddenObstacles=mutableSetOf<Cell>();private var lastAttackTarget:Cell?=null;private var lastAttackPlayer:Cell?=null;private var unchangedAttackFrames=0

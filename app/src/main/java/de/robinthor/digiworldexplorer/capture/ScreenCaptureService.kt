@@ -114,8 +114,8 @@ class ScreenCaptureService : Service() {
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
-                if (framesSeen % 15 == 9) DigiWorldAccessibilityService.instance?.hideForCapture()
-                if (framesSeen % 15 == 0) {
+                if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
+                if (framesSeen % 10 == 0) {
                     CaptureFrameAnalyzer.analyze(this, image, width, height)
                 }
             }

@@ -16,6 +16,7 @@ object CellClassifier{
    val x1=(b.left+(col+1)*cw-cw*.07).toInt().coerceIn(x0+1,width)
    val y0=(b.top+row*ch+ch*.07).toInt().coerceIn(0,height-1)
    val y1=(b.top+(row+1)*ch-ch*(if(row==4).42 else .11)).toInt().coerceIn(y0+1,height)
+   val playerY1=(b.top+(row+1)*ch-ch*.11).toInt().coerceIn(y0+1,height)
    var n=0;var orange=0;var pink=0;var green=0;var red=0;var neutral=0;var yellow=0;var dark=0;var hi=0;var pyramid=0
    for(y in y0 until y1)for(x in x0 until x1){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val bl=p and 255;n++
     val o=r>180&&g>55&&g<190&&bl<100;if(o)orange++
@@ -30,8 +31,12 @@ object CellClassifier{
    fun q(v:Int):Double { return v/n.toDouble() }
    val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
    val os=q(orange);val ps=q(pink);val gs=q(green);val item=maxOf(os,ps,gs)
-   out[Cell(row,col)]=CellScores(maxOf(q(red),q(neutral),shadow),os,ps,gs,item,q(pyramid),q(hi))
+   out[Cell(row,col)]=CellScores(maxOf(q(red),q(neutral),shadow,playerScore(width,argb,x0,x1,y0,playerY1)),os,ps,gs,item,q(pyramid),q(hi))
   }
   return out
  }
-}
+ private fun playerScore(width:Int,argb:IntArray,x0:Int,x1:Int,y0:Int,y1:Int):Double{
+  var n=0;var red=0;var neutral=0;var yellow=0;var dark=0;var hi=0;var orange=0
+  for(y in y0 until y1)for(x in x0 until x1){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val b=p and 255;n++;val o=r>180&&g>55&&g<190&&b<100;if(o)orange++;if(r>110&&r>g+45&&r>b+25&&!o)red++;val mx=maxOf(r,g,b);val mn=minOf(r,g,b);if(mn>165&&mx-mn<65)neutral++;if(r>190&&g>140&&b<80)yellow++;if(r<65&&g<65&&b<75)dark++;if(b>120&&g>90&&b>r+25)hi++}
+  fun q(v:Int):Double{return v/n.coerceAtLeast(1).toDouble()};val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0;return maxOf(q(red),q(neutral),shadow)
+ }}
