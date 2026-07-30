@@ -13,6 +13,7 @@ class CellClassifierTest{
   assertTrue(c.getValue(Cell(1,3)).orange>.06)
   assertTrue(c.getValue(Cell(3,2)).obstacle())
  }
+ @Test fun pyramidTipIsNotObstacle(){assertFalse(CellScores(0.0,0.0,0.0,0.0,0.0,.26,0.0).obstacle())}
  @Test fun itemArtIsNotObstacle(){
   val s=CellScores(0.0,0.0,.09,0.0,.09,.60,0.0);assertFalse(s.obstacle())
  }

@@ -3,7 +3,7 @@ import de.robinthor.digiworldexplorer.detection.*
 import org.junit.Assert.*
 import org.junit.Test
 class MovementPlannerTest{
- private fun board(obstacles:Set<Cell> = emptySet(),items:Set<Cell> = emptySet())=(0..4).flatMap{r->(0..4).map{c->Cell(r,c)}}.associateWith{c->CellScores(0.0,if(c in items).1 else 0.0,0.0,0.0,if(c in items).1 else 0.0,if(c in obstacles).3 else 0.0,0.0)}
+ private fun board(obstacles:Set<Cell> = emptySet(),items:Set<Cell> = emptySet())=(0..4).flatMap{r->(0..4).map{c->Cell(r,c)}}.associateWith{c->CellScores(0.0,if(c in items).1 else 0.0,0.0,0.0,if(c in items).1 else 0.0,if(c in obstacles).5 else 0.0,0.0)}
  @Test fun prefersRight(){assertEquals(Cell(2,3),MovementPlanner.choose(Cell(2,2),board(),emptyList())?.target)}
  @Test fun routesToItem(){val a=MovementPlanner.choose(Cell(2,2),board(items=setOf(Cell(1,2))),emptyList());assertEquals(Cell(1,2),a?.target);assertEquals(ActionKind.MOVE,a?.kind)}
  @Test fun attacksBlockingPyramidOnItemRoute(){val a=MovementPlanner.choose(Cell(2,1),board(setOf(Cell(2,2)),setOf(Cell(2,3))),emptyList());assertEquals(Cell(2,2),a?.target);assertEquals(ActionKind.ATTACK,a?.kind)}

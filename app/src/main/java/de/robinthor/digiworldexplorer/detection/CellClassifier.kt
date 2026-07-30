@@ -4,7 +4,7 @@ data class Cell(val row:Int,val col:Int)
 data class CellScores(
  val player:Double,val orange:Double,val pink:Double,val green:Double,
  val item:Double,val pyramid:Double,val highlight:Double,
-){fun obstacle():Boolean=pyramid>.18&&item<=.06}
+){fun obstacle():Boolean=pyramid>.30&&item<=.06}
 
 object CellClassifier{
  fun classify(width:Int,height:Int,argb:IntArray,b:GridBounds):Map<Cell,CellScores>{
