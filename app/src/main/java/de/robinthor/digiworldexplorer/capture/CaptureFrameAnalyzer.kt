@@ -7,6 +7,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.media.Image
 import de.robinthor.digiworldexplorer.detection.CellClassifier
+import de.robinthor.digiworldexplorer.detection.CalibrationValidator
 import de.robinthor.digiworldexplorer.detection.GridDetector
 import de.robinthor.digiworldexplorer.detection.PreviewClassifier
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
@@ -28,8 +29,9 @@ object CaptureFrameAnalyzer {
 
         val pixels=IntArray(width*height)
         frame.getPixels(pixels,0,width,0,0,width,height)
-        val detection=calibrated ?: GridDetector.detect(width,height,pixels)?.takeIf { it.confidence>=.82 }?.also { calibrated=it }
-        val cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds) }
+        var detection=calibrated ?: GridDetector.detect(width,height,pixels)?.takeIf { it.confidence>=.82 }
+        var cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds) }
+        if(calibrated==null&&detection!=null){if(cells!=null&&CalibrationValidator.plausible(cells))calibrated=detection else{detection=null;cells=null}}
         val preview=detection?.let { PreviewClassifier.classify(width,height,pixels,it.bounds) } ?: emptyMap()
         val diagnostic=frame.copy(Bitmap.Config.ARGB_8888,true)
         val canvas=Canvas(diagnostic)
