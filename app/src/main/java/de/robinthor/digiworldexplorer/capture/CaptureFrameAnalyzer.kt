@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.media.Image
 import de.robinthor.digiworldexplorer.detection.CellClassifier
 import de.robinthor.digiworldexplorer.detection.GridDetector
+import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import java.io.File
 import java.io.FileOutputStream
 
@@ -47,6 +48,7 @@ object CaptureFrameAnalyzer {
             val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\n"
             File(directory,"latest_detection.txt").writeText(summary)
             android.util.Log.i("DigiWorldDetection",summary.replace("\n","; "))
+            AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells)
         }
         val output=File(directory,"dynamic_grid.png")
         FileOutputStream(output).use{diagnostic.compress(Bitmap.CompressFormat.PNG,100,it)}
