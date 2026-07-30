@@ -54,7 +54,8 @@ object CaptureFrameAnalyzer {
             val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\npreview="+preview+"\n"
             File(directory,"latest_detection.txt").writeText(summary)
             android.util.Log.i("DigiWorldDetection",summary.replace("\n","; "))
-            AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells,preview)
+            if(CalibrationValidator.plausible(cells)) AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells,preview)
+            else AutoMoveController.onAnalysis(0.0,detection.bounds,emptyMap(),emptyMap())
         }
         val output=File(directory,"dynamic_grid.png")
         FileOutputStream(output).use{diagnostic.compress(Bitmap.CompressFormat.PNG,100,it)}
