@@ -28,7 +28,6 @@ class ScreenCaptureService : Service() {
     private var virtualDisplay: VirtualDisplay? = null
     private var imageReader: ImageReader? = null
     private var captureThread: HandlerThread? = null
-    private var analyzedFrame = false
     private var framesSeen = 0
 
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -107,8 +106,8 @@ class ScreenCaptureService : Service() {
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
-                if (!analyzedFrame && framesSeen % 30 == 0) {
-                    analyzedFrame = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                if (framesSeen % 30 == 0) {
+                    CaptureFrameAnalyzer.analyze(this, image, width, height)
                 }
             }
         }, Handler(thread.looper))
@@ -135,7 +134,6 @@ class ScreenCaptureService : Service() {
         imageReader = null
         captureThread?.quitSafely()
         captureThread = null
-        analyzedFrame = false
         framesSeen = 0
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()
