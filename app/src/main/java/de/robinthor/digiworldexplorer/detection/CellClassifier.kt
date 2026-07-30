@@ -15,7 +15,7 @@ object CellClassifier{
    val x0=(b.left+col*cw+cw*.07).toInt().coerceIn(0,width-1)
    val x1=(b.left+(col+1)*cw-cw*.07).toInt().coerceIn(x0+1,width)
    val y0=(b.top+row*ch+ch*.07).toInt().coerceIn(0,height-1)
-   val y1=(b.top+(row+1)*ch-ch*.11).toInt().coerceIn(y0+1,height)
+   val y1=(b.top+(row+1)*ch-ch*(if(row==4).42 else .11)).toInt().coerceIn(y0+1,height)
    var n=0;var orange=0;var pink=0;var green=0;var red=0;var neutral=0;var yellow=0;var dark=0;var hi=0;var pyramid=0
    for(y in y0 until y1)for(x in x0 until x1){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val bl=p and 255;n++
     val o=r>180&&g>55&&g<190&&bl<100;if(o)orange++

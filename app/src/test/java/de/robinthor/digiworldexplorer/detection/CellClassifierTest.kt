@@ -16,4 +16,9 @@ class CellClassifierTest{
  @Test fun itemArtIsNotObstacle(){
   val s=CellScores(0.0,0.0,.09,0.0,.09,.60,0.0);assertFalse(s.obstacle())
  }
-}
+ @Test fun bottomWallDecorationIsIgnored(){
+  val w=700;val h=1200;val b=GridBounds(50,300,650,900);val p=IntArray(w*h){0xff163040.toInt()};val cw=(b.right-b.left)/5;val ch=(b.bottom-b.top)/5
+  for(col in 0..4)for(y in b.bottom-(ch*.38).toInt() until b.bottom)for(x in b.left+col*cw until b.left+(col+1)*cw)p[y*w+x]=if(col%2==0)0xff7050b0.toInt() else 0xff30d0b0.toInt()
+  val cells=CellClassifier.classify(w,h,p,b)
+  for(col in 0..4){val score=cells.getValue(Cell(4,col));assertFalse("wall obstacle col=$col",score.obstacle());assertTrue("wall item col=$col",score.item<.06)}
+ }}
