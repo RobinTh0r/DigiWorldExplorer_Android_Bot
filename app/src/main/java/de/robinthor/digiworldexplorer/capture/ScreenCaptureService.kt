@@ -22,6 +22,7 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.R
+import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 class ScreenCaptureService : Service() {
@@ -113,6 +114,7 @@ class ScreenCaptureService : Service() {
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
+                if (framesSeen % 30 == 29) DigiWorldAccessibilityService.instance?.hideForCapture()
                 if (framesSeen % 30 == 0) {
                     CaptureFrameAnalyzer.analyze(this, image, width, height)
                 }
