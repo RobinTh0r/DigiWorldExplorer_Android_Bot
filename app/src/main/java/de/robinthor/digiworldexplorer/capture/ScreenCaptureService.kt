@@ -34,6 +34,7 @@ class ScreenCaptureService : Service() {
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
+            android.util.Log.w("DigiWorldCapture", "MediaProjection stopped by system or user")
             releaseCapture()
             stopSelf()
         }
@@ -102,7 +103,11 @@ class ScreenCaptureService : Service() {
     private fun beginCapture(resultCode: Int, resultData: Intent) {
         CaptureFrameAnalyzer.resetCalibration()
         val manager = getSystemService(MediaProjectionManager::class.java)
-        val mediaProjection = manager.getMediaProjection(resultCode, resultData) ?: return
+        val mediaProjection = manager.getMediaProjection(resultCode, resultData)
+        if (mediaProjection == null) {
+            android.util.Log.e("DigiWorldCapture", "getMediaProjection returned null (resultCode=$resultCode)")
+            return
+        }
         mediaProjection.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
 
         val metrics = getSystemService(WindowManager::class.java).currentWindowMetrics
@@ -115,9 +120,13 @@ class ScreenCaptureService : Service() {
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
-                if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
-                if (framesSeen % 10 == 0) {
-                    CaptureFrameAnalyzer.analyze(this, image, width, height)
+                if (CaptureFrameAnalyzer.isCalibrated) {
+                    // Kalibriert: das Overlay stoert nicht mehr, also so oft wie moeglich analysieren.
+                    // Der Takt bestimmt direkt, wie schnell der Bot laufen kann.
+                    if (framesSeen % 3 == 0) CaptureFrameAnalyzer.analyze(this, image, width, height)
+                } else {
+                    if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
+                    if (framesSeen % 10 == 0) CaptureFrameAnalyzer.analyze(this, image, width, height)
                 }
             }
         }, Handler(thread.looper))
@@ -135,6 +144,7 @@ class ScreenCaptureService : Service() {
         imageReader = reader
         captureThread = thread
         virtualDisplay = display
+        android.util.Log.i("DigiWorldCapture", "capture started ${width}x$height density=$density display=${display != null}")
     }
 
     private fun releaseCapture() {

@@ -19,15 +19,23 @@ object GridDetector {
         for(y in 0 until height-1) for(x in x0 until x1)
             yScore[y]+=abs(gray(argb[y*width+x])-gray(argb[(y+1)*width+x])).toDouble()
         val yCols=(x1-x0).coerceAtLeast(1);for(i in yScore.indices)yScore[i]/=yCols
-        val xb=bestSix(xScore,(width*.05).toInt() until (width*.25).toInt(),(width*.10).toInt() until (width*.22).toInt())?:return null
-        val yb=bestSix(yScore,(height*.20).toInt() until (height*.39).toInt(),(height*.045).toInt() until (height*.10).toInt())?:return null
-        if(xb.values.sorted()[1]<15.0||yb.values.sorted()[1]<15.0)return null
+        // Das Spielfeld kann den Bildschirm nahezu randlos ausfuellen (auf 20:9 beginnt es bei ~2,5% der Breite).
+        // Die Startsuche darf deshalb nicht bei 5% der Breite beginnen, sonst wird das linke Raster nie gefunden.
+        val xb=bestSix(xScore,0 until (width*.25).toInt(),(width*.10).toInt() until (width*.22).toInt())?:return null
+        val yb=bestSix(yScore,(height*.14).toInt() until (height*.42).toInt(),(height*.045).toInt() until (height*.10).toInt())?:return null
+        if(xb.values.sorted()[1]<10.0||yb.values.sorted()[1]<10.0)return null
+        // Absolute Gradientenwerte haengen stark von Kunststil und Renderskalierung ab
+        // (Spielfeld-Trennlinien liegen real bei ~20, synthetische Testbilder bei >200).
+        // Aussagekraeftig ist deshalb das Verhaeltnis der Rasterkanten zum Hintergrundgradienten.
+        val xRatio=xb.values.sorted()[1]/xScore.average().coerceAtLeast(.01)
+        val yRatio=yb.values.sorted()[1]/yScore.average().coerceAtLeast(.01)
+        if(xRatio<5.0||yRatio<5.0)return null
         val xf=fit(xb.positions);val yf=fit(yb.positions)
         val b=GridBounds(xf.second.roundToInt(),yf.second.roundToInt(),(xf.second+5*xf.first).roundToInt(),(yf.second+5*yf.first).roundToInt())
         val bw=b.right-b.left;val bh=b.bottom-b.top
         val aspect=bw/bh.coerceAtLeast(1).toDouble();val coverage=bw*bh/(width*height).toDouble()
         if(aspect !in .85..1.55||coverage !in .20..0.45)return null
-        return GridDetection((.70+.005*minOf(xb.quality,yb.quality)).coerceAtMost(.98),b,"six equidistant grid edges")
+        return GridDetection((.70+.03*(minOf(xRatio,yRatio)-4.0)).coerceIn(.0,.98),b,"six equidistant grid edges")
     }
     private data class Six(val quality:Double,val positions:IntArray,val values:DoubleArray)
     private fun bestSix(score:DoubleArray,starts:IntRange,steps:IntRange):Six? {

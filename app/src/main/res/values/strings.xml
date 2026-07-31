@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DigiWorld Explorer</string>
-    <string name="accessibility_service_name">DigiWorld Explorer Steuerung</string>
+    <string name="app_name">DigiWorldExplorer Android Bot</string>
+    <string name="accessibility_service_name">DigiWorldExplorer Android Bot Steuerung</string>
     <string name="accessibility_service_description">Führt ausschließlich sichtbar gestartete, lokal berechnete Testgesten für DigiWorld aus.</string>
+    <string name="footer_author">RobinTh0r</string>
+    <string name="footer_repo">github.com/RobinTh0r/DigiWorldExplorer_Android</string>
+    <string name="footer_donate_title">Spende</string>
+    <string name="footer_donate_url">https://paypal.me/thor666</string>
 </resources>
