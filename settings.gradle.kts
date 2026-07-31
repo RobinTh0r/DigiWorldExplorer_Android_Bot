@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "DigiWorldExplorerAndroid"
+rootProject.name = "DigiWorldExplorerAndroidBot"
 include(":app")
