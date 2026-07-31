@@ -1,6 +1,6 @@
 # ⚡ DigiWorldExplorer Android Bot ⚡
 
-![Version](https://img.shields.io/badge/version-0.2.3-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
+![Version](https://img.shields.io/badge/version-0.2.4-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
 
 ### 🦖 Native Android-Automatisierung für Digimon UP
 
@@ -144,6 +144,10 @@ unten in der App-Steuerung angezeigt.
 ### Unreleased
 
 - Noch keine Änderungen.
+
+### v0.2.4 – 31.07.2026
+
+- 🎨 Neues App-Icon (Pixel-Digimon auf Orange, weißer Hintergrund entfernt)
 
 ### v0.2.3 – 31.07.2026
 
