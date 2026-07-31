@@ -145,6 +145,14 @@ unten in der App-Steuerung angezeigt.
 
 - Noch keine Änderungen.
 
+### v0.2.2 – 31.07.2026
+
+- 💡 Hinweis in der App und der README: Botamon wird für die zuverlässigste
+  Erkennung empfohlen
+- 📦 Repo umbenannt zu `DigiWorldExplorer_Android_Bot`, Selbst-Referenzen
+  angepasst
+- 🧹 Interne Planungsdokumente (`docs/`) aus dem Repo entfernt
+
 ### v0.2.1 – 31.07.2026
 
 - 🐞 Krallen-Sammelitem auf dem Spielfeld wird jetzt als Item erkannt statt
