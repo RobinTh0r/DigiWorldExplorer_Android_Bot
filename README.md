@@ -1,6 +1,6 @@
 # ⚡ DigiWorldExplorer Android Bot ⚡
 
-![Version](https://img.shields.io/badge/version-0.2.4-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
+![Version](https://img.shields.io/badge/version-0.2.5-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
 
 ### 🦖 Native Android-Automatisierung für Digimon UP
 
@@ -144,6 +144,14 @@ unten in der App-Steuerung angezeigt.
 ### Unreleased
 
 - Noch keine Änderungen.
+
+### v0.2.5 – 31.07.2026
+
+- 🟠 Orangene Energie wird jetzt vor anderen Collectibles eingesammelt (Umweg bis
+  drei Felder wird dafür in Kauf genommen) – sie verschwindet von selbst, Krallen
+  bleiben liegen
+- 🚪 Sackgassen aus Pyramiden werden erkannt: Felder, von denen aus die rechte
+  Spalte nicht mehr erreichbar ist, werden gemieden statt hineinzulaufen
 
 ### v0.2.4 – 31.07.2026
 

@@ -28,6 +28,16 @@ object MovementPlanner{
  /** Abschlag fuer ein Feld, das erst zerschlagen werden muss. Muss den Rechts-Bonus klar
   *  ueberwiegen, sonst rammt der Bot die Pyramide, obwohl eine Zeile weiter alles frei ist. */
  private const val BLOCKED_PENALTY=90
+ /** Ab diesem Wert gilt eine Zelle als Collectable. */
+ private const val ITEM_SCORE=.06
+ /** Ab diesem Orangeanteil ist das Collectable eine Energiekugel und keine Kralle. */
+ private const val ENERGY_ORANGE=.06
+ /** Energiekugeln verschwinden von selbst wieder, Krallen bleiben liegen. Ein Umweg von bis zu
+  *  so vielen Feldern lohnt sich deshalb, um die Energie zuerst einzusammeln. */
+ private const val ENERGY_DETOUR=3
+ /** Abschlag fuer ein Feld, von dem aus die rechte Spalte nicht mehr erreichbar ist. Muss den
+  *  Rechts-Bonus samt Vorausschau ueberwiegen, sonst laeuft der Bot weiter in die Tasche. */
+ private const val DEAD_END_PENALTY=250
 
  private data class Node(val cost:Int,val cell:Cell,val path:List<Action>):Comparable<Node>{override fun compareTo(o:Node)=cost.compareTo(o.cost)}
 
@@ -69,9 +79,11 @@ object MovementPlanner{
   mayBreak:Boolean,
  ):Action?{
   val blockedCells=if(mayBreak)forbiddenObstacles else forbiddenObstacles+cells.filterValues{it.obstacle()}.keys
-  val items=cells.filter{(cell,s)->cell!=player&&s.item>.06}.keys
-  if(items.isNotEmpty())shortest(player,items,cells,blockedCells)?.let{return it.copy(reason="item route")}
-
+  itemPath(player,cells,blockedCells)?.let{path->
+   val goal=path.last().target
+   val energy=(cells[goal]?.orange?:0.0)>ENERGY_ORANGE
+   return path.first().copy(reason=if(energy)"Energie zuerst" else "item route")
+  }
   // Kein Collectable in Sicht: Strecke machen und dabei [LOOKAHEAD] Felder vorausplanen.
   val ahead=(1..LOOKAHEAD).map{Cell(player.row,player.col+it)}.filter{it.col<=4}
   val pyramidsAhead=ahead.count{cells[it]?.obstacle()==true}
@@ -93,6 +105,9 @@ object MovementPlanner{
    if(!blocked)score+=(s.highlight*20).toInt()
    score+=freeAhead(n,cells)*LOOKAHEAD_WEIGHT
    if(blocked)score-=BLOCKED_PENALTY
+   // Die Vorausschau sieht nur die eigene Zeile. Eine von Pyramiden umschlossene Tasche wirkt
+   // darin voellig frei - der Bot lief hinein und musste den ganzen Weg zurueck.
+   if(!blocked&&!escapesRight(n,cells,blockedCells,mayBreak))score-=DEAD_END_PENALTY
    if(n==previous)score-=80;if(oscillating&&n==history[history.lastIndex-1])score-=200
    val look=preview[Cell(n.row,5)];if(look!=null&&look.pyramid>.17&&look.item<=.06)score-=35;if((look?.item?:0.0)>.06)score+=45
    score to Action(if(blocked)ActionKind.ATTACK else ActionKind.MOVE,n,d,if(blocked)"Pyramide zerschlagen" else "Strecke rechts")
@@ -108,8 +123,43 @@ object MovementPlanner{
   return ahead.count{cells[it]?.obstacle()!=true}*LOOKAHEAD/ahead.size
  }
 
- private fun shortest(start:Cell,targets:Set<Cell>,cells:Map<Cell,CellScores>,forbidden:Set<Cell>):Action?=
-  shortestPath(start,targets,cells,forbidden)?.firstOrNull()
+ /**
+  * Weg zum naechsten Collectable - Energiekugeln zuerst. Sie verschwinden nach kurzer Zeit von
+  * selbst, waehrend Krallen liegen bleiben. Ohne diese Bevorzugung nahm der Bot immer nur das
+  * naechstgelegene Symbol und lief an einer bereits sichtbaren Energie vorbei, bis sie weg war.
+  */
+ private fun itemPath(player:Cell,cells:Map<Cell,CellScores>,blocked:Set<Cell>):List<Action>?{
+  val items=cells.filter{(cell,s)->cell!=player&&s.item>ITEM_SCORE}.keys
+  if(items.isEmpty())return null
+  val any=shortestPath(player,items,cells,blocked)
+  val energy=items.filter{(cells[it]?.orange?:0.0)>ENERGY_ORANGE}.toSet()
+  if(energy.isEmpty())return any
+  val toEnergy=shortestPath(player,energy,cells,blocked)?:return any
+  if(any==null)return toEnergy
+  return if(toEnergy.size<=any.size+ENERGY_DETOUR)toEnergy else any
+ }
+
+ /**
+  * Ist von [from] aus die rechte Spalte ueberhaupt noch erreichbar? Nur so laesst sich eine von
+  * Pyramiden umschlossene Tasche von einem normalen Umweg unterscheiden - das Brett ist mit 5x5
+  * klein genug, dass die vollstaendige Suche billiger ist als jede Heuristik.
+  */
+ private fun escapesRight(from:Cell,cells:Map<Cell,CellScores>,blocked:Set<Cell>,passObstacles:Boolean):Boolean{
+  if(from.col>=4)return true
+  val seen=mutableSetOf(from);val queue=ArrayDeque(listOf(from))
+  while(queue.isNotEmpty()){
+   val c=queue.removeFirst()
+   if(c.col>=4)return true
+   for(d in Direction.entries){
+    val n=Cell(c.row+d.dr,c.col+d.dc)
+    if(n in seen||n in blocked)continue
+    val s=cells[n]?:continue
+    if(s.obstacle()&&!passObstacles)continue
+    seen+=n;queue+=n
+   }
+  }
+  return false
+ }
 
  private fun shortestPath(start:Cell,targets:Set<Cell>,cells:Map<Cell,CellScores>,forbidden:Set<Cell>):List<Action>?{
   val q=PriorityQueue<Node>();q+=Node(0,start,emptyList());val best=mutableMapOf(start to 0)
@@ -145,11 +195,10 @@ object MovementPlanner{
   if(maxSteps<=1||first.kind!=ActionKind.MOVE)return single
   val mayBreak=claws!=null&&claws>CLAW_RESERVE
   val blocked=forbiddenObstacles+(if(mayBreak)emptySet() else cells.filterValues{it.obstacle()}.keys)
-  val items=cells.filter{(cell,s)->cell!=player&&s.item>.06}.keys
-  val route=if(items.isNotEmpty()){
-   val path=shortestPath(player,items,cells,blocked)?:return single
-   if(path.first().target!=first.target)return single
-   path.takeWhile{it.kind==ActionKind.MOVE}.take(maxSteps)
+   val itemRoute=itemPath(player,cells,blocked)
+   val route=if(itemRoute!=null){
+    if(itemRoute.first().target!=first.target)return single
+    itemRoute.takeWhile{it.kind==ActionKind.MOVE}.take(maxSteps)
   } else {
    if(first.direction!=Direction.RIGHT)return single
    val out=mutableListOf(first)
