@@ -53,6 +53,13 @@ Priorität bei der Wegwahl:
 - Android 10 (API 29) oder neuer
 - Digimon UP installiert
 
+> [!TIP]
+> Empfehlung für den Betatest: Verwendet möglichst **Botamon**. Sein kleiner,
+> farblich klarer Sprite lässt sich aktuell am zuverlässigsten erkennen –
+> die App zeigt dieselbe Empfehlung auch direkt im Steuerbildschirm. Andere
+> Digimon-Formen können funktionieren, sind aber noch nicht gleich gut
+> kalibriert.
+
 ### Installation
 
 1. APK aus [Releases](../../releases) herunterladen.
