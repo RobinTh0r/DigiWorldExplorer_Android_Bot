@@ -5,9 +5,9 @@ import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityServic
 import de.robinthor.digiworldexplorer.detection.*
 object AutoMoveController{
  private const val MIN_GRID=.82;private const val MIN_PLAYER=.08
- /** Mindestabstand zwischen zwei Taps. Die Analyse laeuft nach der Kalibrierung mit rund 3 Hz,
-  *  daher bremst dieser Wert das Tempo direkt. */
- private const val TAP_DELAY=280L
+ /** Mindestabstand zwischen zwei Taps. 800 ms geben dem Spiel Zeit fuer Animation + Dialog
+  *  und der Analyse ein sauber gerendertes Bild. */
+ private const val TAP_DELAY=800L
  /** So viele Analysen ohne Positionswechsel gelten als festgefahren - erst dann ist ein Dash erlaubt. */
  private const val STUCK_FRAMES=10
  /** So viele Analysen ohne echten Rechts-Fortschritt (Brett scrollt nicht) gelten ebenfalls als
@@ -34,13 +34,20 @@ object AutoMoveController{
  /** Ohne Collectable zaehlt nur Strecke - dann laufen wir gleich so weit am Stueck. */
  private const val BURST_RIGHT=3
  /** Abstand der Taps innerhalb eines Buendels. Muss die Laufanimation abdecken. */
- private const val BURST_DELAY=300L
+ /** Abstand zwischen Burst-Taps - gleich wie TAP_DELAY, damit jeder Tap
+  *  im selben 0,8-s-Rhythmus landet und die Analyse dazwischen sauber lesen kann. */
+ private const val BURST_DELAY=800L
  /** Ab diesem Schriftanteil gilt eine Zelle als von einer Meldung ueberdeckt. */
  private const val DIALOG_TEXT=.08
  /** So viele ueberdeckte Zellen gelten als Dialog - eine Meldung zieht sich ueber das ganze Brett. */
  private const val DIALOG_CELLS=3
  private val main=Handler(Looper.getMainLooper());private val history=ArrayDeque<Cell>();private val recentItems=mutableMapOf<Cell,Int>()
  private var candidate:Cell?=null;private var stable=0;private var lastTap=0L;private var pending=false;private var previous:Cell?=null;private var expected:Cell?=null
+ /** Wird gesetzt, sobald onAnalysis eine Meldung im Bild erkennt. dispatchBurst liest diesen
+  *  Wert auf dem Main-Thread, daher volatile. Ein laufendes Burst-Buendel bricht ab, sobald
+  *  die Analyse einen Dialog meldet - ohne diese Pruefung landen die nachfolgenden Taps blind
+  *  in der gerade angezeigten Fehlermeldung des Spiels. */
+ @Volatile private var dialogActive=false
  private val forbiddenObstacles=mutableSetOf<Cell>();private var lastAttackTarget:Cell?=null;private var lastAttackPlayer:Cell?=null;private var unchangedAttackFrames=0
  private var sameCellFrames=0;private var trackingConfirmed=false;private var lostFrames=0;private var noProgressFrames=0;private var dashFailures=0
  private var lastSignature:List<Double> = emptyList();private var lastSettledSignature:List<Double> = emptyList();private var expectedAge=0;private var unsettledFrames=0
@@ -67,8 +74,9 @@ object AutoMoveController{
   if(texty>=DIALOG_CELLS){
    Log.i("DigiWorldAuto","Meldung im Bild ($texty Zellen mit Schrift) - Automatik wartet")
    service?.updateOverlay(bounds,null,emptySet(),emptySet(),null,"WARTE: Meldung im Bild",AutomationState.overlayEnabled,hud)
-   candidate=null;stable=0;expected=null;expectedAge=0;trackingConfirmed=false;probeFrom=null;return
+   dialogActive=true;candidate=null;stable=0;expected=null;expectedAge=0;trackingConfirmed=false;probeFrom=null;return
   }
+  dialogActive=false
   if(!valid){
    lostFrames++
    if(lostFrames>=LOST_LIMIT){
@@ -171,7 +179,10 @@ object AutoMoveController{
    if(!ok||index+1>=taps.size){
     lastTap=SystemClock.elapsedRealtime();pending=false
     if(!ok){expected=null;trackingConfirmed=false;probeFrom=null}
-   } else main.postDelayed({dispatchBurst(service,taps,index+1,info)},BURST_DELAY)
+   } else main.postDelayed({
+    if(dialogActive){Log.i("DigiWorldAuto","Burst abgebrochen: Meldung im Bild");lastTap=SystemClock.elapsedRealtime();pending=false}
+    else dispatchBurst(service,taps,index+1,info)
+   },BURST_DELAY)
   }
  }
  fun reset(){candidate=null;stable=0;pending=false;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0}

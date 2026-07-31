@@ -1,6 +1,6 @@
 # ⚡ DigiWorldExplorer Android Bot ⚡
 
-![Version](https://img.shields.io/badge/version-0.2.2-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
+![Version](https://img.shields.io/badge/version-0.2.3-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
 
 ### 🦖 Native Android-Automatisierung für Digimon UP
 
@@ -144,6 +144,11 @@ unten in der App-Steuerung angezeigt.
 ### Unreleased
 
 - Noch keine Änderungen.
+
+### v0.2.3 – 31.07.2026
+
+- ⏱️ Klick-Rhythmus auf 800 ms eingestellt: pro Tap eine feste Pause, sauberere Bildanalyse
+- 🚫 Burst-Taps brechen ab, wenn zwischendurch eine Fehlermeldung im Bild erscheint
 
 ### v0.2.2 – 31.07.2026
 
