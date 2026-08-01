@@ -4,11 +4,11 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-0.3.0--rc1-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v0.3.0-rc1)
+[![Version](https://img.shields.io/badge/version-1.0.0-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.0)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-release_candidate-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v0.3.0-rc1/DigiWorldExplorer-Bot-v0.3.0-rc1.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.0/DigiWorldExplorer-Bot-v1.0.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -35,7 +35,7 @@ Movement priorities:
 
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v0.3.0-rc1/DigiWorldExplorer-Bot-v0.3.0-rc1.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.0/DigiWorldExplorer-Bot-v1.0.0.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -53,7 +53,8 @@ You can stop automation at any time from the app or Android notification.
 - Uncertain grid/player detection or visible error dialogs make the bot wait.
 - Unknown claw or dash values are treated conservatively.
 - Screenshots and decisions remain on the device.
-- The app has no internet permission, analytics, account system, advertisements, or runtime cloud service.
+- Internet access is used only to request the latest release version from GitHub. Screenshots and gameplay data never leave the device.
+- The app has no analytics, account system, advertisements, or runtime cloud service.
 
 ## 🌐 Languages
 
@@ -87,7 +88,19 @@ Verify the resulting state before continuing
 | Claw or dash counter shows `?` | The number was not read confidently and is handled as nearly empty for safety. |
 | Android warns during installation | Verify that the APK came from this repository's Releases page. Sideload warnings are normal for apps outside Google Play. |
 
+## ☕ Support development
+
+If the app is useful to you, you can support continued development through **[PayPal.me/thor666](https://paypal.me/thor666)**. Donations are optional and do not unlock features.
+
 ## 📝 Changelog
+
+### v1.0.0 — 1 August 2026
+
+- 🔄 Added automatic and manual update checks against official GitHub Releases
+- ⬇️ Added a safe link to open the latest official release when an update is available
+- ☕ Restored the PayPal support link in the app and README
+- 📐 Added more breathing room above the compact control UI
+- 🏷️ Promoted the tested public release candidate to the first stable release
 
 ### v0.3.0-rc1 — 1 August 2026
 
@@ -175,6 +188,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v0.3.0-rc1/DigiWorldExplorer-Bot-v0.3.0-rc1.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.0/DigiWorldExplorer-Bot-v1.0.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

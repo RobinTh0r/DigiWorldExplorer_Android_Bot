@@ -30,4 +30,12 @@
     <string name="notification_auto_off">Bildanalyse aktiv – Automatik aus</string>
     <string name="notification_auto_stop">AUTOMATIK AUS</string>
     <string name="notification_channel">Bildanalyse</string>
+    <string name="update_checking">Suche nach Updates…</string>
+    <string name="update_current">Du nutzt die neueste Version</string>
+    <string name="update_available">Update %1$s ist verfügbar</string>
+    <string name="update_failed">Versionsprüfung fehlgeschlagen</string>
+    <string name="update_check">Prüfen</string>
+    <string name="update_download">Release öffnen</string>
+    <string name="donate">☕ Entwicklung über PayPal unterstützen</string>
+    <string name="donate_url">https://paypal.me/thor666</string>
 </resources>

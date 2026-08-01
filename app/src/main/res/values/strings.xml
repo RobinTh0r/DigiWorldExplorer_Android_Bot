@@ -30,4 +30,12 @@
     <string name="notification_auto_off">Screen analysis active — automation off</string>
     <string name="notification_auto_stop">STOP AUTOMATION</string>
     <string name="notification_channel">Screen analysis</string>
+    <string name="update_checking">Checking for updates…</string>
+    <string name="update_current">You are using the latest version</string>
+    <string name="update_available">Update %1$s is available</string>
+    <string name="update_failed">Update check failed</string>
+    <string name="update_check">Check</string>
+    <string name="update_download">Open release</string>
+    <string name="donate">☕ Support development via PayPal</string>
+    <string name="donate_url">https://paypal.me/thor666</string>
 </resources>
