@@ -68,7 +68,15 @@ android {
     }
 }
 
+val copyNamedReleaseApk by tasks.registering(Copy::class) {
+    from(layout.buildDirectory.file("outputs/apk/release/app-release.apk"))
+    into(layout.buildDirectory.dir("outputs/release"))
+    rename { "DigiWorldExplorer-Bot-v${android.defaultConfig.versionName}.apk" }
+}
 
+tasks.configureEach {
+    if (name == "assembleRelease") finalizedBy(copyNamedReleaseApk)
+}
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2026.06.00")
 
