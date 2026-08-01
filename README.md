@@ -1,224 +1,75 @@
-# ⚡ DigiWorldExplorer Android Bot ⚡
+# DigiWorldExplorer Android Bot
 
-![Version](https://img.shields.io/badge/version-0.2.5-yellow) ![Status](https://img.shields.io/badge/status-beta-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
+![Version](https://img.shields.io/badge/version-0.3.0--rc1-blue) ![Status](https://img.shields.io/badge/status-release%20candidate-orange) ![Platform](https://img.shields.io/badge/platform-Android%2010%2B-green)
 
-### 🦖 Native Android-Automatisierung für Digimon UP
-
-✨ RobinTh0r Guild Edition · Exclusive for Germon Members ✨
-
-`Lokal` · `Deterministisch` · `Bedienungshilfe` · `Keine Cloud-KI` · `Safety first`
+A native, local Android grid-navigation assistant. It analyzes the visible game board with Android MediaProjection and performs user-authorized gestures through an Accessibility Service. It does not modify, inject into, or redistribute the game APK and requires no root, PC, ADB, or cloud service at runtime.
 
 > [!WARNING]
-> Dieses private Fanprojekt ist nicht mit den Entwicklern von Digimon UP
-> verbunden. Spielautomatisierung kann gegen Spielregeln verstoßen. Nutzung
-> ausschließlich auf eigene Verantwortung und ohne Gewährleistung.
+> This is an independent, unofficial fan project and is not affiliated with or endorsed by any game developer or publisher. Automation may violate a game's terms of service. Use it at your own risk.
 
-> [!NOTE]
-> 🔗 Schwesterprojekt: [DigiWorldExplorer_Bot](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
-> automatisiert dasselbe Spiel über BlueStacks unter Windows/Python. Diese App
-> ist die native Android-Portierung ohne PC, BlueStacks oder ADB-Abhängigkeit.
+## Features
 
-## 🌟 Was macht die App?
+- Dynamic 5×5 grid, player, item, obstacle, preview, and HUD detection
+- Local deterministic path planning with energy priority and dead-end avoidance
+- Conservative claw and dash handling
+- Optional live grid overlay
+- Immediate stop from the app or foreground notification
+- English and German UI with automatic device-language selection and manual switching
+- No analytics, accounts, advertising, cloud AI, root, injection, or fixed tap coordinates
 
-Die App läuft direkt auf dem Android-Gerät und benötigt weder PC noch
-BlueStacks. Sie erfasst den Bildschirm lokal über `MediaProjection`, erkennt
-das sichtbare 5×5-Raster, die Spielfigur, Items, Pyramiden sowie die
-HUD-Zähler (Krallen, Dash) und plant sichere Bewegungen. Alle Eingaben laufen
-über einen selbst aktivierten `AccessibilityService` – es gibt keine feste
-Bildschirmkoordinate und keine Modifikation der Spiel-APK.
+## Requirements
 
-Priorität bei der Wegwahl:
+- Android 10 (API 29) or newer
+- Accessibility control enabled by the user
+- Display-over-other-apps permission for the optional grid
+- Screen-sharing consent after each capture session starts
 
-1. 🟠🟣🟢 Erreichbare Items auf dem kürzesten Weg
-2. ➡️ Sichere Erkundung nach rechts, mehrere Schritte im Voraus geplant
-3. 🔺 Umwege statt Zerschlagen – Pyramiden werden nur mit Krallen-Reserve genommen
-4. 💨 Dash nur bei mehreren Hindernissen in Folge und ausreichend Ladungen
+## Install and run
 
-## 🛡️ Sicherheitsprinzip
+1. Download the signed APK from GitHub Releases.
+2. Install it. For APKs distributed outside Google Play, Android may ask you to allow installation from that source.
+3. Open the app and complete the two setup entries. A check mark confirms each permission.
+4. Start screen sharing.
+5. Open the game and press **START**.
 
-- 📸 Vor jeder Entscheidung wird das aktuelle Kamerabild neu ausgewertet.
-- 🧭 Keine festen Bildschirmkoordinaten – alles relativ zum erkannten Raster.
-- 🛑 Bei unsicherem Raster, unklarer Spielererkennung oder eingeblendeter
-  Spielmeldung wird gewartet statt geraten.
-- 🔢 HUD-Zähler werden nur bei sicherer Erkennung verwendet; unbekannte Werte
-  gelten als "fast leer" und lösen vorsichtiges Verhalten aus.
-- 🔁 Automatik ist jederzeit über die App, die Android-Benachrichtigung oder
-  Wegwischen der App stoppbar.
-- ☁️ Keine Cloud-API und kein KI-Modell während der Laufzeit.
+Stop automation at any time using **STOP AUTOMATION**, **Stop everything**, or the Android notification.
 
-## 🚀 Schnellstart
+## Privacy and safety
 
-### Voraussetzungen
+All screenshots and decisions remain on the device. The app does not request internet access. If the grid or player cannot be detected reliably, the controller waits instead of guessing. Accessibility gestures only run after the user explicitly starts automation.
 
-- Android 10 (API 29) oder neuer
-- Digimon UP installiert
+## Build
 
-> [!TIP]
-> Empfehlung für den Betatest: Verwendet möglichst **Botamon**. Sein kleiner,
-> farblich klarer Sprite lässt sich aktuell am zuverlässigsten erkennen –
-> die App zeigt dieselbe Empfehlung auch direkt im Steuerbildschirm. Andere
-> Digimon-Formen können funktionieren, sind aber noch nicht gleich gut
-> kalibriert.
-
-### Installation
-
-1. APK aus [Releases](../../releases) herunterladen.
-2. Installation aus unbekannter Quelle einmalig erlauben.
-3. App öffnen und der Reihe nach:
-   1. Bildschirmfreigabe starten
-   2. Bedienungshilfe öffnen und die App aktivieren
-   3. Raster über anderen Apps erlauben
-   4. Automatik starten
-4. Digimon UP in den Vordergrund holen – das Raster-Overlay erscheint über
-   dem Spiel.
-
-## 🎮 Bedienung
-
-Die Steuer-UI zeigt Status, Rasterkontrolle und Version in einer Ansicht:
-
-1. **Bildschirmfreigabe starten** – erlaubt der App, den Bildschirm lokal via
-   `MediaProjection` zu lesen. Ohne diesen Schritt läuft keine Analyse.
-2. **Bedienungshilfe öffnen** – aktiviert den `AccessibilityService`, über den
-   alle Taps gesendet werden. Einmalig pro Installation nötig.
-3. **Raster über anderen Apps erlauben** – Overlay-Berechtigung für das
-   Debug-Raster, das während der Automatik über dem Spiel eingeblendet wird.
-4. **AUTOMATIK STARTEN** – ab jetzt entscheidet und tippt die App selbst.
-   Jederzeit über **AUTOMATIK SOFORT STOPPEN**, die Android-Benachrichtigung
-   oder Wegwischen der App unterbrechbar.
-
-Das Raster-Overlay lässt sich separat ein-/ausblenden, ohne die Automatik zu
-stoppen – nützlich, um kurz das reine Spielbild zu sehen.
-
-## 🧠 Entscheidungsablauf
-
-```
-MediaProjection-Screenshot
-      ↓
-5×5-Raster automatisch erkennen
-      ↓
-Spieler, Items, Wege, Pyramiden und HUD-Zähler bewerten
-      ↓
-Sicherste Aktion relativ zum Raster wählen (ggf. mehrere Schritte gebündelt)
-      ↓
-Bedienungshilfe-Geste senden
-      ↓
-Wirkung und neuen Zustand erneut prüfen
-```
-
-## 📂 Projektstruktur
-
-| Pfad | Zweck |
-| --- | --- |
-| `app/src/main/java/.../MainActivity.kt` | Steuer-UI: Freigaben, Start/Stopp, Version, Spenden-Link |
-| `app/src/main/java/.../capture/` | Bildschirmaufnahme und Frame-Analyse |
-| `app/src/main/java/.../detection/` | Raster-, Spieler-, Item- und HUD-Erkennung |
-| `app/src/main/java/.../strategy/` | Bewegungsplanung, Automatik-Zustand |
-| `app/src/main/java/.../accessibility/` | AccessibilityService inkl. Debug-Overlay |
-| `app/src/test/` | Offline-Regressionstests (JVM, keine Geräteverbindung nötig) |
-| `keystore.properties.example` | Vorlage für die lokale Release-Signierung |
-
-## 🧪 Offline testen
+Open the project with Android Studio and use JDK 17. Command-line examples:
 
 ```powershell
-./gradlew testDebugUnitTest
+./gradlew testDebugUnitTest assembleDebug
+./gradlew assembleRelease
 ```
 
-Diese Tests senden keine Gesten und benötigen kein Gerät.
+Release signing reads local values from `keystore.properties`; secrets and the keystore must never be committed. See `keystore.properties.example`.
 
-## 🧯 Häufige Probleme
+## Project structure
 
-| Problem | Lösung |
+| Path | Purpose |
 | --- | --- |
-| Bildschirmfreigabe-Dialog erscheint jedes Mal neu | Android verlangt das bei jedem Neustart der Analyse – erneut bestätigen |
-| Bedienungshilfe wird nach Update/Neuinstallation deaktiviert | Einmalig unter Einstellungen → Bedienungshilfe wieder aktivieren |
-| Raster sitzt nicht über dem Spielfeld | Digimon UP in den Vordergrund holen, App zeigt "Raster unsicher" bis erkannt |
-| Automatik tippt daneben, Spiel zeigt Fehlermeldung | Kurz warten – die App pausiert automatisch, bis die Meldung verschwindet |
-| Automatik reagiert gar nicht | Prüfen, ob Bildschirmfreigabe UND Bedienungshilfe beide aktiv sind |
-| Krallen/Dash-Zähler zeigt "?" | Ziffer aktuell nicht sicher lesbar – App behandelt sie vorsichtshalber als "fast leer" |
+| `app/src/main/java/.../MainActivity.kt` | Compact setup and controls UI |
+| `capture/` | MediaProjection capture and frame analysis |
+| `detection/` | Grid, player, item, obstacle, and HUD detection |
+| `strategy/` | Movement planning and automation state |
+| `accessibility/` | Gesture execution and optional overlay |
+| `app/src/test/` | Offline unit and screenshot regression tests |
 
-## 📝 Versionen und Changelog
+## Release checklist
 
-Die aktuelle Version steht in `app/build.gradle.kts` (`versionName`) und wird
-unten in der App-Steuerung angezeigt.
+- Update `versionCode` and `versionName`
+- Run unit tests and build both APK variants
+- Verify the release certificate with `apksigner verify --verbose --print-certs`
+- Test setup, language selection, start, stop, and overlay on a real device
+- Publish the signed APK with matching tag and release notes
 
-### Unreleased
+## License and contributions
 
-- Noch keine Änderungen.
+No license has been selected yet. Until a license file is added, copyright remains with the author and public source availability does not grant redistribution rights. Issues and focused pull requests are welcome.
 
-### v0.2.5 – 31.07.2026
-
-- 🟠 Orangene Energie wird jetzt vor anderen Collectibles eingesammelt (Umweg bis
-  drei Felder wird dafür in Kauf genommen) – sie verschwindet von selbst, Krallen
-  bleiben liegen
-- 🚪 Sackgassen aus Pyramiden werden erkannt: Felder, von denen aus die rechte
-  Spalte nicht mehr erreichbar ist, werden gemieden statt hineinzulaufen
-
-### v0.2.4 – 31.07.2026
-
-- 🎨 Neues App-Icon (Pixel-Digimon auf Orange, weißer Hintergrund entfernt)
-
-### v0.2.3 – 31.07.2026
-
-- ⏱️ Klick-Rhythmus auf 800 ms eingestellt: pro Tap eine feste Pause, sauberere Bildanalyse
-- 🚫 Burst-Taps brechen ab, wenn zwischendurch eine Fehlermeldung im Bild erscheint
-
-### v0.2.2 – 31.07.2026
-
-- 💡 Hinweis in der App und der README: Botamon wird für die zuverlässigste
-  Erkennung empfohlen
-- 📦 Repo umbenannt zu `DigiWorldExplorer_Android_Bot`, Selbst-Referenzen
-  angepasst
-- 🧹 Interne Planungsdokumente (`docs/`) aus dem Repo entfernt
-
-### v0.2.1 – 31.07.2026
-
-- 🐞 Krallen-Sammelitem auf dem Spielfeld wird jetzt als Item erkannt statt
-  ignoriert (eigener Rotanteil, vorher nur Orange/Pink/Grün)
-- 🐞 Dash wird jetzt auch ausgelöst, wenn die Figur in einer Einkesselung
-  ohne Fortschritt hin- und herläuft, statt nur bei völligem Stillstand
-- 🛡️ Ein wirkungsloser Dash (keine Ladung, Knopf falsch erkannt) blockiert
-  die Automatik nach mehreren Fehlversuchen nicht mehr dauerhaft
-
-### v0.2.0 – 31.07.2026
-
-- 🔢 HUD-Zähler (Krallen, Dash) werden erkannt und ausgewertet
-- 🔺 Pyramiden werden mit Krallen-Reserve bevorzugt umgangen statt zerschlagen
-- 🏃 Mehrere Bewegungsschritte werden bei sicherem Weg gebündelt
-- 🐞 Fehlerkennung des Spielers durch Dialogtext behoben
-- ⚡ ~1,6× schnellere Bildanalyse
-- 🎨 Eigenes App-Icon, Versionsanzeige, Spenden-Link, Signierung
-
-### v0.1.0 – 29.07.2026
-
-- 🧭 Automatische Erkennung des sichtbaren 5×5-Rasters
-- 🟠 Priorisierte Sammlung von Items
-- 🛑 Sicherheitsstopps bei unsicherem Raster oder Spieler
-
-### Regeln für zukünftige Releases
-
-Bei jeder neuen Version werden gemeinsam aktualisiert:
-
-1. `versionCode`/`versionName` in `app/build.gradle.kts`
-2. Changelog in dieser README
-3. Git-Tag im Format `vX.Y.Z`
-4. GitHub-Release mit demselben Changelog als Release Notes und signierter APK
-5. Neu gebaute, signierte APK ohne lokale Keystore-Datei im Repo
-
-## 🔗 Verwandtes Projekt
-
-| Projekt | Plattform | Repo |
-| --- | --- | --- |
-| DigiWorldExplorer Android Bot (dieses Repo) | Android, nativ, ADB-frei | – |
-| DigiWorldExplorer_Bot | Windows + BlueStacks, ADB | [RobinTh0r/DigiWorldExplorer_Bot](https://github.com/RobinTh0r/DigiWorldExplorer_Bot) |
-
-## ☕ Unterstützen
-
-Wenn dir das Projekt gefällt: [paypal.me/thor666](https://paypal.me/thor666)
-(auch direkt in der App verlinkt).
-
-## ⚒️ RobinTh0r × Agumon 🦖
-
-✨ Built for the guild · Exclusive for Germon Members ✨
-
-Explore smart. Stop safe. Collect everything.
-
+Related Windows/BlueStacks project: [DigiWorldExplorer_Bot](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)

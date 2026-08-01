@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">DigiWorldExplorer Bot</string>
+    <string name="app_title">DigiWorldExplorer Bot</string>
+    <string name="accessibility_service_name">DigiWorldExplorer Bot-Steuerung</string>
+    <string name="accessibility_service_description">Führt nur bewusst gestartete, lokal berechnete Gesten zur Rasternavigation aus.</string>
+    <string name="status_title">Status</string>
+    <string name="status_ready">Bereit – Automatik ist aus</string>
+    <string name="status_capture">Bildanalyse aktiv – Automatik ist aus</string>
+    <string name="status_auto">Automatik aktiv – Stopp ist jederzeit möglich</string>
+    <string name="status_capture_denied">Bildschirmfreigabe wurde nicht erteilt</string>
+    <string name="status_stopped">Alles gestoppt</string>
+    <string name="setup_title">Einmalige Einrichtung</string>
+    <string name="permission_accessibility">Bedienungshilfe aktivieren</string>
+    <string name="permission_overlay">Über anderen Apps einblenden</string>
+    <string name="permission_granted">✓ Aktiv</string>
+    <string name="permission_missing">○ Öffnen</string>
+    <string name="capture_start">Bildschirmfreigabe starten</string>
+    <string name="capture_renew">Bildschirmfreigabe erneuern</string>
+    <string name="grid_hide">Raster aus</string>
+    <string name="grid_show">Raster an</string>
+    <string name="auto_start">START</string>
+    <string name="auto_stop">AUTOMATIK STOPPEN</string>
+    <string name="stop_all">Alles stoppen</string>
+    <string name="safety_note">Stopp ist auch über die Android-Benachrichtigung möglich. Das Schließen der App stoppt die Automatik.</string>
+    <string name="character_tip">Tipp: Kleine, optisch klar abgegrenzte Spielfiguren werden derzeit am zuverlässigsten erkannt.</string>
+    <string name="source_code">Quellcode · RobinTh0r</string>
+    <string name="footer_repo_url">https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
+    <string name="notification_auto_on">Automatik aktiv</string>
+    <string name="notification_auto_off">Bildanalyse aktiv – Automatik aus</string>
+    <string name="notification_auto_stop">AUTOMATIK AUS</string>
+    <string name="notification_channel">Bildanalyse</string>
+</resources>

@@ -84,10 +84,10 @@ class ScreenCaptureService : Service() {
         val notification: Notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setContentTitle(getString(R.string.app_name))
-            .setContentText(if (AutomationState.enabled) "Automatik aktiv" else "Analyse aktiv – Automatik aus")
+            .setContentText(if (AutomationState.enabled) getString(R.string.notification_auto_on) else getString(R.string.notification_auto_off))
             .setOngoing(true)
-            .addAction(0, "AUTOMATIK AUS", autoOffPendingIntent)
-            .addAction(0, "Alles stoppen", stopPendingIntent)
+            .addAction(0, getString(R.string.notification_auto_stop), autoOffPendingIntent)
+            .addAction(0, getString(R.string.stop_all), stopPendingIntent)
             .build()
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
@@ -164,7 +164,7 @@ class ScreenCaptureService : Service() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Bildschirmanalyse",
+            getString(R.string.notification_channel),
             NotificationManager.IMPORTANCE_LOW,
         )
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)

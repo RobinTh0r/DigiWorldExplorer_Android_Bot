@@ -1,10 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">DigiWorldExplorer Android Bot</string>
-    <string name="accessibility_service_name">DigiWorldExplorer Android Bot Steuerung</string>
-    <string name="accessibility_service_description">Führt ausschließlich sichtbar gestartete, lokal berechnete Testgesten für DigiWorld aus.</string>
-    <string name="footer_author">RobinTh0r</string>
-    <string name="footer_repo">github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
-    <string name="footer_donate_title">Spende</string>
-    <string name="footer_donate_url">https://paypal.me/thor666</string>
+    <string name="app_name">DigiWorldExplorer Bot</string>
+    <string name="app_title">DigiWorldExplorer Bot</string>
+    <string name="accessibility_service_name">DigiWorldExplorer Bot controls</string>
+    <string name="accessibility_service_description">Performs only user-started, locally calculated gestures for grid navigation.</string>
+    <string name="status_title">Status</string>
+    <string name="status_ready">Ready — automation is off</string>
+    <string name="status_capture">Screen analysis active — automation is off</string>
+    <string name="status_auto">Automation active — stop is always available</string>
+    <string name="status_capture_denied">Screen sharing was not granted</string>
+    <string name="status_stopped">Everything stopped</string>
+    <string name="setup_title">One-time setup</string>
+    <string name="permission_accessibility">Enable accessibility control</string>
+    <string name="permission_overlay">Allow display over other apps</string>
+    <string name="permission_granted">✓ Enabled</string>
+    <string name="permission_missing">○ Open</string>
+    <string name="capture_start">Start screen sharing</string>
+    <string name="capture_renew">Renew screen sharing</string>
+    <string name="grid_hide">Hide grid</string>
+    <string name="grid_show">Show grid</string>
+    <string name="auto_start">START</string>
+    <string name="auto_stop">STOP AUTOMATION</string>
+    <string name="stop_all">Stop everything</string>
+    <string name="safety_note">You can also stop from the Android notification. Closing the app stops automation.</string>
+    <string name="character_tip">Tip: small, visually distinct player sprites currently provide the most reliable detection.</string>
+    <string name="source_code">Source code · RobinTh0r</string>
+    <string name="footer_repo_url">https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
+    <string name="notification_auto_on">Automation active</string>
+    <string name="notification_auto_off">Screen analysis active — automation off</string>
+    <string name="notification_auto_stop">STOP AUTOMATION</string>
+    <string name="notification_channel">Screen analysis</string>
 </resources>
