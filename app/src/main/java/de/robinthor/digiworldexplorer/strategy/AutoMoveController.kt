@@ -1,6 +1,7 @@
 package de.robinthor.digiworldexplorer.strategy
 import android.os.*
 import android.util.Log
+import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.detection.*
 object AutoMoveController{
@@ -73,7 +74,7 @@ object AutoMoveController{
   val texty=cells.count{it.value.text>DIALOG_TEXT}
   if(texty>=DIALOG_CELLS){
    Log.i("DigiWorldAuto","Meldung im Bild ($texty Zellen mit Schrift) - Automatik wartet")
-   service?.updateOverlay(bounds,null,emptySet(),emptySet(),null,"WARTE: Meldung im Bild",AutomationState.overlayEnabled,hud)
+   service?.updateOverlay(bounds,null,emptySet(),emptySet(),null,service.getString(R.string.overlay_wait_dialog),AutomationState.overlayEnabled,hud)
    dialogActive=true;candidate=null;stable=0;expected=null;expectedAge=0;trackingConfirmed=false;probeFrom=null;return
   }
   dialogActive=false
@@ -85,7 +86,7 @@ object AutoMoveController{
    }
    val reason=when{cells.isEmpty()->"kein Spielbild";confidence<MIN_GRID->"Raster unsicher %.2f".format(confidence);else->"Spieler unsicher (%d Kandidaten, best %.3f)".format(cells.count{it.value.player>=MIN_PLAYER},cells.values.maxOf{it.player})}
    Log.i("DigiWorldAuto","pause reason=$reason previous=$previous expected=$expected recentItems=${recentItems.keys}")
-   service?.updateOverlay(bounds,player,items,obstacles,null,"PAUSE: $reason",AutomationState.overlayEnabled,hud);candidate=null;stable=0;return
+   val overlayStatus=when{cells.isEmpty()->service?.getString(R.string.overlay_no_game)?:reason;confidence<MIN_GRID->service?.getString(R.string.overlay_grid_uncertain)?:reason;else->service?.getString(R.string.overlay_player_uncertain)?:reason};service?.updateOverlay(bounds,player,items,obstacles,null,overlayStatus,AutomationState.overlayEnabled,hud);candidate=null;stable=0;return
   }
   lostFrames=0
   // Waehrend eines Zuges scrollt das Brett. In diesen Zwischenbildern liegen Sprites und
@@ -98,7 +99,7 @@ object AutoMoveController{
   val settled=quiet||unsettledFrames>=SETTLE_LIMIT
   if(settled&&!quiet)Log.w("DigiWorldAuto","Bild nach $unsettledFrames Analysen nie ruhig - handle trotzdem")
   if(!settled){
-   service?.updateOverlay(bounds,player,items,obstacles,null,"WARTE: Bild in Bewegung",AutomationState.overlayEnabled,hud)
+   service?.updateOverlay(bounds,player,items,obstacles,null,service.getString(R.string.overlay_wait_motion),AutomationState.overlayEnabled,hud)
    candidate=null;stable=0;return
   }
   unsettledFrames=0
@@ -132,7 +133,7 @@ object AutoMoveController{
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
   val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=stuck&&dashButton!=null&&dashFailures<3,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=hud.dash?:0,stuck=stuck,claws=hud.claws,maxSteps=burst)
   val action=plan.firstOrNull()
-  val status=if(AutomationState.enabled)"AUTO: ${action?.kind?:"STOP"} ${action?.reason?:"keine Route"}"+(if(plan.size>1)" x${plan.size}" else "") else "PAUSE: Automatik aus"
+  val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
   service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud)
   if(!AutomationState.enabled||pending||action==null)return
   // Nach einem bestaetigten Zug reicht eine Analyse zur Bestaetigung, sonst zwei.

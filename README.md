@@ -4,11 +4,11 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-1.0.0-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-1.0.1-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.1)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-release_candidate-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.0/DigiWorldExplorer-Bot-v1.0.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.1/DigiWorldExplorer-Bot-v1.0.1.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -35,7 +35,7 @@ Movement priorities:
 
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.0/DigiWorldExplorer-Bot-v1.0.0.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.1/DigiWorldExplorer-Bot-v1.0.1.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -76,6 +76,12 @@ Send an accessibility gesture
 Verify the resulting state before continuing
 ```
 
+## 🐞 Known issues
+
+- The bot can occasionally become stuck even though a manual route is still possible.
+- Automatic dash handling is not reliable yet and should currently be considered non-functional.
+- If either situation occurs, press **STOP AUTOMATION**, make one or two moves manually, then start automation again.
+- The internal claw and dash readings are still used for conservative route planning, but their uncertain `?` labels are intentionally no longer shown in the grid overlay.
 ## 🧯 Troubleshooting
 
 | Problem | What to do |
@@ -94,6 +100,11 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ## 📝 Changelog
 
+### v1.0.1 — 1 August 2026
+
+- 🌐 Localized all grid-overlay status messages in German and English
+- 🧹 Removed the visible `Claws ?` / `Dash ?` HUD labels from the overlay
+- 🐞 Documented the current stuck-state and dash limitations with manual recovery steps
 ### v1.0.0 — 1 August 2026
 
 - 🔄 Added automatic and manual update checks against official GitHub Releases
@@ -188,6 +199,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.0/DigiWorldExplorer-Bot-v1.0.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.1/DigiWorldExplorer-Bot-v1.0.1.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

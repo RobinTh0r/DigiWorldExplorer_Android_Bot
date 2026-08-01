@@ -9,8 +9,6 @@ import android.view.accessibility.AccessibilityEvent
 import android.provider.Settings
 import de.robinthor.digiworldexplorer.detection.Cell
 import de.robinthor.digiworldexplorer.detection.GridBounds
-import de.robinthor.digiworldexplorer.detection.HudBox
-import de.robinthor.digiworldexplorer.detection.HudCounterReader
 import de.robinthor.digiworldexplorer.detection.HudCounters
 
 class DigiWorldAccessibilityService:AccessibilityService(){
@@ -48,23 +46,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    val ts=ch*.24f;p.textSize=ts;val below=b.bottom+ts*1.15f;val ty=if(below<=height-ts*.3f)below else (b.top-ts*.45f).coerceAtLeast(ts)
    p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,b.left.toFloat(),ty,p)
    p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,b.left.toFloat(),ty,p)
-   // Vorratszahlen einkasten. Das Overlay liegt im eigenen Kamerabild, deshalb sind hier zwei
-   // Farben tabu: nahezu Weiss wuerde der Ziffernleser als Kontur zaehlen, und Cyan erfuellt genau
-   // das Farbkriterium der Dash-Button-Suche (b>195, g>140, r<140) - beides mit rotem Anteil 255
-   // ausgeschlossen. Die Beschriftung steht ausserdem rechts neben dem Abtastfenster der Ziffern.
-   // Ein nicht sicher gelesener Wert wird als "?" gezeigt statt geraten zu werden.
-   val labelX=b.left+(HudCounterReader.X_TO+.03).toFloat()*(b.right-b.left)
-   fun counter(box:HudBox?,value:Int?,label:String){
-    if(box==null)return
-    val pad=ts*.18f
-    p.style=Paint.Style.STROKE;p.strokeWidth=ts*.10f;p.color=if(value==null)Color.rgb(255,140,0) else Color.MAGENTA
-    c.drawRect(box.left-pad,box.top-pad,box.right+pad,box.bottom+pad,p)
-    val text="$label ${value?:"?"}";val tby=box.bottom.toFloat()
-    p.textSize=ts*.7f;p.style=Paint.Style.STROKE;p.strokeWidth=ts*.16f;p.color=Color.WHITE;c.drawText(text,labelX,tby,p)
-    p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(text,labelX,tby,p)
-    p.textSize=ts
-   }
-   counter(hud.clawsBox,hud.claws,"Krallen");counter(hud.dashBox,hud.dash,"Dash")}
+}
  }
  companion object{@Volatile var instance:DigiWorldAccessibilityService?=null;private set}
 }

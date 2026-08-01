@@ -38,4 +38,15 @@
     <string name="update_download">Release öffnen</string>
     <string name="donate">☕ Entwicklung über PayPal unterstützen</string>
     <string name="donate_url">https://paypal.me/thor666</string>
+    <string name="overlay_wait_dialog">WARTE: Spielmeldung sichtbar</string>
+    <string name="overlay_wait_motion">WARTE: Bild in Bewegung</string>
+    <string name="overlay_no_game">PAUSE: Kein Spielraster</string>
+    <string name="overlay_grid_uncertain">PAUSE: Raster unsicher</string>
+    <string name="overlay_player_uncertain">PAUSE: Spieler unsicher</string>
+    <string name="overlay_auto_action">AUTO: %1$s</string>
+    <string name="overlay_paused">PAUSE: Automatik aus</string>
+    <string name="overlay_action_move">LAUFEN</string>
+    <string name="overlay_action_attack">ANGRIFF</string>
+    <string name="overlay_action_dash">DASH</string>
+    <string name="overlay_action_stop">STOPP – keine Route</string>
 </resources>
