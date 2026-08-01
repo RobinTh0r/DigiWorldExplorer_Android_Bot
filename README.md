@@ -4,11 +4,11 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-1.0.1-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.1)
+[![Version](https://img.shields.io/badge/version-1.0.2-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.2)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-release_candidate-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.1/DigiWorldExplorer-Bot-v1.0.1.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.2/DigiWorldExplorer-Bot-v1.0.2.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -35,7 +35,7 @@ Movement priorities:
 
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.1/DigiWorldExplorer-Bot-v1.0.1.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.2/DigiWorldExplorer-Bot-v1.0.2.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -87,7 +87,7 @@ Verify the resulting state before continuing
 | Problem | What to do |
 | --- | --- |
 | Screen-sharing dialog appears again | Android requires fresh consent when a capture session restarts. Confirm it again. |
-| Accessibility is disabled after an update | Open the first setup entry and enable DigiWorldExplorer Bot again. |
+| Accessibility is disabled or blocked | On Samsung, first try enabling it once so the blocked-access warning appears. Then open **Settings → Apps → DigiWorldExplorer Bot → ⋮ → Allow restricted settings**. Return to Accessibility and enable it again. The three-dot option may only appear after the first failed attempt. |
 | No grid appears | Confirm the overlay permission, enable the grid in the app, then bring the game to the foreground. |
 | Automation does nothing | Both screen sharing and accessibility control must be active. |
 | Grid or player is reported as uncertain | Wait for the scene to settle. Use a small, visually distinct player sprite where possible. |
@@ -100,6 +100,11 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ## 📝 Changelog
 
+### v1.0.2 — 1 August 2026
+
+- ℹ️ Added an in-app **Blocked?** help button next to the accessibility setup
+- 📱 Added the Samsung-specific restricted-settings instructions in English and German
+- 📖 Documented that Samsung may show the three-dot permission option only after one failed activation attempt
 ### v1.0.1 — 1 August 2026
 
 - 🌐 Localized all grid-overlay status messages in German and English
@@ -199,6 +204,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.1/DigiWorldExplorer-Bot-v1.0.1.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.2/DigiWorldExplorer-Bot-v1.0.2.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

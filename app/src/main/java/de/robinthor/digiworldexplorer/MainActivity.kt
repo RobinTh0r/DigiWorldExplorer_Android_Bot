@@ -120,7 +120,9 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onCapture: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onAll: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onRepo: () -> Unit) {
+    var showAccessHelp by remember { mutableStateOf(false) }
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
+    if (showAccessHelp) AlertDialog(onDismissRequest = { showAccessHelp = false }, title = { Text(stringResource(R.string.accessibility_help_title)) }, text = { Text(stringResource(R.string.accessibility_help_body)) }, confirmButton = { TextButton(onClick = { showAccessHelp = false }) { Text(stringResource(R.string.close)) } })
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 24.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Spacer(Modifier.height(4.dp))
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -131,6 +133,7 @@ class MainActivity : ComponentActivity() {
         Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(12.dp)) { Text(stringResource(R.string.status_title), fontWeight = FontWeight.Bold); Text(stringResource(statusText)) } }
         Text(stringResource(R.string.setup_title), fontWeight = FontWeight.Bold)
         PermissionButton(1, R.string.permission_accessibility, access, onAccess)
+        TextButton(onClick = { showAccessHelp = true }, modifier = Modifier.align(Alignment.End)) { Text(stringResource(R.string.accessibility_blocked_help)) }
         PermissionButton(2, R.string.permission_overlay, overlay, onOverlay)
         Button(onClick = onCapture, Modifier.fillMaxWidth()) { Text(stringResource(if (capture) R.string.capture_renew else R.string.capture_start)) }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

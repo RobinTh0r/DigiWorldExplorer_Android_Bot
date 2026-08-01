@@ -49,4 +49,8 @@
     <string name="overlay_action_attack">ATTACK</string>
     <string name="overlay_action_dash">DASH</string>
     <string name="overlay_action_stop">STOP — no route</string>
+    <string name="accessibility_blocked_help">ⓘ Blocked?</string>
+    <string name="accessibility_help_title">Accessibility access blocked</string>
+    <string name="accessibility_help_body">On Samsung, first try to enable the service once and let the blocked-access warning appear. Then open Settings → Apps → DigiWorldExplorer Bot → the three-dot menu at the top right → Allow restricted settings. Return to Accessibility and enable the service again.</string>
+    <string name="close">Close</string>
 </resources>

@@ -49,4 +49,8 @@
     <string name="overlay_action_attack">ANGRIFF</string>
     <string name="overlay_action_dash">DASH</string>
     <string name="overlay_action_stop">STOPP – keine Route</string>
+    <string name="accessibility_blocked_help">ⓘ Gesperrt?</string>
+    <string name="accessibility_help_title">Bedienungshilfe wurde blockiert</string>
+    <string name="accessibility_help_body">Bei Samsung zuerst einmal versuchen, den Dienst zu aktivieren, und die Blockierungswarnung erscheinen lassen. Danach Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü oben rechts → Eingeschränkte Einstellungen zulassen. Anschließend zur Bedienungshilfe zurückkehren und den Dienst erneut aktivieren.</string>
+    <string name="close">Schließen</string>
 </resources>
