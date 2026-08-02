@@ -82,6 +82,30 @@ Verify the resulting state before continuing
 - Automatic dash handling is not reliable yet and should currently be considered non-functional.
 - If either situation occurs, press **STOP AUTOMATION**, make one or two moves manually, then start automation again.
 - The internal claw and dash readings are still used for conservative route planning, but their uncertain `?` labels are intentionally no longer shown in the grid overlay.
+
+## 📱 Device and emulator compatibility
+
+Compatibility depends on the exact device, Android/OEM build and graphics compositor, not only the Android version. The bot needs Android `MediaProjection` to include the game's complete Unity `SurfaceView`.
+
+| Device / environment | System | Status | Result and reason |
+| --- | --- | --- | --- |
+| Samsung Galaxy S21 Ultra (`SM-G998B`) | Physical device, 1080×2400 | ✅ Working | Full frames, dynamic grid, dark scenes and automated movement tested. Samsung may require **Allow restricted settings** for Accessibility. |
+| BlueStacks 5 (`5.22.245.1004`) | Android 11 emulator | ✅ Working | Capture, overlay, grid recognition and accessibility gestures tested successfully. |
+| OnePlus 8 Pro EU (`IN2023`) | OxygenOS 13.1 / Android 13 | ❌ Incompatible on tested build | The HUD is captured, but OxygenOS replaces the Unity game surface with a uniform gray area for third-party MediaProjection and `adb screencap`. OnePlus' hardware screenshot and built-in recorder still work because they are privileged system components. Disabling hardware overlays did not fix it. |
+| LDPlayer | Exact build not recorded | ⚠️ Unconfirmed failure | Automation did not work in the reported test. Without the emulator version, Android image and diagnostic frame, the precise cause is still unknown. |
+
+### Why a OnePlus screenshot can work while the bot cannot
+
+The hardware-key screenshot and built-in OnePlus recorder are signed, privileged OxygenOS components. They can use internal compositor access that Android does not expose to an ordinary APK. DigiWorldExplorer uses the public, user-approved `MediaProjection` API; it cannot call the OEM recorder or grant itself system privileges. On the tested OnePlus build, even an ADB screenshot omitted the Unity surface, confirming that this happens below the bot's detection code.
+
+Android documents `MediaProjection` as the public screen-capture API. A `SurfaceView` owns a separate drawing surface and can be assigned to a hardware overlay by the device compositor, which is why behavior may vary by OEM firmware. This result does **not** prove that every OnePlus, OPPO or Realme device is affected.
+
+- [Android MediaProjection guide](https://developer.android.com/media/grow/media-projection)
+- [Android SurfaceView reference](https://developer.android.com/reference/android/view/SurfaceView)
+- [Android explanation of SurfaceView hardware-overlay behavior](https://developer.android.com/media/camera/camerax/preview)
+
+When reporting another device, include its exact model, Android version, OEM build, bot version, whether the system recorder captures the game, and the app's `dynamic_grid.png`. Remove private notifications or account information before sharing diagnostics.
+
 ## 🧯 Troubleshooting
 
 | Problem | What to do |
@@ -93,6 +117,7 @@ Verify the resulting state before continuing
 | Grid or player is reported as uncertain | Wait for the scene to settle. Use a small, visually distinct player sprite where possible. |
 | Claw or dash counter shows `?` | The number was not read confidently and is handled as nearly empty for safety. |
 | Android warns during installation | Verify that the APK came from this repository's Releases page. Sideload warnings are normal for apps outside Google Play. |
+| HUD is visible but the game area is gray or black | The OEM compositor is excluding the Unity surface from third-party MediaProjection. A working hardware screenshot or built-in recorder does not prove that ordinary apps receive the same image. Check the compatibility table above. |
 
 ## ☕ Support development
 
