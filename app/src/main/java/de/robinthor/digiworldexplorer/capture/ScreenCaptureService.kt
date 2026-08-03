@@ -23,6 +23,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
+import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 class ScreenCaptureService : Service() {
@@ -128,7 +129,10 @@ class ScreenCaptureService : Service() {
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
-                if (CaptureFrameAnalyzer.isCalibrated) {
+                val rewardScreen = framesSeen % 3 == 0 && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                if (rewardScreen) {
+                    // The purchase analyzer owns this frame; never run grid movement on this screen.
+                } else if (CaptureFrameAnalyzer.isCalibrated) {
                     // Kalibriert: das Overlay stoert nicht mehr, also so oft wie moeglich analysieren.
                     // Der Takt bestimmt direkt, wie schnell der Bot laufen kann.
                     if (framesSeen % 3 == 0) CaptureFrameAnalyzer.analyze(this, image, width, height)
@@ -163,6 +167,7 @@ class ScreenCaptureService : Service() {
         captureThread?.quitSafely()
         captureThread = null
         framesSeen = 0
+        RewardPurchaseFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()

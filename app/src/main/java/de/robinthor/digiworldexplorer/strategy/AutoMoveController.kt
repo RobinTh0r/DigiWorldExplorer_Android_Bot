@@ -199,5 +199,6 @@ object AutoMoveController{
    },BURST_DELAY)
   }
  }
+ fun pauseForPurchaseScreen(){dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
  fun reset(){candidate=null;stable=0;pending=false;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0}
 }

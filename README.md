@@ -4,7 +4,7 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-1.0.3-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.3)
+[![Version](https://img.shields.io/badge/version-1.0.4--dev-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -125,7 +125,16 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ## 📝 Changelog
 
+### v1.0.4 — 3 August 2026
+
+- 🎫 Added automatic 35x reward purchases for both green and purple ticket screens
+- 🛡️ Requires the blue summon, yellow 35x summon and white close buttons to be visible together
+- ⏱️ Taps only the yellow button at a maximum rate of once every 200 ms
+- 🛑 Stops immediately when the 30-ticket cost turns red or the shop dialog covers the screen
+- 🧭 Uses relative screen regions so the detector scales across different resolutions and aspect ratios
+- 🧪 Added tests for affordable purchases, red-cost stopping and shop-modal stopping
 ### v1.0.3 — 3 August 2026
+
 
 - 🐾 Improved recognition of small red claw drops so they are less likely to be marked as obstacles
 - 💨 Enabled proactive dash when two obstacles are visible within the next three cells, at least two charges remain and no orange energy is visible; one dash stays reserved for recovery
