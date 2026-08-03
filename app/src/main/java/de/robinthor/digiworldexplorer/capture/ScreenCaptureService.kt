@@ -50,6 +50,14 @@ class ScreenCaptureService : Service() {
             ACTION_STOP -> { AutomationState.stop(); stopSelf(); return START_NOT_STICKY }
             ACTION_AUTO_ON -> { AutomationState.enabled=true; startCaptureForeground(); return START_NOT_STICKY }
             ACTION_AUTO_OFF -> { AutomationState.stop(); startCaptureForeground(); return START_NOT_STICKY }
+            ACTION_STUCK -> {
+                AutomationState.enabled = false
+                AutomationState.overlayEnabled = false
+                DigiWorldAccessibilityService.instance?.setOverlayEnabled(false)
+                showStuckNotification()
+                stopSelf()
+                return START_NOT_STICKY
+            }
         }
 
         startCaptureForeground()
@@ -170,13 +178,26 @@ class ScreenCaptureService : Service() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
+    private fun showStuckNotification() {
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setContentTitle(getString(R.string.notification_stuck_title))
+            .setContentText(getString(R.string.notification_stuck_body))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(STUCK_NOTIFICATION_ID, notification)
+    }
+
     companion object {
         private const val CHANNEL_ID = "screen_capture"
         private const val NOTIFICATION_ID = 1001
+        private const val STUCK_NOTIFICATION_ID = 1002
         private const val ACTION_START = "capture.start"
         private const val ACTION_STOP = "capture.stop"
         private const val ACTION_AUTO_ON = "capture.auto.on"
         private const val ACTION_AUTO_OFF = "capture.auto.off"
+        private const val ACTION_STUCK = "capture.stuck"
         private const val EXTRA_RESULT_CODE = "capture.resultCode"
         private const val EXTRA_RESULT_DATA = "capture.resultData"
 
@@ -196,6 +217,10 @@ class ScreenCaptureService : Service() {
 
         fun setAutomation(context: Context, enabled: Boolean) {
             context.startService(Intent(context, ScreenCaptureService::class.java).setAction(if (enabled) ACTION_AUTO_ON else ACTION_AUTO_OFF))
+        }
+
+        fun stopForStuck(context: Context) {
+            context.startService(Intent(context, ScreenCaptureService::class.java).setAction(ACTION_STUCK))
         }
 
         @Suppress("DEPRECATION")

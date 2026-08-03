@@ -30,6 +30,8 @@
     <string name="notification_auto_off">Bildanalyse aktiv – Automatik aus</string>
     <string name="notification_auto_stop">AUTOMATIK AUS</string>
     <string name="notification_channel">Bildanalyse</string>
+    <string name="notification_stuck_title">Bot gestoppt: festgefahren</string>
+    <string name="notification_stuck_body">Kein Fortschritt nach 5 Aktionen. Automatik, Aufnahme und Raster wurden gestoppt. Bitte kurz manuell eingreifen.</string>
     <string name="update_checking">Suche nach Updates…</string>
     <string name="update_current">Du nutzt die neueste Version</string>
     <string name="update_available">Update %1$s ist verfügbar</string>

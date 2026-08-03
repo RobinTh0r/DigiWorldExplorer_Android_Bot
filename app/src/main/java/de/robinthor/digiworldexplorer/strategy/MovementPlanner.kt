@@ -87,10 +87,11 @@ object MovementPlanner{
   // Kein Collectable in Sicht: Strecke machen und dabei [LOOKAHEAD] Felder vorausplanen.
   val ahead=(1..LOOKAHEAD).map{Cell(player.row,player.col+it)}.filter{it.col<=4}
   val pyramidsAhead=ahead.count{cells[it]?.obstacle()==true}
+  val energyVisible=cells.any{(cell,score)->cell!=player&&score.orange>ENERGY_ORANGE}
   val dashReason=when{
    !dashAvailable->null
    stuck->"festgefahren"
-   dashCharges>DASH_RESERVE&&pyramidsAhead>DASH_PYRAMIDS&&player.col+LOOKAHEAD<=4->"$pyramidsAhead Pyramiden voraus, $dashCharges Ladungen"
+   !energyVisible&&dashCharges>DASH_RESERVE&&pyramidsAhead>=DASH_PYRAMIDS&&player.col+LOOKAHEAD<=4->"$pyramidsAhead Pyramiden voraus, $dashCharges Ladungen"
    else->null
   }
   if(dashReason!=null)return Action(ActionKind.DASH,Cell(player.row,minOf(4,player.col+LOOKAHEAD)),Direction.RIGHT,dashReason)

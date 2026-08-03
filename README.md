@@ -4,7 +4,7 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-1.0.2-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v1.0.2)
+[![Version](https://img.shields.io/badge/version-1.0.3--dev-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-release_candidate-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -78,9 +78,9 @@ Verify the resulting state before continuing
 
 ## 🐞 Known issues
 
-- The bot can occasionally become stuck even though a manual route is still possible.
-- Automatic dash handling is not reliable yet and should currently be considered non-functional.
-- If either situation occurs, press **STOP AUTOMATION**, make one or two moves manually, then start automation again.
+- The bot can still choose an imperfect route for unusual player sprites or misclassified objects.
+- Dash is used when stuck or when at least two obstacles are detected within three cells ahead, more than two charges remain and no orange energy is visible.
+- After five dispatched actions without detected progress, automation, capture and grid stop automatically and Android posts a stuck notification. Move manually before restarting.
 - The internal claw and dash readings are still used for conservative route planning, but their uncertain `?` labels are intentionally no longer shown in the grid overlay.
 
 ## 📱 Device and emulator compatibility
@@ -125,7 +125,16 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ## 📝 Changelog
 
+### v1.0.3 — 3 August 2026
+
+- 🐾 Improved recognition of small red claw drops so they are less likely to be marked as obstacles
+- 💨 Enabled proactive dash when two obstacles are visible within the next three cells, more than two charges remain and no orange energy is visible
+- 🚶 Changed stuck tracking from analysis frames to dispatched actions and real board/rightward progress
+- 🛑 Added a hard safety stop after five actions without progress, including capture/grid shutdown and a localized Android notification
+- 🧪 Added regression coverage for the new dash threshold and visible-energy protection
+- 🔍 Audited v1.0.1 versus v1.0.2: capture, detection, accessibility configuration and movement logic were unchanged; v1.0.2 only added permission-help UI/text and version metadata
 ### v1.0.2 — 1 August 2026
+
 
 - ℹ️ Added an in-app **Blocked?** help button next to the accessibility setup
 - 📱 Added the Samsung-specific restricted-settings instructions in English and German

@@ -30,6 +30,8 @@
     <string name="notification_auto_off">Screen analysis active — automation off</string>
     <string name="notification_auto_stop">STOP AUTOMATION</string>
     <string name="notification_channel">Screen analysis</string>
+    <string name="notification_stuck_title">Bot stopped: stuck</string>
+    <string name="notification_stuck_body">No progress after 5 actions. Automation, capture and grid were stopped. Please move manually.</string>
     <string name="update_checking">Checking for updates…</string>
     <string name="update_current">You are using the latest version</string>
     <string name="update_available">Update %1$s is available</string>

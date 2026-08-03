@@ -43,7 +43,12 @@ object CellClassifier{
    // Die Krallen-Aufsammelbelohnung ist ein satt rotes Symbol, kein orangenes wie die
    // Energiekugel - ohne den eigenen Rotanteil wurde sie nie als Item erkannt und die Figur
    // ist einfach daran vorbeigelaufen.
-   val os=q(orange);val ps=q(pink);val gs=q(green);val rs=q(red);val item=maxOf(os,ps,gs,rs)
+   val os=q(orange);val ps=q(pink);val gs=q(green);val rs=q(red)
+   // Krallen-Drops sind deutlich kleiner als die Energiekarten. Ihr sattroter Kern belegt oft
+   // nur 2-4 % der Zelle und lag damit unter der allgemeinen Item-Schwelle von 6 %. Gesaettigtes
+   // Rot kommt in den blau-violetten Pyramiden kaum vor, deshalb darf es gezielt verstaerkt werden.
+   val claw=rs*2.5
+   val item=maxOf(os,ps,gs,claw)
    // Nur in der untersten Reihe weicht das Spielerfenster vom Abtastfenster ab (42% statt 11%
    // Rand unten). Fuer alle anderen Reihen ist der zweite Durchlauf Wort fuer Wort derselbe
    // Bereich und damit reine Doppelarbeit.

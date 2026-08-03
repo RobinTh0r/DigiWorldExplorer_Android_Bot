@@ -86,10 +86,16 @@ class MovementPlannerTest{
   assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,1),b,emptyList(),dashAvailable=true,dashCharges=2)?.kind)
  }
 
- /** Drei Pyramiden voraus und mehr als zwei Ladungen: jetzt lohnt sich der Dash. */
+ /** Schon zwei Pyramiden in den naechsten drei Feldern und mehr als zwei Ladungen: Dash. */
  @Test fun dashOverThreePyramidsWithReserve(){
-  val b=board(setOf(Cell(2,1),Cell(2,2),Cell(2,3)))
+  val b=board(setOf(Cell(2,1),Cell(2,2)))
   assertEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,0),b,emptyList(),dashAvailable=true,dashCharges=3)?.kind)
+ }
+
+ /** Sichtbare Energie hat Vorrang; der Bot darf nicht daran vorbeidashen. */
+ @Test fun noDashPastVisibleEnergy(){
+  val b=board(setOf(Cell(2,1),Cell(2,2)),setOf(Cell(4,4)))
+  assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,0),b,emptyList(),dashAvailable=true,dashCharges=3)?.kind)
  }
 
  /** Festgefahren darf immer gedasht werden, auch ohne Reserve. */

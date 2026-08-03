@@ -3,6 +3,7 @@ import android.os.*
 import android.util.Log
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
+import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.detection.*
 object AutoMoveController{
  private const val MIN_GRID=.82;private const val MIN_PLAYER=.08
@@ -16,6 +17,9 @@ object AutoMoveController{
   *  zwischen wenigen Zellen hin- und herlaeuft, ohne je auf derselben Zelle zu verharren - dann
   *  wurde nie gedasht, obwohl kein Weg herausfuehrte. */
  private const val NO_PROGRESS_LIMIT=25
+ /** Nach fuenf wirklich ausgefuehrten Aktionen ohne Brett- oder Rechtsfortschritt wird komplett
+  *  gestoppt. Das verhindert endlose 2-3-Zellen-Schleifen und spart Schritte. */
+ private const val MAX_FAILED_ACTIONS=5
  /** So viele Analysen ohne erkannten Spieler, bis die Verfolgung komplett neu aufgesetzt wird. */
  private const val LOST_LIMIT=15
  /** So viele ruhige Analysen darf ein erwartetes Zugziel unerreicht bleiben, bevor es verworfen
@@ -50,7 +54,7 @@ object AutoMoveController{
   *  in der gerade angezeigten Fehlermeldung des Spiels. */
  @Volatile private var dialogActive=false
  private val forbiddenObstacles=mutableSetOf<Cell>();private var lastAttackTarget:Cell?=null;private var lastAttackPlayer:Cell?=null;private var unchangedAttackFrames=0
- private var sameCellFrames=0;private var trackingConfirmed=false;private var lostFrames=0;private var noProgressFrames=0;private var dashFailures=0
+ private var sameCellFrames=0;private var trackingConfirmed=false;private var lostFrames=0;private var noProgressFrames=0;private var dashFailures=0;private var actionsWithoutProgress=0
  private var lastSignature:List<Double> = emptyList();private var lastSettledSignature:List<Double> = emptyList();private var expectedAge=0;private var unsettledFrames=0
  /** Laeuft die Figur nach rechts, scrollt bei diesem Spiel das Brett mit und die Figur bleibt auf
   *  derselben Bildschirmzelle. Das wird nicht angenommen, sondern am ersten Einzelschritt gemessen -
@@ -115,6 +119,7 @@ object AutoMoveController{
    if(player==expectedRight){rightScrolls=false;probeFrom=null;Log.i("DigiWorldAuto","Rechtsschritt: Figur laeuft, Brett steht")}
    else if(advanced&&player==from){rightScrolls=true;probeFrom=null;Log.i("DigiWorldAuto","Rechtsschritt: Brett scrollt, Figur bleibt stehen")}
   }
+  val playerBefore=previous
   previous=player
   if(history.lastOrNull()!=player){history.addLast(player!!);while(history.size>8)history.removeFirst();sameCellFrames=0} else sameCellFrames++
   if(advanced)sameCellFrames=0
@@ -124,14 +129,21 @@ object AutoMoveController{
   // advanced=true heisst: das Brett ist wirklich weitergescrollt, also echter Fortschritt -
   // unabhaengig davon, ob die Figur dabei staendig die Zelle wechselt (Einkesselung sieht wie
   // Bewegung aus, bringt aber nie ein neues Brettbild).
-  if(advanced){noProgressFrames=0;dashFailures=0} else noProgressFrames++
-  val stuck=AutomationState.enabled&&(sameCellFrames>=STUCK_FRAMES||noProgressFrames>=NO_PROGRESS_LIMIT)
+  val progressed=advanced||(playerBefore!=null&&player!!.col>playerBefore.col)
+  if(progressed){noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0} else noProgressFrames++
+  val stuck=AutomationState.enabled&&(actionsWithoutProgress>=3||sameCellFrames>=STUCK_FRAMES||noProgressFrames>=NO_PROGRESS_LIMIT)
+  if(AutomationState.enabled&&actionsWithoutProgress>=MAX_FAILED_ACTIONS){
+   Log.w("DigiWorldAuto","Stopp nach $actionsWithoutProgress Aktionen ohne Fortschritt")
+   AutomationState.enabled=false;AutomationState.overlayEnabled=false;service?.setOverlayEnabled(false)
+   if(service!=null)main.post{ScreenCaptureService.stopForStuck(service)}
+   return
+  }
   // Gebuendelt wird nur, wenn die Verfolgung sitzt und das Scrollverhalten gemessen ist.
   val burst=if(!trackingConfirmed||rightScrolls==null)1
    else if(cells.any{(c,s)->c!=player&&s.item>.06})BURST_ITEM else BURST_RIGHT
   // Bringt ein Dash nach mehreren Versuchen nie echten Fortschritt (0 Ladungen oder Knopf falsch
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
-  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=stuck&&dashButton!=null&&dashFailures<3,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=hud.dash?:0,stuck=stuck,claws=hud.claws,maxSteps=burst)
+  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&dashFailures<3,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=hud.dash?:0,stuck=stuck,claws=hud.claws,maxSteps=burst)
   val action=plan.firstOrNull()
   val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
   service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud)
@@ -158,6 +170,7 @@ object AutoMoveController{
    expectedAge=0
   }
   pending=true;stable=0;lastTap=SystemClock.elapsedRealtime()
+  actionsWithoutProgress+=taps.size
   when(action.kind){
    ActionKind.MOVE->{
     // Solange das Scrollverhalten unbekannt ist, dient der Einzelschritt als Messung.
@@ -186,5 +199,5 @@ object AutoMoveController{
    },BURST_DELAY)
   }
  }
- fun reset(){candidate=null;stable=0;pending=false;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0}
+ fun reset(){candidate=null;stable=0;pending=false;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0}
 }
