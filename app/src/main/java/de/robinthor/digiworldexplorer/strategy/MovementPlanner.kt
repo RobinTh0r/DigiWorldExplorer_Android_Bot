@@ -21,7 +21,7 @@ object MovementPlanner{
  /** Dash lohnt sich erst bei mehr als so vielen Pyramiden in den naechsten [LOOKAHEAD] Feldern. */
  private const val DASH_PYRAMIDS=2
  /** Ausserhalb einer Blockade nur dashen, wenn mehr als so viele Ladungen uebrig sind. */
- private const val DASH_RESERVE=2
+ private const val DASH_RESERVE=1
  /** Gewicht der Vorausschau je freiem Feld. Muss gross genug sein, um den Rechts-Bonus zu
   *  ueberstimmen, wenn die Zeile zugebaut ist. */
  private const val LOOKAHEAD_WEIGHT=20

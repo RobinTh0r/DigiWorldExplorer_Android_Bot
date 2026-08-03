@@ -79,7 +79,7 @@ Verify the resulting state before continuing
 ## 🐞 Known issues
 
 - The bot can still choose an imperfect route for unusual player sprites or misclassified objects.
-- Dash is used when stuck or when at least two obstacles are detected within three cells ahead, more than two charges remain and no orange energy is visible.
+- Dash is used when stuck or when at least two obstacles are detected within three cells ahead, at least two charges remain and no orange energy is visible. One charge is reserved for recovery.
 - After five dispatched actions without detected progress, automation, capture and grid stop automatically and Android posts a stuck notification. Move manually before restarting.
 - The internal claw and dash readings are still used for conservative route planning, but their uncertain `?` labels are intentionally no longer shown in the grid overlay.
 
@@ -128,7 +128,7 @@ If the app is useful to you, you can support continued development through **[Pa
 ### v1.0.3 — 3 August 2026
 
 - 🐾 Improved recognition of small red claw drops so they are less likely to be marked as obstacles
-- 💨 Enabled proactive dash when two obstacles are visible within the next three cells, more than two charges remain and no orange energy is visible
+- 💨 Enabled proactive dash when two obstacles are visible within the next three cells, at least two charges remain and no orange energy is visible; one dash stays reserved for recovery
 - 🚶 Changed stuck tracking from analysis frames to dispatched actions and real board/rightward progress
 - 🛑 Added a hard safety stop after five actions without progress, including capture/grid shutdown and a localized Android notification
 - 🧪 Added regression coverage for the new dash threshold and visible-energy protection

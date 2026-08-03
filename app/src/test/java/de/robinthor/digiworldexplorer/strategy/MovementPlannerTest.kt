@@ -80,22 +80,22 @@ class MovementPlannerTest{
   assertNotEquals(Direction.RIGHT,a?.direction)
  }
 
- /** Ohne Blockade und ohne Reserve darf kein Dash verschwendet werden. */
+ /** Eine Dash-Ladung bleibt als Reserve fuer einen echten Stuck-Zustand erhalten. */
  @Test fun noDashWithoutReason(){
   val b=board(setOf(Cell(2,2),Cell(2,3)))
-  assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,1),b,emptyList(),dashAvailable=true,dashCharges=2)?.kind)
+  assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,1),b,emptyList(),dashAvailable=true,dashCharges=1)?.kind)
  }
 
- /** Schon zwei Pyramiden in den naechsten drei Feldern und mehr als zwei Ladungen: Dash. */
+ /** Schon zwei Pyramiden und zwei Ladungen: eine nutzen, eine fuer Stuck behalten. */
  @Test fun dashOverThreePyramidsWithReserve(){
   val b=board(setOf(Cell(2,1),Cell(2,2)))
-  assertEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,0),b,emptyList(),dashAvailable=true,dashCharges=3)?.kind)
+  assertEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,0),b,emptyList(),dashAvailable=true,dashCharges=2)?.kind)
  }
 
  /** Sichtbare Energie hat Vorrang; der Bot darf nicht daran vorbeidashen. */
  @Test fun noDashPastVisibleEnergy(){
   val b=board(setOf(Cell(2,1),Cell(2,2)),setOf(Cell(4,4)))
-  assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,0),b,emptyList(),dashAvailable=true,dashCharges=3)?.kind)
+  assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,0),b,emptyList(),dashAvailable=true,dashCharges=2)?.kind)
  }
 
  /** Festgefahren darf immer gedasht werden, auch ohne Reserve. */
