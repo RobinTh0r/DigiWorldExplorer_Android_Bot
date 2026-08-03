@@ -44,15 +44,21 @@
     <string name="overlay_wait_motion">WARTE: Bild in Bewegung</string>
     <string name="overlay_no_game">PAUSE: Kein Spielraster</string>
     <string name="overlay_grid_uncertain">PAUSE: Raster unsicher</string>
-    <string name="overlay_player_uncertain">PAUSE: Spieler unsicher</string>
+    <string name="overlay_player_uncertain">Spieler nicht erkannt — Botamon-Sprite verwenden</string>
     <string name="overlay_auto_action">AUTO: %1$s</string>
     <string name="overlay_paused">PAUSE: Automatik aus</string>
     <string name="overlay_action_move">LAUFEN</string>
     <string name="overlay_action_attack">ANGRIFF</string>
     <string name="overlay_action_dash">DASH</string>
     <string name="overlay_action_stop">STOPP – keine Route</string>
-    <string name="accessibility_blocked_help">ⓘ Gesperrt?</string>
-    <string name="accessibility_help_title">Bedienungshilfe wurde blockiert</string>
-    <string name="accessibility_help_body">Bei Samsung zuerst einmal versuchen, den Dienst zu aktivieren, und die Blockierungswarnung erscheinen lassen. Danach Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü oben rechts → Eingeschränkte Einstellungen zulassen. Anschließend zur Bedienungshilfe zurückkehren und den Dienst erneut aktivieren.</string>
+    <string name="accessibility_blocked_help">ⓘ Kompatibilität</string>
+    <string name="accessibility_help_title">Kompatibilität und gesperrter Zugriff</string>
+    <string name="accessibility_help_body">Samsung: Einmal die Blockierungswarnung auslösen, dann Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü → Eingeschränkte Einstellungen zulassen. OnePlus/OxygenOS wird aktuell nicht unterstützt: Auf getesteten Geräten liefert die Bildschirmfreigabe teilweise nur eine graue Spielfläche, sodass der Bot das Raster nicht sehen kann.</string>
     <string name="close">Schließen</string>
+    <string name="auto_purchase">Automatisch beschwören</string>
+    <string name="overlay_no_digiworld">Keine DigiWorld erkannt</string>
+    <string name="overlay_auto_purchase">AUTO: Beschwören</string>
+    <string name="overlay_purchase_disabled">Beschwörungsbildschirm erkannt — Automatik aus</string>
+    <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>
+    <string name="notification_idle_body">1 Minute lang wurde weder DigiWorld noch ein Belohnungsbildschirm erkannt. Aufnahme und Automatik wurden zum Schutz des Geräts gestoppt.</string>
 </resources>

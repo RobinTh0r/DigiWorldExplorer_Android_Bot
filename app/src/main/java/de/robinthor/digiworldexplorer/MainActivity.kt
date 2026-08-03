@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
     private var capture by mutableStateOf(false)
     private var auto by mutableStateOf(false)
     private var grid by mutableStateOf(true)
+    private var autoPurchase by mutableStateOf(true)
     private var access by mutableStateOf(false)
     private var overlay by mutableStateOf(false)
     private var updateStatus by mutableStateOf(UpdateStatus.CHECKING)
@@ -71,13 +72,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AutomationState.stop()
+        autoPurchase = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_purchase", true)
+        AutomationState.autoPurchaseEnabled = autoPurchase
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent { MaterialTheme { Surface(Modifier.fillMaxSize()) {
             ControlScreen(
-                status, capture, auto, grid, access, overlay, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, access, overlay, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
                 onGrid = { grid = !grid; AutomationState.overlayEnabled = grid; DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid) },
+                onAutoPurchase = { enabled -> autoPurchase = enabled; AutomationState.autoPurchaseEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_purchase", enabled).apply() },
                 onCapture = { consent.launch(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()) },
                 onStart = { if (capture && access) { ScreenCaptureService.setAutomation(this, true); auto = true; status = UiStatus.AUTOMATIC } },
                 onStop = { ScreenCaptureService.setAutomation(this, false); auto = false; status = UiStatus.CAPTURING },
@@ -119,7 +123,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onCapture: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onAll: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onRepo: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onCapture: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onAll: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onRepo: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
     if (showAccessHelp) AlertDialog(onDismissRequest = { showAccessHelp = false }, title = { Text(stringResource(R.string.accessibility_help_title)) }, text = { Text(stringResource(R.string.accessibility_help_body)) }, confirmButton = { TextButton(onClick = { showAccessHelp = false }) { Text(stringResource(R.string.close)) } })
@@ -139,6 +143,10 @@ class MainActivity : ComponentActivity() {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(onClick = onGrid, enabled = overlay, modifier = Modifier.weight(1f)) { Text(stringResource(if (grid) R.string.grid_hide else R.string.grid_show)) }
             Button(onClick = onStart, enabled = capture && access && !auto, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.auto_start)) }
+        }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.auto_purchase), modifier = Modifier.weight(1f))
+            Switch(checked = autoPurchase, onCheckedChange = onAutoPurchase)
         }
         Button(onClick = onStop, enabled = auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
         OutlinedButton(onClick = onAll, Modifier.fillMaxWidth()) { Text(stringResource(R.string.stop_all)) }

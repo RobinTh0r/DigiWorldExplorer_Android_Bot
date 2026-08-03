@@ -21,6 +21,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  fun clearCalibrationOverlay(){overlay?.post{overlay?.bounds=null;overlay?.visibility=View.GONE;overlay?.invalidate()}}
  fun setOverlayEnabled(enabled:Boolean){overlay?.post{overlay?.visibility=if(enabled)View.VISIBLE else View.GONE}}
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
+ fun showStatusOnly(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  fun updateOverlay(bounds:GridBounds?,player:Cell?,items:Set<Cell>,obstacles:Set<Cell>,target:Cell?,status:String,visible:Boolean,hud:HudCounters=HudCounters()){overlay?.post{overlay?.apply{this.bounds=bounds;this.player=player;this.items=items;this.obstacles=obstacles;this.target=target;this.status=status;this.hud=hud;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  // FLAG_LAYOUT_NO_LIMITS und LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS sind noetig, damit das Overlay im
  // selben Koordinatensystem liegt wie der Vollbild-Capture. Ohne beides ist das Fenster um die
@@ -35,7 +36,9 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   // CellClassifier und PreviewClassifier lassen an jeder Zellkante 7% Rand aus. Linien liegen auf den
   // Zellgrenzen, Boxen bei 3,5% Einrückung, jeweils inklusive halber Strichstärke unter 6%. Dadurch
   // darf das Overlay dauerhaft sichtbar bleiben und muss für die Analyse nicht mehr ausgeblendet werden.
-  override fun onDraw(c:Canvas){super.onDraw(c);val b=bounds?:return;if(captureMode)return;val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;val unit=minOf(cw,ch)
+  override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;val b=bounds
+   if(b==null){val ts=(width/24f).coerceIn(28f,64f);val x=width*.04f;val y=height*.12f;p.textSize=ts;p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,x,y,p);p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,x,y,p);return}
+   val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;val unit=minOf(cw,ch)
    p.pathEffect=null;p.style=Paint.Style.STROKE;p.color=Color.GREEN;p.strokeWidth=unit*.025f;for(i in 0..5){c.drawLine(b.left+i*cw,b.top.toFloat(),b.left+i*cw,b.bottom.toFloat(),p);c.drawLine(b.left.toFloat(),b.top+i*ch,b.right.toFloat(),b.top+i*ch,p)}
    p.pathEffect=DashPathEffect(floatArrayOf(unit*.07f,unit*.05f),0f);c.drawRect(b.right.toFloat(),b.top.toFloat(),b.right+cw,b.bottom.toFloat(),p);for(i in 1..4)c.drawLine(b.right.toFloat(),b.top+i*ch,b.right+cw,b.top+i*ch,p);p.pathEffect=null
    val inset=unit*.035f

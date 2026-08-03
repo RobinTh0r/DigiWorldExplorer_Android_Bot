@@ -18,6 +18,7 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
+import android.os.SystemClock
 import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
@@ -32,6 +33,9 @@ class ScreenCaptureService : Service() {
     private var imageReader: ImageReader? = null
     private var captureThread: HandlerThread? = null
     private var framesSeen = 0
+    private var lastRecognizedContent = 0L
+    private var missingStatusShown = false
+    private var idleStopRequested = false
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
@@ -111,6 +115,9 @@ class ScreenCaptureService : Service() {
 
     private fun beginCapture(resultCode: Int, resultData: Intent) {
         CaptureFrameAnalyzer.resetCalibration()
+        lastRecognizedContent = SystemClock.elapsedRealtime()
+        missingStatusShown = false
+        idleStopRequested = false
         val manager = getSystemService(MediaProjectionManager::class.java)
         val mediaProjection = manager.getMediaProjection(resultCode, resultData)
         if (mediaProjection == null) {
@@ -129,17 +136,17 @@ class ScreenCaptureService : Service() {
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
+                var recognized = false
                 val rewardScreen = framesSeen % 3 == 0 && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
                 if (rewardScreen) {
-                    // The purchase analyzer owns this frame; never run grid movement on this screen.
+                    recognized = true // The purchase analyzer owns this frame; never run movement here.
                 } else if (CaptureFrameAnalyzer.isCalibrated) {
-                    // Kalibriert: das Overlay stoert nicht mehr, also so oft wie moeglich analysieren.
-                    // Der Takt bestimmt direkt, wie schnell der Bot laufen kann.
-                    if (framesSeen % 3 == 0) CaptureFrameAnalyzer.analyze(this, image, width, height)
+                    if (framesSeen % 3 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
                 } else {
                     if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
-                    if (framesSeen % 10 == 0) CaptureFrameAnalyzer.analyze(this, image, width, height)
+                    if (framesSeen % 10 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
                 }
+                if (recognized) markContentRecognized() else checkRecognitionTimeouts()
             }
         }, Handler(thread.looper))
         val display = mediaProjection.createVirtualDisplay(
@@ -157,6 +164,28 @@ class ScreenCaptureService : Service() {
         captureThread = thread
         virtualDisplay = display
         android.util.Log.i("DigiWorldCapture", "capture started ${width}x$height density=$density display=${display != null}")
+    }
+
+    private fun markContentRecognized() {
+        lastRecognizedContent = SystemClock.elapsedRealtime()
+        missingStatusShown = false
+    }
+
+    private fun checkRecognitionTimeouts() {
+        if (idleStopRequested || lastRecognizedContent == 0L) return
+        val missingFor = SystemClock.elapsedRealtime() - lastRecognizedContent
+        if (missingFor >= GRID_HIDE_TIMEOUT && !missingStatusShown) {
+            missingStatusShown = true
+            DigiWorldAccessibilityService.instance?.showStatusOnly(getString(R.string.overlay_no_digiworld))
+        }
+        if (missingFor >= IDLE_STOP_TIMEOUT) {
+            idleStopRequested = true
+            Handler(Looper.getMainLooper()).post {
+                AutomationState.stop()
+                showIdleNotification()
+                stopSelf()
+            }
+        }
     }
 
     private fun releaseCapture() {
@@ -183,6 +212,16 @@ class ScreenCaptureService : Service() {
         getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
     }
 
+    private fun showIdleNotification() {
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setContentTitle(getString(R.string.notification_idle_title))
+            .setContentText(getString(R.string.notification_idle_body))
+            .setAutoCancel(true)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(IDLE_NOTIFICATION_ID, notification)
+    }
+
     private fun showStuckNotification() {
         val notification = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
@@ -198,6 +237,9 @@ class ScreenCaptureService : Service() {
         private const val CHANNEL_ID = "screen_capture"
         private const val NOTIFICATION_ID = 1001
         private const val STUCK_NOTIFICATION_ID = 1002
+        private const val IDLE_NOTIFICATION_ID = 1003
+        private const val GRID_HIDE_TIMEOUT = 3_000L
+        private const val IDLE_STOP_TIMEOUT = 60_000L
         private const val ACTION_START = "capture.start"
         private const val ACTION_STOP = "capture.stop"
         private const val ACTION_AUTO_ON = "capture.auto.on"

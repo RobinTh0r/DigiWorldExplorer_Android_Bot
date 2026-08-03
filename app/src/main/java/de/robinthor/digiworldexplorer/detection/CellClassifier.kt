@@ -47,7 +47,11 @@ object CellClassifier{
    // Krallen-Drops sind deutlich kleiner als die Energiekarten. Ihr sattroter Kern belegt oft
    // nur 2-4 % der Zelle und lag damit unter der allgemeinen Item-Schwelle von 6 %. Gesaettigtes
    // Rot kommt in den blau-violetten Pyramiden kaum vor, deshalb darf es gezielt verstaerkt werden.
-   val claw=rs*2.5
+   // Das echte Krallen-Sprite ist gelb-schwarz auf einem cyanfarbenen Leuchten. In der
+   // untersten Reihe verdeckt die Mauer einen Teil, der verbleibende Ausschnitt hat aber stabil
+   // viel Gelb + Cyan und kaum Orange. Pyramiden haben praktisch kein Gelb, Energie viel Orange.
+   val yellowClaw=if(q(yellow)>.05&&q(hi)>.45&&os<.06)q(yellow)*2 else 0.0
+   val claw=maxOf(rs*4.0,yellowClaw)
    val item=maxOf(os,ps,gs,claw)
    // Nur in der untersten Reihe weicht das Spielerfenster vom Abtastfenster ab (42% statt 11%
    // Rand unten). Fuer alle anderen Reihen ist der zweite Durchlauf Wort fuer Wort derselbe

@@ -12,6 +12,10 @@ object AutoMoveController{
  private const val TAP_DELAY=800L
  /** So viele Analysen ohne Positionswechsel gelten als festgefahren - erst dann ist ein Dash erlaubt. */
  private const val STUCK_FRAMES=10
+ /** HUD-Ziffern sind auf manchen Aufloesungen nicht sicher lesbar. Drei ist der begrenzte
+  * Fallback fuer den bestaetigten Testvorrat; drei Fehlversuche sperren weitere Dashes. */
+ private const val UNKNOWN_DASH_FALLBACK=3
+ private const val UNKNOWN_CLAW_FALLBACK=4
  /** So viele Analysen ohne echten Rechts-Fortschritt (Brett scrollt nicht) gelten ebenfalls als
   *  festgefahren. Reines Stillstehen (STUCK_FRAMES) erkennt keine Einkesselung, in der die Figur
   *  zwischen wenigen Zellen hin- und herlaeuft, ohne je auf derselben Zelle zu verharren - dann
@@ -54,7 +58,7 @@ object AutoMoveController{
   *  in der gerade angezeigten Fehlermeldung des Spiels. */
  @Volatile private var dialogActive=false
  private val forbiddenObstacles=mutableSetOf<Cell>();private var lastAttackTarget:Cell?=null;private var lastAttackPlayer:Cell?=null;private var unchangedAttackFrames=0
- private var sameCellFrames=0;private var trackingConfirmed=false;private var lostFrames=0;private var noProgressFrames=0;private var dashFailures=0;private var actionsWithoutProgress=0
+ private var sameCellFrames=0;private var furthestCol=-1;private var trackingConfirmed=false;private var lostFrames=0;private var noProgressFrames=0;private var dashFailures=0;private var actionsWithoutProgress=0
  private var lastSignature:List<Double> = emptyList();private var lastSettledSignature:List<Double> = emptyList();private var expectedAge=0;private var unsettledFrames=0
  /** Laeuft die Figur nach rechts, scrollt bei diesem Spiel das Brett mit und die Figur bleibt auf
   *  derselben Bildschirmzelle. Das wird nicht angenommen, sondern am ersten Einzelschritt gemessen -
@@ -90,7 +94,10 @@ object AutoMoveController{
    }
    val reason=when{cells.isEmpty()->"kein Spielbild";confidence<MIN_GRID->"Raster unsicher %.2f".format(confidence);else->"Spieler unsicher (%d Kandidaten, best %.3f)".format(cells.count{it.value.player>=MIN_PLAYER},cells.values.maxOf{it.player})}
    Log.i("DigiWorldAuto","pause reason=$reason previous=$previous expected=$expected recentItems=${recentItems.keys}")
-   val overlayStatus=when{cells.isEmpty()->service?.getString(R.string.overlay_no_game)?:reason;confidence<MIN_GRID->service?.getString(R.string.overlay_grid_uncertain)?:reason;else->service?.getString(R.string.overlay_player_uncertain)?:reason};service?.updateOverlay(bounds,player,items,obstacles,null,overlayStatus,AutomationState.overlayEnabled,hud);candidate=null;stable=0;return
+   val overlayStatus=when{cells.isEmpty()->service?.getString(R.string.overlay_no_game)?:reason;confidence<MIN_GRID->service?.getString(R.string.overlay_grid_uncertain)?:reason;else->service?.getString(R.string.overlay_player_uncertain)?:reason}
+   if(cells.isEmpty()||confidence<MIN_GRID)service?.showStatusOnly(overlayStatus)
+   else service?.updateOverlay(bounds,player,items,obstacles,null,overlayStatus,AutomationState.overlayEnabled,hud)
+   candidate=null;stable=0;return
   }
   lostFrames=0
   // Waehrend eines Zuges scrollt das Brett. In diesen Zwischenbildern liegen Sprites und
@@ -129,9 +136,14 @@ object AutoMoveController{
   // advanced=true heisst: das Brett ist wirklich weitergescrollt, also echter Fortschritt -
   // unabhaengig davon, ob die Figur dabei staendig die Zelle wechselt (Einkesselung sieht wie
   // Bewegung aus, bringt aber nie ein neues Brettbild).
-  val progressed=advanced||(playerBefore!=null&&player!!.col>playerBefore.col)
+  // Links/rechts zwischen denselben zwei Feldern ist kein Fortschritt. Ein Feld zaehlt nur beim
+  // erstmaligen Erreichen einer weiter rechts liegenden Spalte oder wenn das Brett wirklich scrollt.
+  val newRightmost=player!!.col>furthestCol
+  val progressed=advanced||newRightmost
+  if(advanced)furthestCol=player.col else if(newRightmost)furthestCol=player.col
   if(progressed){noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0} else noProgressFrames++
-  val stuck=AutomationState.enabled&&(actionsWithoutProgress>=3||sameCellFrames>=STUCK_FRAMES||noProgressFrames>=NO_PROGRESS_LIMIT)
+  val looping=history.size>=4&&history.takeLast(4).let{it[0]==it[2]&&it[1]==it[3]}
+  val stuck=AutomationState.enabled&&(looping||actionsWithoutProgress>=3||sameCellFrames>=STUCK_FRAMES||noProgressFrames>=NO_PROGRESS_LIMIT)
   if(AutomationState.enabled&&actionsWithoutProgress>=MAX_FAILED_ACTIONS){
    Log.w("DigiWorldAuto","Stopp nach $actionsWithoutProgress Aktionen ohne Fortschritt")
    AutomationState.enabled=false;AutomationState.overlayEnabled=false;service?.setOverlayEnabled(false)
@@ -143,7 +155,7 @@ object AutoMoveController{
    else if(cells.any{(c,s)->c!=player&&s.item>.06})BURST_ITEM else BURST_RIGHT
   // Bringt ein Dash nach mehreren Versuchen nie echten Fortschritt (0 Ladungen oder Knopf falsch
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
-  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&dashFailures<3,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=hud.dash?:0,stuck=stuck,claws=hud.claws,maxSteps=burst)
+  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&dashFailures<3,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=hud.dash?:UNKNOWN_DASH_FALLBACK,stuck=stuck,claws=hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst)
   val action=plan.firstOrNull()
   val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
   service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud)
@@ -200,5 +212,5 @@ object AutoMoveController{
   }
  }
  fun pauseForPurchaseScreen(){dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
- fun reset(){candidate=null;stable=0;pending=false;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0}
+ fun reset(){candidate=null;stable=0;pending=false;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0}
 }

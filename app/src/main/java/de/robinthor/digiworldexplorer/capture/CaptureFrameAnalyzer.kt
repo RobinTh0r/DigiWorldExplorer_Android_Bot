@@ -84,6 +84,7 @@ object CaptureFrameAnalyzer {
             }
         }
         val directory=File(context.getExternalFilesDir(null) ?: context.filesDir,"diagnostics").apply{mkdirs()}
+        var gameVisible=false
         if(detection!=null && cells!=null){
             val player=cells.maxByOrNull { it.value.player }
             val playerCell=player?.key
@@ -97,7 +98,8 @@ object CaptureFrameAnalyzer {
             val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\npreview="+preview+"\ndash="+dashButton+"\nkrallen="+hud.claws+" dashvorrat="+hud.dash+"\n"
             File(directory,"latest_detection.txt").writeText(summary)
             android.util.Log.i("DigiWorldDetection",summary.replace("\n","; "))
-            if(CalibrationValidator.plausible(cells)) AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells,preview,dashButton,hud)
+            gameVisible=CalibrationValidator.plausible(cells)
+            if(gameVisible) AutoMoveController.onAnalysis(detection.confidence,detection.bounds,cells,preview,dashButton,hud)
             else AutoMoveController.onAnalysis(0.0,detection.bounds,emptyMap(),emptyMap(),null,hud)
         }
         // Der PNG-Export kostet bei 1080x2400 mehr als die gesamte Analyse. Nach der Kalibrierung
@@ -109,6 +111,6 @@ object CaptureFrameAnalyzer {
             FileOutputStream(output).use{diagnostic.compress(Bitmap.CompressFormat.PNG,100,it)}
         }
         diagnostic.recycle();frame.recycle()
-        Result(detection!=null,detection?.confidence?:0.0,output.absolutePath)
+        Result(gameVisible,detection?.confidence?:0.0,output.absolutePath)
     }.onFailure{ android.util.Log.e("DigiWorldCapture","analyze failed",it) }.getOrNull()
 }

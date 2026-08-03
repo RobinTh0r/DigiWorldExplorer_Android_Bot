@@ -4,11 +4,11 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-1.0.4--dev-orange?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-1.0.4-blue?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.3/DigiWorldExplorer-Bot-v1.0.3.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.4/DigiWorldExplorer-Bot-v1.0.4.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -26,6 +26,12 @@
 
 The app runs directly on an Android device without a PC, BlueStacks, ADB, root, injection, or game-APK modification. It captures the screen locally through `MediaProjection`, detects the visible 5×5 grid, player, collectibles, obstacles and HUD counters, then sends user-authorized gestures through an `AccessibilityService`.
 
+### ⚡ Mega Summon
+
+When enabled in the app, **Auto Summon** recognizes green and purple ticket summon screens, repeatedly presses the yellow 35x summon button, and continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
+
+![Mega Summon automatically advancing the reward screen](docs/images/v1.0.4-mega-summon.png)
+
 Movement priorities:
 
 1. 🟠🟣🟢 Collect reachable items using safe, short routes
@@ -35,7 +41,7 @@ Movement priorities:
 
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.3/DigiWorldExplorer-Bot-v1.0.3.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.4/DigiWorldExplorer-Bot-v1.0.4.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -51,7 +57,7 @@ You can stop automation at any time from the app or Android notification.
 - Every decision uses a newly analyzed frame.
 - Grid positions are detected dynamically instead of using fixed coordinates.
 - Uncertain grid/player detection or visible error dialogs make the bot wait.
-- Unknown claw or dash values are treated conservatively.
+- If a claw or dash HUD digit cannot be read, bounded fallback values keep recovery available; failed actions still trigger the hard safety stop.
 - Screenshots and decisions remain on the device.
 - Internet access is used only to request the latest release version from GitHub. Screenshots and gameplay data never leave the device.
 - The app has no analytics, account system, advertisements, or runtime cloud service.
@@ -115,7 +121,7 @@ When reporting another device, include its exact model, Android version, OEM bui
 | No grid appears | Confirm the overlay permission, enable the grid in the app, then bring the game to the foreground. |
 | Automation does nothing | Both screen sharing and accessibility control must be active. |
 | Grid or player is reported as uncertain | Wait for the scene to settle. Use a small, visually distinct player sprite where possible. |
-| Claw or dash counter shows `?` | The number was not read confidently and is handled as nearly empty for safety. |
+| Dash or claw behavior differs from the visible counter | Some resolutions cannot read the HUD digit reliably. The bot uses bounded recovery fallbacks and stops after repeated failed actions. |
 | Android warns during installation | Verify that the APK came from this repository's Releases page. Sideload warnings are normal for apps outside Google Play. |
 | HUD is visible but the game area is gray or black | The OEM compositor is excluding the Unity surface from third-party MediaProjection. A working hardware screenshot or built-in recorder does not prove that ordinary apps receive the same image. Check the compatibility table above. |
 
@@ -127,12 +133,18 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ### v1.0.4 — 3 August 2026
 
-- 🎫 Added automatic 35x reward purchases for both green and purple ticket screens
-- 🛡️ Requires the blue summon, yellow 35x summon and white close buttons to be visible together
-- ⏱️ Taps only the yellow button at a maximum rate of once every 200 ms
-- 🛑 Stops immediately when the 30-ticket cost turns red or the shop dialog covers the screen
-- 🧭 Uses relative screen regions so the detector scales across different resolutions and aspect ratios
-- 🧪 Added tests for affordable purchases, red-cost stopping and shop-modal stopping
+- ⚡ Added optional **Mega Summon / Auto Summon** for green and purple ticket screens
+- ⏱️ Continues through loading and reward screens every 200 ms for up to five seconds
+- 🛑 Re-checks affordability and stops when the 30-ticket cost turns red
+- 🟡 Recognizes yellow-black claw drops even when the bottom wall partly covers them
+- 💨 Restored proactive dash with unreadable HUD digits and detects A–B–A–B loops immediately
+- 🧭 Improved stuck recovery, route progress tracking and the five-action safety stop
+- 🫥 Hides the green grid immediately outside DigiWorld while keeping a clear status message
+- 🔋 Stops capture and automation after one minute without DigiWorld or a summon screen
+- 🐾 Shows a Botamon-sprite hint when the player cannot be identified reliably
+- 🌐 Added localized English/German labels, compatibility guidance and an Auto Summon toggle
+- 🧪 Passed all 49 unit and screenshot-regression tests; verified on BlueStacks 5
+
 ### v1.0.3 — 3 August 2026
 
 
@@ -247,6 +259,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.3/DigiWorldExplorer-Bot-v1.0.3.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.4/DigiWorldExplorer-Bot-v1.0.4.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

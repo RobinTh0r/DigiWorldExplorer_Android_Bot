@@ -33,7 +33,7 @@ class HighlightFrameDetectionTest {
         assertTrue("Figurenscore ${player.value.player} zu schwach", player.value.player >= .10)
 
         val items = cells.filter { it.key != player.key && it.value.item > .06 }.keys
-        assertTrue("Markierungen faelschlich als Item erkannt: $items", items.isEmpty())
+        assertTrue("Markierungen faelschlich als Item erkannt: $items; Feld 1/2=${cells[Cell(1, 2)]}", items.isEmpty())
 
         val obstacles = cells.filter { it.value.obstacle() }.keys.sortedWith(compareBy({ it.row }, { it.col }))
         assertEquals(
