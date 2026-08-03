@@ -28,7 +28,7 @@ The app runs directly on an Android device without a PC, BlueStacks, ADB, root, 
 
 ### ⚡ Mega Summon
 
-When enabled in the app, **Auto Summon** recognizes green and purple ticket summon screens, repeatedly presses the yellow 35x summon button, and continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
+When enabled in the app, **Auto Summon** recognizes green and purple 30-ticket summon screens and repeatedly presses the yellow summon button. It continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
 
 ![Mega Summon automatically advancing the reward screen](docs/images/v1.0.4-mega-summon.png)
 
