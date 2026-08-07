@@ -56,9 +56,17 @@
     <string name="accessibility_help_body">Samsung: Einmal die Blockierungswarnung auslösen, dann Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü → Eingeschränkte Einstellungen zulassen. OnePlus/OxygenOS wird aktuell nicht unterstützt: Auf getesteten Geräten liefert die Bildschirmfreigabe teilweise nur eine graue Spielfläche, sodass der Bot das Raster nicht sehen kann.</string>
     <string name="close">Schließen</string>
     <string name="auto_purchase">Automatisch beschwören</string>
+    <string name="auto_dungeon">VS. Dungeon</string>
+    <string name="overlay_auto_dungeon">AUTO: Dungeon</string>
+    <string name="overlay_dungeon_disabled">Dungeon erkannt — Dungeon-Automatik aus</string>
+    <string name="overlay_dungeon_timeout">Dungeon-Automatik gestoppt — 15 Sekunden kein Fortschritt</string>
+    <string name="summon_help_title">Automatisch beschwören</string>
+    <string name="summon_help_body">Betätigt auf unterstützten grünen und lila Belohnungsseiten automatisch die gelbe Beschwörung für 30 Tickets. Während des Ladeübergangs wird kurz weitergetippt; sobald die Ticketkosten rot erscheinen, stoppt die Funktion. Zum manuellen Beschwören kannst du sie jederzeit ausschalten.</string>
+    <string name="dungeon_help_title">VS. Dungeon</string>
+    <string name="dungeon_help_body">Startet eine erkannte VS.-Dungeon-Herausforderung, wartet während des Kampfes ohne zu tippen, schließt die Belohnungsseite und startet das nächste Level. Die Erkennung nutzt das Bildlayout und ist von der Spielsprache unabhängig. Nach 15 Sekunden ohne sichtbaren Fortschritt stoppt der Modus.</string>
     <string name="overlay_no_digiworld">Keine DigiWorld erkannt</string>
     <string name="overlay_auto_purchase">AUTO: Beschwören</string>
     <string name="overlay_purchase_disabled">Beschwörungsbildschirm erkannt — Automatik aus</string>
     <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>
-    <string name="notification_idle_body">1 Minute lang wurde weder DigiWorld noch ein Belohnungsbildschirm erkannt. Aufnahme und Automatik wurden zum Schutz des Geräts gestoppt.</string>
+    <string name="notification_idle_body">1 Minute lang wurde weder DigiWorld noch ein Beschwörungs- oder VS.-Dungeon-Bildschirm erkannt. Aufnahme und Automatik wurden zum Schutz des Geräts gestoppt.</string>
 </resources>

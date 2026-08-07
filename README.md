@@ -4,11 +4,11 @@
 
 **Native, local grid-navigation automation for Android 10+**
 
-[![Version](https://img.shields.io/badge/version-1.0.4-blue?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.4/DigiWorldExplorer-Bot-v1.0.4.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -26,6 +26,13 @@
 
 The app runs directly on an Android device without a PC, BlueStacks, ADB, root, injection, or game-APK modification. It captures the screen locally through `MediaProjection`, detects the visible 5×5 grid, player, collectibles, obstacles and HUD counters, then sends user-authorized gestures through an `AccessibilityService`.
 
+### ⚔️ VS. Dungeon Automation
+
+The optional **VS. Dungeon** mode automatically recognizes the multilingual challenge dialog, presses **Attempt / Herausfordern**, waits without touching the active battle, closes a detected victory reward screen and starts the next level. Both challenge and reward detection use strict, resolution-independent full-layout fingerprints instead of generic blue-screen matching.
+
+The mode stops after 15 seconds without visible progress. This provides a safe fallback for defeat screens or unexpected dialogs that have not yet been explicitly classified.
+
+![VS Dungeon challenge automatically detected](docs/images/v2.0.0-vs-dungeon.png)
 ### ⚡ Mega Summon
 
 When enabled in the app, **Auto Summon** recognizes green and purple 30-ticket summon screens and repeatedly presses the yellow summon button. It continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
@@ -41,7 +48,7 @@ Movement priorities:
 
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.4/DigiWorldExplorer-Bot-v1.0.4.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -131,6 +138,17 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ## 📝 Changelog
 
+### v2.0.0 — 7 August 2026
+
+- ⚔️ Added optional **VS. Dungeon automation** for the new daily multi-level dungeon battles
+- ▶️ Detects and presses multilingual **Attempt / Herausfordern** dialogs automatically
+- 🏆 Recognizes victory reward screens, closes them and advances to the next dungeon level
+- 🌐 Uses resolution-independent full-layout fingerprints instead of translated text or generic blue colors
+- 🛑 Stops VS. Dungeon after 15 seconds without visible progress for safe defeat/unknown-screen handling
+- 🎛️ Added separate Auto Summon and VS. Dungeon switches with illustrated bilingual help pages
+- 📐 Redesigned the app into a compact single-screen control layout with side-by-side setup, status, update and stop controls
+- 🧪 Added German/English screenshot regression tests and negative coverage for ordinary blue game screens
+- ✅ Passed all 52 automated tests and verified the signed build on BlueStacks 5
 ### v1.0.4 — 3 August 2026
 
 - ⚡ Added optional **Mega Summon / Auto Summon** for green and purple ticket screens
@@ -244,6 +262,7 @@ Release signing reads local values from `keystore.properties`. The password file
 | `capture/` | MediaProjection capture and frame analysis |
 | `detection/` | Grid, player, item, obstacle and HUD detection |
 | `strategy/` | Movement planning and automation state |
+| `dungeon/` | Strict VS. Dungeon challenge/reward recognition and safe auto-advance |
 | `accessibility/` | Gesture execution and optional live overlay |
 | `app/src/test/` | Offline unit and screenshot-regression tests |
 
@@ -259,6 +278,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v1.0.4/DigiWorldExplorer-Bot-v1.0.4.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

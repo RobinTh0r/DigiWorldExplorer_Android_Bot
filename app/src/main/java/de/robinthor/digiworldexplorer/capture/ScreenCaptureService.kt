@@ -25,6 +25,7 @@ import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
+import de.robinthor.digiworldexplorer.dungeon.DungeonFrameAnalyzer
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 class ScreenCaptureService : Service() {
@@ -137,8 +138,9 @@ class ScreenCaptureService : Service() {
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
                 var recognized = false
-                val rewardScreen = framesSeen % 3 == 0 && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
-                if (rewardScreen) {
+                val dungeonScreen = framesSeen % 3 == 0 && DungeonFrameAnalyzer.analyze(image, width, height)
+                val rewardScreen = !dungeonScreen && framesSeen % 3 == 0 && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                if (dungeonScreen || rewardScreen) {
                     recognized = true // The purchase analyzer owns this frame; never run movement here.
                 } else if (CaptureFrameAnalyzer.isCalibrated) {
                     if (framesSeen % 3 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
@@ -197,6 +199,7 @@ class ScreenCaptureService : Service() {
         captureThread = null
         framesSeen = 0
         RewardPurchaseFrameAnalyzer.reset()
+        DungeonFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()
