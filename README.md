@@ -26,18 +26,11 @@
 
 The app runs directly on an Android device without a PC, BlueStacks, ADB, root, injection, or game-APK modification. It captures the screen locally through `MediaProjection`, detects the visible 5×5 grid, player, collectibles, obstacles and HUD counters, then sends user-authorized gestures through an `AccessibilityService`.
 
-### ⚔️ VS. Dungeon Automation
+### 🧭 Automatic DigiWorld Navigation
 
-The optional **VS. Dungeon** mode automatically recognizes the multilingual challenge dialog, presses **Attempt / Herausfordern**, waits without touching the active battle, closes a detected victory reward screen and starts the next level. Both challenge and reward detection use strict, resolution-independent full-layout fingerprints instead of generic blue-screen matching.
+The core feature automatically navigates the visible DigiWorld grid. It dynamically detects the 5×5 board, player position, collectibles, obstacles, preview cells and available HUD actions instead of relying on fixed pixel coordinates. The route planner prioritizes reachable energy, explores toward the right, avoids unnecessary obstacle attacks and uses dash conservatively for recovery or suitable blocked paths.
 
-The mode stops after 15 seconds without visible progress. This provides a safe fallback for defeat screens or unexpected dialogs that have not yet been explicitly classified.
-
-![VS Dungeon challenge automatically detected](docs/images/v2.0.0-vs-dungeon.png)
-### ⚡ Mega Summon
-
-When enabled in the app, **Auto Summon** recognizes green and purple 30-ticket summon screens and repeatedly presses the yellow summon button. It continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
-
-![Mega Summon automatically advancing the reward screen](docs/images/v1.0.4-mega-summon.png)
+![Automatic DigiWorld navigation with the detected grid, player, items and obstacles](docs/images/automatic-digiworld-navigation.png)
 
 Movement priorities:
 
@@ -46,6 +39,19 @@ Movement priorities:
 3. 🔺 Prefer detours and preserve claws for real dead ends
 4. 💨 Use dash conservatively when escape conditions require it
 
+### ⚔️ VS. Dungeon Automation
+
+The optional **VS. Dungeon** mode automatically recognizes the multilingual challenge dialog, presses **Attempt / Herausfordern**, waits without touching the active battle, closes a detected victory reward screen and starts the next level. Both challenge and reward detection use strict, resolution-independent full-layout fingerprints instead of generic blue-screen matching.
+
+The mode stops after 15 seconds without visible progress. This provides a safe fallback for defeat screens or unexpected dialogs that have not yet been explicitly classified.
+
+![VS Dungeon challenge automatically detected](docs/images/v2.0.0-vs-dungeon.png)
+
+### ⚡ Auto Summon
+
+When enabled in the app, **Auto Summon** recognizes green and purple 30-ticket summon screens and repeatedly presses the yellow summon button. It continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
+
+![Auto Summon automatically advancing the reward screen](docs/images/v1.0.4-mega-summon.png)
 ## 🚀 Quick start
 
 1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk).**
