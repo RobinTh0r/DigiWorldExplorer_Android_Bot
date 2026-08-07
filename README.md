@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ DigiWorldExplorer Android Bot
+# ⚡ DigiWorldExplorer — The DIGIMON UP Bot for Android
 
 **Native, local grid-navigation automation for Android 10+**
 
