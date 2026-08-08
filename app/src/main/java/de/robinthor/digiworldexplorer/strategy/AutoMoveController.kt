@@ -95,7 +95,9 @@ object AutoMoveController{
    val reason=when{cells.isEmpty()->"kein Spielbild";confidence<MIN_GRID->"Raster unsicher %.2f".format(confidence);else->"Spieler unsicher (%d Kandidaten, best %.3f)".format(cells.count{it.value.player>=MIN_PLAYER},cells.values.maxOf{it.player})}
    Log.i("DigiWorldAuto","pause reason=$reason previous=$previous expected=$expected recentItems=${recentItems.keys}")
    val overlayStatus=when{cells.isEmpty()->service?.getString(R.string.overlay_no_game)?:reason;confidence<MIN_GRID->service?.getString(R.string.overlay_grid_uncertain)?:reason;else->service?.getString(R.string.overlay_player_uncertain)?:reason}
-   if(cells.isEmpty()||confidence<MIN_GRID)service?.showStatusOnly(overlayStatus)
+   // Ein einzelner unsicherer Analyseframe darf das zuletzt stabile Raster nicht loeschen.
+   // ScreenCaptureService entfernt es weiterhin nach drei Sekunden ohne erkannten Spielinhalt.
+   if(cells.isEmpty()||confidence<MIN_GRID)service?.updateStatusKeepingGrid(overlayStatus,AutomationState.overlayEnabled)
    else service?.updateOverlay(bounds,player,items,obstacles,null,overlayStatus,AutomationState.overlayEnabled,hud)
    candidate=null;stable=0;return
   }

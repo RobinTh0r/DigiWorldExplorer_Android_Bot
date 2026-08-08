@@ -21,6 +21,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  fun clearCalibrationOverlay(){overlay?.post{overlay?.bounds=null;overlay?.visibility=View.GONE;overlay?.invalidate()}}
  fun setOverlayEnabled(enabled:Boolean){overlay?.post{overlay?.visibility=if(enabled)View.VISIBLE else View.GONE}}
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
+ fun updateStatusKeepingGrid(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  fun showStatusOnly(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  fun updateOverlay(bounds:GridBounds?,player:Cell?,items:Set<Cell>,obstacles:Set<Cell>,target:Cell?,status:String,visible:Boolean,hud:HudCounters=HudCounters()){overlay?.post{overlay?.apply{this.bounds=bounds;this.player=player;this.items=items;this.obstacles=obstacles;this.target=target;this.status=status;this.hud=hud;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  // FLAG_LAYOUT_NO_LIMITS und LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS sind noetig, damit das Overlay im
