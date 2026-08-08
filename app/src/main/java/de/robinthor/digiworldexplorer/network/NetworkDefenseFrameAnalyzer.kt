@@ -12,10 +12,12 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 object NetworkDefenseFrameAnalyzer {
     private const val TAP_INTERVAL = 250L
     private const val SESSION_TIMEOUT = 5 * 60_000L
+    private const val BOSS_STATUS_HOLD = 5_000L
     private var sessionActive = false
     private var pending = false
     private var lastTap = 0L
     private var sessionStarted = 0L
+    private var lastBossSeen = 0L
     private var lastScreen = NetworkDefenseScreen.NONE
     private var startTaps = 0
 
@@ -34,17 +36,19 @@ object NetworkDefenseFrameAnalyzer {
         if (!AutomationState.autoNetworkDefenseEnabled) {
             sessionActive = false
             if (detection.screen != NetworkDefenseScreen.NONE) {
-                DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_network_disabled)) }
+                showStatus(R.string.overlay_network_disabled)
                 return true
             }
             return false
         }
 
         if (detection.screen == NetworkDefenseScreen.START) {
-            if (!sessionActive) sessionStarted = now
+            if (!sessionActive || lastScreen != NetworkDefenseScreen.START) {
+                sessionStarted = now
+                startTaps = 0
+            }
             sessionActive = true
-            if (lastScreen != detection.screen) startTaps = 0
-            lastScreen = detection.screen
+            lastScreen = NetworkDefenseScreen.START
             showStatus(R.string.overlay_network_start)
             if (AutomationState.enabled && startTaps < 2) tryTap(detection, now) { startTaps++ }
             return true
@@ -53,7 +57,8 @@ object NetworkDefenseFrameAnalyzer {
         if (detection.screen == NetworkDefenseScreen.DIABOROMON) {
             if (!sessionActive) sessionStarted = now
             sessionActive = true
-            lastScreen = detection.screen
+            lastBossSeen = now
+            lastScreen = NetworkDefenseScreen.DIABOROMON
             showStatus(R.string.overlay_network_give_up)
             if (AutomationState.enabled) tryTap(detection, now)
             return true
@@ -67,6 +72,13 @@ object NetworkDefenseFrameAnalyzer {
             Log.w("DigiWorldNetwork", "Network Defense Ops stopped after session timeout")
             return true
         }
+
+        // Keep the last certain boss status stable during the transition instead of alternating
+        // between 'Diaboromon' and 'waiting' when animation frames temporarily hide the banner.
+        if (lastBossSeen != 0L && now - lastBossSeen < BOSS_STATUS_HOLD) {
+            showStatus(R.string.overlay_network_give_up)
+            return true
+        }
         lastScreen = NetworkDefenseScreen.NONE
         showStatus(R.string.overlay_network_waiting)
         return true
@@ -78,9 +90,9 @@ object NetworkDefenseFrameAnalyzer {
         pending = true
         lastTap = now
         afterDispatch()
-        service.dispatchValidatedTap(detection.tapX, detection.tapY) { ok ->
+        service.dispatchNormalizedTap(detection.tapXRatio, detection.tapYRatio) { ok ->
             pending = false
-            Log.i("DigiWorldNetwork", "${detection.screen} tap=$ok confidence=${detection.confidence}")
+            Log.i("DigiWorldNetwork", "${detection.screen} tap=$ok normalized=${detection.tapXRatio},${detection.tapYRatio} confidence=${detection.confidence}")
         }
     }
 
@@ -93,6 +105,7 @@ object NetworkDefenseFrameAnalyzer {
         pending = false
         lastTap = 0L
         sessionStarted = 0L
+        lastBossSeen = 0L
         lastScreen = NetworkDefenseScreen.NONE
         startTaps = 0
     }
