@@ -5,6 +5,7 @@ object AutomationState {
  @Volatile var overlayEnabled=true
  @Volatile var autoPurchaseEnabled=true
  @Volatile var autoDungeonEnabled=true
+ @Volatile var autoNetworkDefenseEnabled=false
  @Volatile var forceLegacyCaptureMetrics=false
  fun stop(){enabled=false;AutoMoveController.reset()}
 }

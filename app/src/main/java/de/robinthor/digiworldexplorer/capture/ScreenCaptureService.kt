@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
+import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.dungeon.DungeonFrameAnalyzer
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
@@ -105,7 +106,7 @@ class ScreenCaptureService : Service() {
             .setContentText(if (AutomationState.enabled) getString(R.string.notification_auto_on) else getString(R.string.notification_auto_off))
             .setOngoing(true)
             .addAction(0, getString(R.string.notification_auto_stop), autoOffPendingIntent)
-            .addAction(0, getString(R.string.stop_all), stopPendingIntent)
+            .addAction(0, getString(R.string.auto_stop), stopPendingIntent)
             .build()
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
@@ -156,9 +157,10 @@ class ScreenCaptureService : Service() {
                 if (captureBlocked) {
                     recognized = captureImageMissing
                 } else {
-                    val dungeonScreen = featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
-                    val rewardScreen = !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
-                    if (dungeonScreen || rewardScreen) {
+                    val networkScreen = featureFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
+                    val dungeonScreen = !networkScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
+                    val rewardScreen = !networkScreen && !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                    if (networkScreen || dungeonScreen || rewardScreen) {
                         recognized = true // The feature analyzer owns this frame; never run movement here.
                     } else if (CaptureFrameAnalyzer.isCalibrated) {
                         if (featureFrame) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
@@ -251,6 +253,7 @@ class ScreenCaptureService : Service() {
         captureImageMissing = false
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
+        NetworkDefenseFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         projection?.unregisterCallback(projectionCallback)
         projection?.stop()
