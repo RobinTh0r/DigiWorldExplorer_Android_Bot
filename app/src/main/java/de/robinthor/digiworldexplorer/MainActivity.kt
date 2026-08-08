@@ -40,6 +40,7 @@ private enum class UiStatus { READY, CAPTURING, AUTOMATIC, CAPTURE_DENIED, STOPP
 private enum class UpdateStatus { CHECKING, CURRENT, AVAILABLE, FAILED }
 
 class MainActivity : ComponentActivity() {
+    private companion object { const val GAME_PACKAGE = "com.bandainamcoent.dgup_ww" }
     private var status by mutableStateOf(UiStatus.READY)
     private var capture by mutableStateOf(false)
     private var auto by mutableStateOf(false)
@@ -94,7 +95,7 @@ class MainActivity : ComponentActivity() {
                 onAutoDungeon = { enabled -> autoDungeon = enabled; AutomationState.autoDungeonEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", enabled).apply() },
                 onLegacyCapture = { enabled -> legacyCapture = enabled; AutomationState.forceLegacyCaptureMetrics = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("legacy_capture", enabled).apply() },
                 onCapture = { consent.launch(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()) },
-                onStart = { if (capture && access) { ScreenCaptureService.setAutomation(this, true); auto = true; status = UiStatus.AUTOMATIC } },
+                onStart = { if (capture && access) { ScreenCaptureService.setAutomation(this, true); auto = true; status = UiStatus.AUTOMATIC; bringGameToForeground() } },
                 onStop = { ScreenCaptureService.setAutomation(this, false); auto = false; status = UiStatus.CAPTURING },
                 onAll = { ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED },
                 onLanguage = ::setLanguage,
@@ -116,6 +117,13 @@ class MainActivity : ComponentActivity() {
                 is UpdateResult.Available -> { updateStatus = UpdateStatus.AVAILABLE; updateVersion = result.version; updateUrl = result.url }
             }
         } }
+    }
+
+    private fun bringGameToForeground() {
+        packageManager.getLaunchIntentForPackage(GAME_PACKAGE)?.let { launch ->
+            launch.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(launch)
+        }
     }
 
     private fun openUrl(url: String) = startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
