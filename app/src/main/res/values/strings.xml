@@ -65,6 +65,7 @@
     <string name="dungeon_help_title">VS. Dungeon</string>
     <string name="dungeon_help_body">Automatically starts a detected VS dungeon challenge, waits without tapping during the battle, closes the reward screen and starts the next level. Detection uses the screen layout and works independently of the game language. The mode stops after 15 seconds without visible progress.</string>
     <string name="overlay_no_digiworld">No DigiWorld detected</string>
+    <string name="overlay_no_capture_image">No game image received — capture is gray or black</string>
     <string name="overlay_auto_purchase">AUTO: Summoning</string>
     <string name="overlay_purchase_disabled">Summon screen detected — auto summon off</string>
     <string name="notification_idle_title">Capture stopped: no game detected</string>

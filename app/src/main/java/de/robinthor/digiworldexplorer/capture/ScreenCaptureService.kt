@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.graphics.Color
 import android.graphics.PixelFormat
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
@@ -37,6 +38,9 @@ class ScreenCaptureService : Service() {
     private var lastRecognizedContent = 0L
     private var missingStatusShown = false
     private var idleStopRequested = false
+    private var badCaptureSince = 0L
+    private var healthyCaptureSince = 0L
+    private var captureImageMissing = false
 
     private val projectionCallback = object : MediaProjection.Callback() {
         override fun onStop() {
@@ -127,26 +131,33 @@ class ScreenCaptureService : Service() {
         }
         mediaProjection.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
 
-        val metrics = getSystemService(WindowManager::class.java).currentWindowMetrics
-        val bounds = metrics.bounds
-        val width = bounds.width().coerceAtLeast(1)
-        val height = bounds.height().coerceAtLeast(1)
-        val density = resources.configuration.densityDpi
+        // Compatibility branch: deliberately use classic metrics on every Android version so affected
+        // OnePlus/OxygenOS devices can test whether currentWindowMetrics caused gray captures.
+        val displayMetrics = resources.displayMetrics
+        val width = displayMetrics.widthPixels.coerceAtLeast(1)
+        val height = displayMetrics.heightPixels.coerceAtLeast(1)
+        val density = displayMetrics.densityDpi
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         val thread = HandlerThread("DigiWorldAnalysis").apply { start() }
         reader.setOnImageAvailableListener({ source ->
             source.acquireLatestImage()?.use { image ->
                 framesSeen++
                 var recognized = false
-                val dungeonScreen = framesSeen % 3 == 0 && DungeonFrameAnalyzer.analyze(image, width, height)
-                val rewardScreen = !dungeonScreen && framesSeen % 3 == 0 && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
-                if (dungeonScreen || rewardScreen) {
-                    recognized = true // The purchase analyzer owns this frame; never run movement here.
-                } else if (CaptureFrameAnalyzer.isCalibrated) {
-                    if (framesSeen % 3 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                val featureFrame = framesSeen % 3 == 0
+                val captureBlocked = featureFrame && updateCaptureQuality(image, width, height)
+                if (captureBlocked) {
+                    recognized = captureImageMissing
                 } else {
-                    if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
-                    if (framesSeen % 10 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                    val dungeonScreen = featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
+                    val rewardScreen = !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                    if (dungeonScreen || rewardScreen) {
+                        recognized = true // The feature analyzer owns this frame; never run movement here.
+                    } else if (CaptureFrameAnalyzer.isCalibrated) {
+                        if (featureFrame) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                    } else {
+                        if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
+                        if (framesSeen % 10 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                    }
                 }
                 if (recognized) markContentRecognized() else checkRecognitionTimeouts()
             }
@@ -168,6 +179,35 @@ class ScreenCaptureService : Service() {
         android.util.Log.i("DigiWorldCapture", "capture started ${width}x$height density=$density display=${display != null}")
     }
 
+    private fun updateCaptureQuality(image: android.media.Image, width: Int, height: Int): Boolean {
+        val plane = image.planes.firstOrNull() ?: return false
+        if (plane.pixelStride < 3) return false
+        val buffer = plane.buffer
+        val result = CaptureQualityDetector.detect(width, height) { x, y ->
+            val offset = y * plane.rowStride + x * plane.pixelStride
+            Color.rgb(buffer.get(offset).toInt() and 255, buffer.get(offset + 1).toInt() and 255, buffer.get(offset + 2).toInt() and 255)
+        }
+        val now = SystemClock.elapsedRealtime()
+        if (result.quality != CaptureQuality.VALID) {
+            healthyCaptureSince = 0L
+            if (badCaptureSince == 0L) badCaptureSince = now
+            if (now - badCaptureSince >= MISSING_IMAGE_CONFIRMATION) {
+                if (!captureImageMissing) android.util.Log.w("DigiWorldCapture", "missing game image quality=${result.quality} mean=${result.meanLuma} deviation=${result.lumaDeviation} chroma=${result.meanChroma}")
+                captureImageMissing = true
+                DigiWorldAccessibilityService.instance?.showStatusOnly(getString(R.string.overlay_no_capture_image))
+            }
+            return true
+        }
+        badCaptureSince = 0L
+        if (!captureImageMissing) return false
+        if (healthyCaptureSince == 0L) healthyCaptureSince = now
+        if (now - healthyCaptureSince < CAPTURE_RECOVERY_CONFIRMATION) return true
+        captureImageMissing = false
+        healthyCaptureSince = 0L
+        DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
+        android.util.Log.i("DigiWorldCapture", "structured game image recovered")
+        return false
+    }
     private fun markContentRecognized() {
         lastRecognizedContent = SystemClock.elapsedRealtime()
         missingStatusShown = false
@@ -198,6 +238,9 @@ class ScreenCaptureService : Service() {
         captureThread?.quitSafely()
         captureThread = null
         framesSeen = 0
+        badCaptureSince = 0L
+        healthyCaptureSince = 0L
+        captureImageMissing = false
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
@@ -242,6 +285,8 @@ class ScreenCaptureService : Service() {
         private const val STUCK_NOTIFICATION_ID = 1002
         private const val IDLE_NOTIFICATION_ID = 1003
         private const val GRID_HIDE_TIMEOUT = 3_000L
+        private const val MISSING_IMAGE_CONFIRMATION = 2_000L
+        private const val CAPTURE_RECOVERY_CONFIRMATION = 750L
         private const val IDLE_STOP_TIMEOUT = 60_000L
         private const val ACTION_START = "capture.start"
         private const val ACTION_STOP = "capture.stop"

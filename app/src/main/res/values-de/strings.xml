@@ -65,6 +65,7 @@
     <string name="dungeon_help_title">VS. Dungeon</string>
     <string name="dungeon_help_body">Startet eine erkannte VS.-Dungeon-Herausforderung, wartet während des Kampfes ohne zu tippen, schließt die Belohnungsseite und startet das nächste Level. Die Erkennung nutzt das Bildlayout und ist von der Spielsprache unabhängig. Nach 15 Sekunden ohne sichtbaren Fortschritt stoppt der Modus.</string>
     <string name="overlay_no_digiworld">Keine DigiWorld erkannt</string>
+    <string name="overlay_no_capture_image">Kein Spielbild empfangen — Aufnahme ist grau oder schwarz</string>
     <string name="overlay_auto_purchase">AUTO: Beschwören</string>
     <string name="overlay_purchase_disabled">Beschwörungsbildschirm erkannt — Automatik aus</string>
     <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>
