@@ -131,12 +131,20 @@ class ScreenCaptureService : Service() {
         }
         mediaProjection.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
 
-        // Compatibility branch: deliberately use classic metrics on every Android version so affected
-        // OnePlus/OxygenOS devices can test whether currentWindowMetrics caused gray captures.
         val displayMetrics = resources.displayMetrics
-        val width = displayMetrics.widthPixels.coerceAtLeast(1)
-        val height = displayMetrics.heightPixels.coerceAtLeast(1)
+        val useLegacyMetrics = Build.VERSION.SDK_INT < 30 || AutomationState.forceLegacyCaptureMetrics
+        val width: Int
+        val height: Int
+        if (useLegacyMetrics) {
+            width = displayMetrics.widthPixels.coerceAtLeast(1)
+            height = displayMetrics.heightPixels.coerceAtLeast(1)
+        } else {
+            val bounds = getSystemService(WindowManager::class.java).currentWindowMetrics.bounds
+            width = bounds.width().coerceAtLeast(1)
+            height = bounds.height().coerceAtLeast(1)
+        }
         val density = displayMetrics.densityDpi
+        android.util.Log.i("DigiWorldCapture", "metrics mode=${if (useLegacyMetrics) "legacy" else "currentWindow"} ${width}x$height")
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         val thread = HandlerThread("DigiWorldAnalysis").apply { start() }
         reader.setOnImageAvailableListener({ source ->

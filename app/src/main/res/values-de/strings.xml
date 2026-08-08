@@ -17,6 +17,8 @@
     <string name="permission_missing">○ Öffnen</string>
     <string name="capture_start">Bildschirmfreigabe starten</string>
     <string name="capture_renew">Bildschirmfreigabe erneuern</string>
+    <string name="legacy_capture">Legacy-Aufnahmegröße (OnePlus-Test)</string>
+    <string name="legacy_capture_hint">Vor Start oder Erneuern der Bildschirmfreigabe aktivieren</string>
     <string name="grid_hide">Raster aus</string>
     <string name="grid_show">Raster an</string>
     <string name="auto_start">START</string>

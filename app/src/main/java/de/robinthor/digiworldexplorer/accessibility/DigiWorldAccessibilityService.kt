@@ -13,14 +13,6 @@ import de.robinthor.digiworldexplorer.detection.HudCounters
 
 class DigiWorldAccessibilityService:AccessibilityService(){
  private var overlay:GridOverlayView?=null
- private val isEmulator:Boolean by lazy{
-  android.os.Build.BRAND.lowercase().contains("generic")
-   ||android.os.Build.MANUFACTURER.lowercase().contains("generic")
-   ||android.os.Build.MODEL.lowercase().contains("sdk")
-   ||android.os.Build.PRODUCT.lowercase().contains("bluestacks")
-   ||java.io.File("/data/local/bluestacks").exists()
-   ||java.io.File("/dev/socket/bluestacks").exists()
- }
  override fun onServiceConnected(){instance=this;showOverlay()}
  override fun onAccessibilityEvent(event:AccessibilityEvent?)=Unit
  override fun onInterrupt()=Unit
@@ -36,7 +28,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  // Statusleistenhoehe nach unten versetzt; die gezeichneten Linien landen dann in den Abtastfenstern
  // der Zellen und verfaelschen die naechste Analyse (messbar: unterste Reihe komplett als Item erkannt).
  // FLAG_SECURE ist hier bewusst NICHT gesetzt: es schwaerzt auf Android 15 die gesamte MediaProjection.
- private fun showOverlay(){if(overlay!=null)return;val useAppOverlay=Settings.canDrawOverlays(this)&&!isEmulator;android.util.Log.i("DigiWorldOverlay","create canDrawOverlays=${Settings.canDrawOverlays(this)} emulator=$isEmulator type=${if(useAppOverlay)"APPLICATION_OVERLAY"else"ACCESSIBILITY_OVERLAY"}");overlay=GridOverlayView();val wm=getSystemService(WindowManager::class.java);val params=WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT,if(useAppOverlay) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT).apply{gravity=Gravity.TOP or Gravity.START;layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS};runCatching{wm.addView(overlay,params)}.onFailure{e->android.util.Log.e("DigiWorldOverlay","addView failed, trying ACCESSIBILITY_OVERLAY",e);params.type=WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY;wm.addView(overlay,params)}}
+ private fun showOverlay(){if(overlay!=null)return;android.util.Log.i("DigiWorldOverlay","create canDrawOverlays=${Settings.canDrawOverlays(this)}");overlay=GridOverlayView().also{getSystemService(WindowManager::class.java).addView(it,WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT,if(Settings.canDrawOverlays(this)) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT).apply{gravity=Gravity.TOP or Gravity.START;layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS})}}
  private fun removeOverlay(){overlay?.let{runCatching{getSystemService(WindowManager::class.java).removeView(it)}};overlay=null}
  inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status="Analyse";var hud:HudCounters=HudCounters();var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
   init{background=ColorDrawable(Color.TRANSPARENT)}

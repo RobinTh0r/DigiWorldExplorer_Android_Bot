@@ -17,6 +17,8 @@
     <string name="permission_missing">○ Open</string>
     <string name="capture_start">Start screen sharing</string>
     <string name="capture_renew">Renew screen sharing</string>
+    <string name="legacy_capture">Legacy capture size (OnePlus test)</string>
+    <string name="legacy_capture_hint">Enable before starting or renewing screen sharing</string>
     <string name="grid_hide">Hide grid</string>
     <string name="grid_show">Show grid</string>
     <string name="auto_start">START</string>

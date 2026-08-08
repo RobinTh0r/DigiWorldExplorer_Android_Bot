@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private var grid by mutableStateOf(true)
     private var autoPurchase by mutableStateOf(true)
     private var autoDungeon by mutableStateOf(true)
+    private var legacyCapture by mutableStateOf(false)
     private var access by mutableStateOf(false)
     private var overlay by mutableStateOf(false)
     private var updateStatus by mutableStateOf(UpdateStatus.CHECKING)
@@ -78,17 +79,20 @@ class MainActivity : ComponentActivity() {
         AutomationState.stop()
         autoPurchase = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_purchase", true)
         autoDungeon = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_dungeon", true)
+        legacyCapture = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("legacy_capture", false)
         AutomationState.autoPurchaseEnabled = autoPurchase
         AutomationState.autoDungeonEnabled = autoDungeon
+        AutomationState.forceLegacyCaptureMetrics = legacyCapture
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent { MaterialTheme { Surface(Modifier.fillMaxSize()) {
             ControlScreen(
-                status, capture, auto, grid, autoPurchase, autoDungeon, access, overlay, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, autoDungeon, legacyCapture, access, overlay, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
                 onGrid = { grid = !grid; AutomationState.overlayEnabled = grid; DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid) },
                 onAutoPurchase = { enabled -> autoPurchase = enabled; AutomationState.autoPurchaseEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_purchase", enabled).apply() },
                 onAutoDungeon = { enabled -> autoDungeon = enabled; AutomationState.autoDungeonEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", enabled).apply() },
+                onLegacyCapture = { enabled -> legacyCapture = enabled; AutomationState.forceLegacyCaptureMetrics = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("legacy_capture", enabled).apply() },
                 onCapture = { consent.launch(getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()) },
                 onStart = { if (capture && access) { ScreenCaptureService.setAutomation(this, true); auto = true; status = UiStatus.AUTOMATIC } },
                 onStop = { ScreenCaptureService.setAutomation(this, false); auto = false; status = UiStatus.CAPTURING },
@@ -130,7 +134,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onCapture: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onAll: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onRepo: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, legacyCapture: Boolean, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onCapture: () -> Unit, onStart: () -> Unit, onStop: () -> Unit, onAll: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onRepo: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
@@ -152,6 +156,13 @@ class MainActivity : ComponentActivity() {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             CompactPermissionButton(1, R.string.permission_accessibility, access, onAccess, Modifier.weight(1f))
             CompactPermissionButton(2, R.string.permission_overlay, overlay, onOverlay, Modifier.weight(1f))
+        }
+        Row(Modifier.fillMaxWidth().heightIn(min = 42.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.legacy_capture))
+                Text(stringResource(R.string.legacy_capture_hint), style = MaterialTheme.typography.labelSmall)
+            }
+            Switch(checked = legacyCapture, onCheckedChange = onLegacyCapture)
         }
         Button(onClick = onCapture, Modifier.fillMaxWidth()) { Text(stringResource(if (capture) R.string.capture_renew else R.string.capture_start)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
