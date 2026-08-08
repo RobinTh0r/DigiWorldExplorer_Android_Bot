@@ -29,6 +29,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
@@ -203,7 +204,7 @@ class MainActivity : ComponentActivity() {
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
         Text(stringResource(R.string.safety_note), style = MaterialTheme.typography.labelSmall)
-        Button(onClick = onDonate, Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF168A45))) { Text(stringResource(R.string.donate)) }
+        Button(onClick = onDonate, Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF168A45))) { Text(stringResource(R.string.donate), fontSize = 11.sp, maxLines = 1) }
         OutlinedButton(onClick = { showExperimental = true }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.experimental_settings)) }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = onRepo, contentPadding = PaddingValues(horizontal = 0.dp)) { Text(stringResource(R.string.source_code), style = MaterialTheme.typography.labelSmall) }

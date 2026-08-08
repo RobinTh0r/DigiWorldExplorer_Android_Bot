@@ -20,6 +20,7 @@ object NetworkDefenseFrameAnalyzer {
     private var lastBossSeen = 0L
     private var lastScreen = NetworkDefenseScreen.NONE
     private var startTaps = 0
+    private var bossCandidateFrames = 0
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val plane = image.planes.firstOrNull() ?: return false
@@ -55,7 +56,13 @@ object NetworkDefenseFrameAnalyzer {
         }
 
         if (detection.screen == NetworkDefenseScreen.DIABOROMON) {
-            if (!sessionActive) sessionStarted = now
+            // Accept a boss only after this loop started its own attempt.
+            if (!sessionActive) return false
+            bossCandidateFrames++
+            if (bossCandidateFrames < 2) {
+                showStatus(R.string.overlay_network_waiting)
+                return true
+            }
             sessionActive = true
             lastBossSeen = now
             lastScreen = NetworkDefenseScreen.DIABOROMON
@@ -64,6 +71,7 @@ object NetworkDefenseFrameAnalyzer {
             return true
         }
 
+        bossCandidateFrames = 0
         if (!sessionActive) return false
         if (now - sessionStarted >= SESSION_TIMEOUT) {
             AutomationState.autoNetworkDefenseEnabled = false
@@ -108,5 +116,6 @@ object NetworkDefenseFrameAnalyzer {
         lastBossSeen = 0L
         lastScreen = NetworkDefenseScreen.NONE
         startTaps = 0
+        bossCandidateFrames = 0
     }
 }

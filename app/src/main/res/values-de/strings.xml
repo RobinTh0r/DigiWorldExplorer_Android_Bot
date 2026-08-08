@@ -60,8 +60,8 @@
     <string name="accessibility_help_body">Samsung: Einmal die Blockierungswarnung auslösen, dann Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü → Eingeschränkte Einstellungen zulassen.\n\nWichtig: In DIGIMON UP muss Botamon als sichtbarer Sprite ausgewählt sein.\n\nBei Problemen am besten zuerst „Alles stoppen“, anschließend DIGIMON UP und DigiWorldExplorer vollständig schließen. Danach zuerst DIGIMON UP starten und warten, bis das Spiel vollständig geladen ist. Erst dann DigiWorldExplorer öffnen, Bildschirmfreigabe starten und die Automatik aktivieren.</string>
     <string name="close">Schließen</string>
     <string name="auto_purchase">Automatisch beschwören</string>
-    <string name="auto_network_defense">Network Defense Ops Loop</string>
-    <string name="network_help_title">Network Defense Ops Loop</string>
+    <string name="auto_network_defense">Network Defense Ops Loop · BETA</string>
+    <string name="network_help_title">Network Defense Ops Loop · BETA</string>
     <string name="network_help_body">Standardmäßig AUS. Startet Network Defense Ops automatisch, wartet alle fünf Wellen ab und erkennt anschließend das rot-schwarze Diaboromon-Banner. Dann tippt der Bot wiederholt auf „Aufgeben“, kehrt zur Auswahl zurück und startet den nächsten Versuch. So können pro Durchlauf ungefähr 40 besiegte Gegner gezählt werden. Nur in Network Defense Ops aktivieren.</string>
     <string name="overlay_network_disabled">Network Defense Ops erkannt — Loop ist aus</string>
     <string name="overlay_network_start">AUTO: Network Defense Ops starten</string>

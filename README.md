@@ -2,13 +2,13 @@
 
 # ⚡ DigiWorldExplorer — The DIGIMON UP Bot for Android
 
-**Native, local grid-navigation automation for Android 10+**
+**Native, local grid-navigation automation for Android 9+**
 
-[![Version](https://img.shields.io/badge/version-2.0.0-blue?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
-[![Android](https://img.shields.io/badge/Android-10%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-2.2.0-blue?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.2.0/DigiWorldExplorer-Bot-v2.2.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -52,9 +52,17 @@ The mode stops after 15 seconds without visible progress. This provides a safe f
 When enabled in the app, **Auto Summon** recognizes green and purple 30-ticket summon screens and repeatedly presses the yellow summon button. It continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
 
 ![Auto Summon automatically advancing the reward screen](docs/images/v1.0.4-mega-summon.png)
+
+### 🛡️ Network Defense Ops Loop — BETA
+
+The optional **Network Defense Ops Loop** starts an attempt, waits through all five waves and detects the Diaboromon boss banner together with the final-wave indicator. It then presses **Give up / Aufgeben**, returns to the dungeon dialog and automatically starts the next run. This can count roughly 40 defeated enemies per completed loop.
+
+The mode is **off by default** and must only be enabled inside Network Defense Ops. Its stricter session tracking prevents ordinary battles and the general dungeon overview from triggering the loop. Button positions are detected dynamically for different resolutions and Android display mappings.
+
+![Network Defense Ops detecting Diaboromon before giving up](docs/images/v2.2.0-network-defense-ops.png)
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.2.0/DigiWorldExplorer-Bot-v2.2.0.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -110,18 +118,9 @@ Compatibility depends on the exact device, Android/OEM build and graphics compos
 | --- | --- | --- | --- |
 | Samsung Galaxy S21 Ultra (`SM-G998B`) | Physical device, 1080×2400 | ✅ Working | Full frames, dynamic grid, dark scenes and automated movement tested. Samsung may require **Allow restricted settings** for Accessibility. |
 | BlueStacks 5 (`5.22.245.1004`) | Android 11 emulator | ✅ Working | Capture, overlay, grid recognition and accessibility gestures tested successfully. |
-| OnePlus 8 Pro EU (`IN2023`) | OxygenOS 13.1 / Android 13 | ❌ Incompatible on tested build | The HUD is captured, but OxygenOS replaces the Unity game surface with a uniform gray area for third-party MediaProjection and `adb screencap`. OnePlus' hardware screenshot and built-in recorder still work because they are privileged system components. Disabling hardware overlays did not fix it. |
+| BlueStacks 5 Pie 64 | Android 9 / Pie 64 emulator | ✅ Working | Screen capture, DigiWorld navigation, Auto Summon and accessibility gestures tested successfully. |
+| OnePlus 8 Pro EU (`IN2023`) | OxygenOS 13.1 / Android 13 | ✅ Working | Screen capture, recognition and automation tested successfully after the capture/display-metrics compatibility improvements. |
 | LDPlayer | Exact build not recorded | ⚠️ Unconfirmed failure | Automation did not work in the reported test. Without the emulator version, Android image and diagnostic frame, the precise cause is still unknown. |
-
-### Why a OnePlus screenshot can work while the bot cannot
-
-The hardware-key screenshot and built-in OnePlus recorder are signed, privileged OxygenOS components. They can use internal compositor access that Android does not expose to an ordinary APK. DigiWorldExplorer uses the public, user-approved `MediaProjection` API; it cannot call the OEM recorder or grant itself system privileges. On the tested OnePlus build, even an ADB screenshot omitted the Unity surface, confirming that this happens below the bot's detection code.
-
-Android documents `MediaProjection` as the public screen-capture API. A `SurfaceView` owns a separate drawing surface and can be assigned to a hardware overlay by the device compositor, which is why behavior may vary by OEM firmware. This result does **not** prove that every OnePlus, OPPO or Realme device is affected.
-
-- [Android MediaProjection guide](https://developer.android.com/media/grow/media-projection)
-- [Android SurfaceView reference](https://developer.android.com/reference/android/view/SurfaceView)
-- [Android explanation of SurfaceView hardware-overlay behavior](https://developer.android.com/media/camera/camerax/preview)
 
 When reporting another device, include its exact model, Android version, OEM build, bot version, whether the system recorder captures the game, and the app's `dynamic_grid.png`. Remove private notifications or account information before sharing diagnostics.
 
@@ -143,6 +142,18 @@ When reporting another device, include its exact model, Android version, OEM bui
 If the app is useful to you, you can support continued development through **[PayPal.me/thor666](https://paypal.me/thor666)**. Donations are optional and do not unlock features.
 
 ## 📝 Changelog
+
+### v2.2.0 — 8 August 2026
+
+- 🛡️ Added the optional **Network Defense Ops Loop (BETA)**
+- ▶️ Starts Network Defense Ops attempts automatically and waits through all five waves
+- 👾 Detects the Diaboromon boss banner and final-wave indicator before giving up
+- 🔁 Returns to the dungeon dialog and repeats the run automatically
+- 🎯 Detects the Give up button dynamically and compensates for emulator touch-coordinate offsets
+- 🧭 Requires an active bot-started session, preventing ordinary battles from triggering the boss action
+- 🚫 Tightened start-dialog detection so the general dungeon overview is no longer mistaken for Network Defense Ops
+- ⏳ Keeps the Diaboromon status stable during transitions and retains the existing safety timeout
+- 📱 Improved MediaProjection and display-metrics compatibility; successfully tested on OnePlus/OxygenOS, Samsung, BlueStacks Android 11 and BlueStacks Pie 64, with the fallback potentially helping additional devices and emulators
 
 ### v2.0.0 — 7 August 2026
 
@@ -284,6 +295,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.0.0/DigiWorldExplorer-Bot-v2.0.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v2.2.0/DigiWorldExplorer-Bot-v2.2.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>
