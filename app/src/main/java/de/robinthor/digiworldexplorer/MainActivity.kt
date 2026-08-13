@@ -67,7 +67,8 @@ class MainActivity : ComponentActivity() {
     private var preReleaseUpdates by mutableStateOf(false)
     private var supporterLicense by mutableStateOf<SupporterLicense?>(null)
     private var showLicenseDialog by mutableStateOf(false)
-    private var showSupporterIntro by mutableStateOf(false)
+    private var showReleaseNotes by mutableStateOf(false)
+    private var showUpdateNotice by mutableStateOf(false)
     private var showFeedDelayNotice by mutableStateOf(false)
     private var access by mutableStateOf(false)
     private var overlay by mutableStateOf(false)
@@ -107,8 +108,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
-        val supporterIntroKey = "supporter_intro_${BuildConfig.VERSION_NAME}"
-        showSupporterIntro = !settings.getBoolean(supporterIntroKey, false)
+        val releaseNotesKey = "release_notes_${BuildConfig.VERSION_NAME}"
+        showReleaseNotes = !settings.getBoolean(releaseNotesKey, false)
         grid = settings.getBoolean("grid_enabled", !isHuaweiOrHonor())
         autoPurchase = settings.getBoolean("auto_purchase", true)
         autoDungeon = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_dungeon", true)
@@ -119,7 +120,6 @@ class MainActivity : ComponentActivity() {
         supporterLicense = SupporterLicenseManager.load(this)
         autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
         autoFeed = supporterLicense != null && settings.getBoolean("auto_feed", false)
-        if (autoFeed && autoNetworkDefense) { autoNetworkDefense = false; settings.edit().putBoolean("auto_network_defense", false).apply() }
         AutomationState.overlayEnabled = grid
         AutomationState.autoPurchaseEnabled = autoPurchase
         AutomationState.autoDungeonEnabled = autoDungeon
@@ -140,7 +140,6 @@ class MainActivity : ComponentActivity() {
                 onAutoNetworkDefense = { enabled ->
                     val allowed = enabled && supporterLicense != null
                     autoNetworkDefense = allowed; AutomationState.autoNetworkDefenseEnabled = allowed
-                    if (allowed) { autoFeed = false; AutomationState.autoFeedEnabled = false }
                     settings.edit().putBoolean("auto_network_defense", allowed).putBoolean("auto_feed", autoFeed).apply()
                     if (enabled && !allowed) showLicenseDialog = true
                 },
@@ -148,7 +147,6 @@ class MainActivity : ComponentActivity() {
                     val allowed = enabled && supporterLicense != null
                     autoFeed = allowed; AutomationState.autoFeedEnabled = allowed
                     if (allowed) {
-                        autoNetworkDefense = false; AutomationState.autoNetworkDefenseEnabled = false
                         if (!settings.getBoolean("feed_delay_notice_seen", false)) {
                             showFeedDelayNotice = true
                             settings.edit().putBoolean("feed_delay_notice_seen", true).apply()
@@ -171,10 +169,15 @@ class MainActivity : ComponentActivity() {
                 onContact = { },
             )
             if (showFeedDelayNotice) FeedDelayNoticeDialog(onClose = { showFeedDelayNotice = false })
-            if (showSupporterIntro) SupporterIntroDialog(onClose = {
-                showSupporterIntro = false
-                settings.edit().putBoolean(supporterIntroKey, true).apply()
+            if (showReleaseNotes) ReleaseNotesDialog(onClose = {
+                showReleaseNotes = false
+                settings.edit().putBoolean(releaseNotesKey, true).apply()
             })
+            if (showUpdateNotice) UpdateAvailableDialog(
+                version = updateVersion,
+                onUpdate = { showUpdateNotice = false; if (updateUrl.isNotBlank()) openUrl(updateUrl) },
+                onLater = { showUpdateNotice = false },
+            )
             if (showLicenseDialog) SupporterLicenseDialog(
                 currentLicense = supporterLicense,
                 onActivate = { code ->
@@ -239,7 +242,15 @@ class MainActivity : ComponentActivity() {
             when (result) {
                 UpdateResult.Current -> updateStatus = UpdateStatus.CURRENT
                 UpdateResult.Failed -> updateStatus = UpdateStatus.FAILED
-                is UpdateResult.Available -> { updateStatus = UpdateStatus.AVAILABLE; updateVersion = result.version; updateUrl = result.url }
+                is UpdateResult.Available -> {
+                    updateStatus = UpdateStatus.AVAILABLE; updateVersion = result.version; updateUrl = result.url
+                    val noticeKey = "update_notice_${result.version}"
+                    val preferences = getSharedPreferences("settings", MODE_PRIVATE)
+                    if (!preferences.getBoolean(noticeKey, false)) {
+                        preferences.edit().putBoolean(noticeKey, true).apply()
+                        showUpdateNotice = true
+                    }
+                }
             }
         } }
     }
@@ -439,15 +450,24 @@ class MainActivity : ComponentActivity() {
         confirmButton = { Button(onClick = onClose) { Text(stringResource(R.string.close)) } },
     )
 }
-@Composable private fun SupporterIntroDialog(onClose: () -> Unit) {
+@Composable private fun ReleaseNotesDialog(onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text(stringResource(R.string.supporter_intro_title)) },
-        text = { Text(stringResource(R.string.supporter_intro_body)) },
+        title = { Text(stringResource(R.string.release_notes_title)) },
+        text = { Text(stringResource(R.string.release_notes_body)) },
         confirmButton = { Button(onClick = onClose) { Text(stringResource(R.string.close)) } },
     )
 }
 
+@Composable private fun UpdateAvailableDialog(version: String, onUpdate: () -> Unit, onLater: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onLater,
+        title = { Text(stringResource(R.string.update_notice_title)) },
+        text = { Text(stringResource(R.string.update_notice_body, version)) },
+        confirmButton = { Button(onClick = onUpdate) { Text(stringResource(R.string.update_notice_install)) } },
+        dismissButton = { TextButton(onClick = onLater) { Text(stringResource(R.string.update_notice_later)) } },
+    )
+}
 @Composable private fun PaymentContactDialog(onContinue: () -> Unit, onClose: () -> Unit) {
     AlertDialog(
         onDismissRequest = onClose,

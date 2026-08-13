@@ -13,7 +13,8 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 object NetworkDefenseFrameAnalyzer {
     // Network Defense dialogs can take noticeably longer to settle on BlueStacks. A confirmed
     // screen is therefore retried deliberately instead of firing a short two-tap burst.
-    private const val START_RETRY_INTERVAL = 1_100L
+    private const val START_SETTLE_TIME = 650L
+    private const val START_RETRY_INTERVAL = 2_500L
     private const val BOSS_RETRY_INTERVAL = 650L
     private const val PENDING_GESTURE_TIMEOUT = 1_800L
     private const val SESSION_TIMEOUT = 5 * 60_000L
@@ -27,7 +28,10 @@ object NetworkDefenseFrameAnalyzer {
     private var lastBossSeen = 0L
     private var lastScreen = NetworkDefenseScreen.NONE
     private var startTaps = 0
-    private var bossCandidateFrames = 0
+    private var startVisibleSince = 0L
+    private var finalBossArmed = false
+
+    fun isSessionActive(): Boolean = AutomationState.autoNetworkDefenseEnabled && sessionActive
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!AutomationState.autoNetworkDefenseEnabled) {
@@ -55,33 +59,35 @@ object NetworkDefenseFrameAnalyzer {
             if (!sessionActive || lastScreen != NetworkDefenseScreen.START) {
                 sessionStarted = now
                 startTaps = 0
+                startVisibleSince = now
             }
             sessionActive = true
+            // A newly confirmed start dialog begins a fresh run. Never carry the previous boss arm.
+            finalBossArmed = false
+            lastBossSeen = 0L
             lastScreen = NetworkDefenseScreen.START
             showStatus(R.string.overlay_network_start)
             // Retry only while the complete START dialog remains positively detected. The next
             // state is confirmed by this dialog disappearing, not merely by dispatching a tap.
-            if (AutomationState.enabled) tryTap(detection, now, START_RETRY_INTERVAL) { startTaps++ }
+            if (AutomationState.enabled && now - startVisibleSince >= START_SETTLE_TIME) {
+                tryTap(detection, now, START_RETRY_INTERVAL) { startTaps++ }
+            }
             return true
         }
+
+        startVisibleSince = 0L
 
         if (detection.screen == NetworkDefenseScreen.FINAL_BOSS) {
             // Accept a boss only after this loop started its own attempt.
             if (!sessionActive) return false
-            bossCandidateFrames++
-            if (bossCandidateFrames < 2) {
-                showStatus(R.string.overlay_network_waiting)
-                return true
-            }
             sessionActive = true
+            finalBossArmed = true
             lastBossSeen = now
             lastScreen = NetworkDefenseScreen.FINAL_BOSS
             showStatus(R.string.overlay_network_give_up)
             if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
             return true
         }
-
-        bossCandidateFrames = 0
         if (!sessionActive) return false
         if (now - sessionStarted >= SESSION_TIMEOUT) {
             AutomationState.autoNetworkDefenseEnabled = false
@@ -93,6 +99,12 @@ object NetworkDefenseFrameAnalyzer {
 
         // Keep the last certain boss status stable during the transition instead of alternating
         // between 'final boss' and 'waiting' when animation frames temporarily hide the banner.
+        if (finalBossArmed && detection.screen == NetworkDefenseScreen.BATTLE) {
+            lastBossSeen = now
+            showStatus(R.string.overlay_network_give_up)
+            if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
+            return true
+        }
         if (lastBossSeen != 0L && now - lastBossSeen < BOSS_STATUS_HOLD) {
             showStatus(R.string.overlay_network_give_up)
             return true
@@ -136,6 +148,7 @@ object NetworkDefenseFrameAnalyzer {
         lastBossSeen = 0L
         lastScreen = NetworkDefenseScreen.NONE
         startTaps = 0
-        bossCandidateFrames = 0
+        startVisibleSince = 0L
+        finalBossArmed = false
     }
 }

@@ -49,7 +49,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   // Zellgrenzen, Boxen bei 3,5% Einrückung, jeweils inklusive halber Strichstärke unter 6%. Dadurch
   // darf das Overlay dauerhaft sichtbar bleiben und muss für die Analyse nicht mehr ausgeblendet werden.
   override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;val b=bounds
-   if(b==null){val ts=(width/24f).coerceIn(28f,64f);val x=width*.04f;val y=height*.12f;p.textSize=ts;p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,x,y,p);p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,x,y,p);return}
+   if(b==null){val ts=(width/30f).coerceIn(24f,48f);val x=width*.025f;val y=height*.075f;p.textSize=ts;p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,x,y,p);p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,x,y,p);return}
    val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;val unit=minOf(cw,ch)
    p.pathEffect=null;p.style=Paint.Style.STROKE;p.color=Color.GREEN;p.strokeWidth=unit*.025f;for(i in 0..5){c.drawLine(b.left+i*cw,b.top.toFloat(),b.left+i*cw,b.bottom.toFloat(),p);c.drawLine(b.left.toFloat(),b.top+i*ch,b.right.toFloat(),b.top+i*ch,p)}
    p.pathEffect=DashPathEffect(floatArrayOf(unit*.07f,unit*.05f),0f);c.drawRect(b.right.toFloat(),b.top.toFloat(),b.right+cw,b.bottom.toFloat(),p);for(i in 1..4)c.drawLine(b.right.toFloat(),b.top+i*ch,b.right+cw,b.top+i*ch,p);p.pathEffect=null

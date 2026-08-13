@@ -48,6 +48,12 @@
     <string name="update_failed">Update check failed</string>
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
+    <string name="release_notes_title">What’s new in this version</string>
+    <string name="release_notes_body">Network Defense now detects the start dialog on more screen formats, watches every frame for the short final-boss banner, resets the boss state between runs, and waits for slow menus before tapping. The status overlay is smaller, global failure-dialog recovery remains active, and Network Defense can run alongside Bond &amp; Friendship.</string>
+    <string name="update_notice_title">New version available</string>
+    <string name="update_notice_body">Version %1$s is available. Please update for the best stability and device compatibility.</string>
+    <string name="update_notice_install">Open update</string>
+    <string name="update_notice_later">Later</string>
     <string name="donate">💚 Help keep development moving · Support via PayPal</string>
     <string name="donate_url">https://paypal.me/thor666/4</string>    <string name="supporter_purchase_url">https://paypal.me/thor666/4</string>
     <string name="supporter_license_import">♥ Unlock Supporter features</string>

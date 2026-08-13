@@ -1,6 +1,6 @@
 package de.robinthor.digiworldexplorer.network
 
-enum class NetworkDefenseScreen { NONE, START, FINAL_BOSS }
+enum class NetworkDefenseScreen { NONE, START, BATTLE, FINAL_BOSS }
 
 data class NetworkDefenseDetection(
     val screen: NetworkDefenseScreen,
@@ -50,6 +50,15 @@ object NetworkDefenseScreenDetector {
                     attemptButtonCenter?.first ?: .65f,
                     attemptButtonCenter?.second ?: .57f,
                     startScore,
+                )
+            // The lower give-up panel exists throughout a Network Defense battle. It is kept as a
+            // separate state so an armed final-boss action can be retried after the short banner.
+            waveDemonRed >= .015 && giveUpPanelNavy >= .55 && giveUpButtonCyan >= .10 ->
+                NetworkDefenseDetection(
+                    NetworkDefenseScreen.BATTLE,
+                    giveUpButtonCenter?.first ?: .50f,
+                    ((giveUpButtonCenter?.second ?: .925f) + .035f).coerceAtMost(.98f),
+                    bossScore,
                 )
             else -> NetworkDefenseDetection(NetworkDefenseScreen.NONE, 0f, 0f, maxOf(startScore, bossScore))
         }
