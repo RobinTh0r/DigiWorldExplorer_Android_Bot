@@ -49,7 +49,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">Network Defense erkennt das Startmenü jetzt auf mehr Bildschirmformaten, prüft jedes Bild auf das kurze Endboss-Banner, setzt den Boss-Status zwischen Durchläufen zurück und wartet bei langsamen Menüs vor dem Tippen. Das Status-Overlay ist kleiner, die globale Fehlerdialog-Erkennung bleibt aktiv und Network Defense kann parallel zu Bond &amp; Friendship laufen.</string>
+    <string name="release_notes_body">Network Defense hat während eines aktiven Loops jetzt Vorrang. Dadurch kann Bond &amp; Freundschaft eingeschaltet bleiben, ohne die Erkennung des Dungeon-Menüs oder Kampfes zu blockieren. Die bisherigen Kompatibilitäts- und Stabilitätsverbesserungen bleiben enthalten.</string>
     <string name="update_notice_title">Neue Version verfügbar</string>
     <string name="update_notice_body">Version %1$s ist verfügbar. Bitte aktualisiere für bestmögliche Stabilität und Gerätekompatibilität.</string>
     <string name="update_notice_install">Update öffnen</string>

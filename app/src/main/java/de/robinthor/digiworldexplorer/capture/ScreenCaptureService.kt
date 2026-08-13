@@ -164,12 +164,16 @@ class ScreenCaptureService : Service() {
                 val captureBlocked = featureFrame && updateCaptureQuality(image, width, height)
                 if (captureBlocked) {
                     recognized = captureImageMissing
-                } else {                    val stageFailedScreen = featureFrame && StageFailedFrameAnalyzer.analyze(image, width, height)
-                    // Safe main-screen feed recognition may run alongside Network Defense.
-                    val feedScreen = !stageFailedScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
+                } else {
+                    val stageFailedScreen = featureFrame && StageFailedFrameAnalyzer.analyze(image, width, height)
+                    // Network Defense has priority because FeedFrameAnalyzer intentionally owns a
+                    // confirmed main-screen frame even when no food bubble is currently visible.
                     // Active runs inspect every frame because the final-boss banner is brief.
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
-                    val networkScreen = !stageFailedScreen && !feedScreen && networkFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
+                    val networkScreen = !stageFailedScreen && networkFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
+                    // Feed remains enabled in parallel, but only receives frames that Network
+                    // Defense did not identify or reserve as part of an active dungeon session.
+                    val feedScreen = !stageFailedScreen && !networkScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
                     val dungeonScreen = !stageFailedScreen && !feedScreen && !networkScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
                     val rewardScreen = !stageFailedScreen && !feedScreen && !networkScreen && !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
                     if (stageFailedScreen || networkScreen || dungeonScreen || rewardScreen || feedScreen) {
