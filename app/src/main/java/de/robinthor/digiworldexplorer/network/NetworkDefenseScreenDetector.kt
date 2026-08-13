@@ -1,6 +1,6 @@
 package de.robinthor.digiworldexplorer.network
 
-enum class NetworkDefenseScreen { NONE, START, DIABOROMON }
+enum class NetworkDefenseScreen { NONE, START, FINAL_BOSS }
 
 data class NetworkDefenseDetection(
     val screen: NetworkDefenseScreen,
@@ -23,7 +23,7 @@ object NetworkDefenseScreenDetector {
         val startScore = titleCyan + attemptCyan + previousPurple + partyCyan + startPanelNavy + startTicketPurple
 
         // The banner spans the complete screen. Requiring both edges prevents red battle sprites or
-        // effects in the middle from triggering the give-up action before Diaboromon appears.
+        // effects in the middle from triggering the give-up action before final boss appears.
         val waveDemonRed = ratio(width, height, .25, .13, .38, .20, argbAt, ::brightRed)
         val bannerLeft = ratio(width, height, .00, .43, .20, .58, argbAt, ::darkOrRed)
         val bannerCenter = ratio(width, height, .20, .43, .80, .58, argbAt, ::darkOrRed)
@@ -38,7 +38,7 @@ object NetworkDefenseScreenDetector {
             waveDemonRed >= .015 && bannerLeft >= .20 && bannerCenter >= .24 && bannerRight >= .18 &&
                 giveUpPanelNavy >= .55 && giveUpButtonCyan >= .10 ->
                 NetworkDefenseDetection(
-                    NetworkDefenseScreen.DIABOROMON,
+                    NetworkDefenseScreen.FINAL_BOSS,
                     giveUpButtonCenter?.first ?: .50f,
                     ((giveUpButtonCenter?.second ?: .925f) + .035f).coerceAtMost(.98f),
                     bossScore,

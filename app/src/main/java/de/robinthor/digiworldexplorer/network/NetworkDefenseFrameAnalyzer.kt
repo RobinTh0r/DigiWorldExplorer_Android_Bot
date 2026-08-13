@@ -11,13 +11,18 @@ import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 object NetworkDefenseFrameAnalyzer {
-    private const val TAP_INTERVAL = 250L
+    // Network Defense dialogs can take noticeably longer to settle on BlueStacks. A confirmed
+    // screen is therefore retried deliberately instead of firing a short two-tap burst.
+    private const val START_RETRY_INTERVAL = 1_100L
+    private const val BOSS_RETRY_INTERVAL = 650L
+    private const val PENDING_GESTURE_TIMEOUT = 1_800L
     private const val SESSION_TIMEOUT = 5 * 60_000L
     private const val BOSS_STATUS_HOLD = 5_000L
     private var sessionActive = false
     private var pending = false
+    private var pendingSince = 0L
     private var lastTap = 0L
-    private var nextTapInterval = TAP_INTERVAL
+    private var nextTapInterval = START_RETRY_INTERVAL
     private var sessionStarted = 0L
     private var lastBossSeen = 0L
     private var lastScreen = NetworkDefenseScreen.NONE
@@ -38,6 +43,12 @@ object NetworkDefenseFrameAnalyzer {
         }
         val detection = NetworkDefenseScreenDetector.detect(width, height, ::pixel)
         val now = SystemClock.elapsedRealtime()
+        // Some emulator/accessibility combinations occasionally never deliver a gesture callback.
+        if (pending && now - pendingSince >= PENDING_GESTURE_TIMEOUT) {
+            pending = false
+            pendingSince = 0L
+            Log.w("DigiWorldNetwork", "Tap callback timeout; allowing a confirmed-screen retry")
+        }
         if (detection.screen != NetworkDefenseScreen.NONE) AutoMoveController.pauseForPurchaseScreen()
 
         if (detection.screen == NetworkDefenseScreen.START) {
@@ -48,11 +59,13 @@ object NetworkDefenseFrameAnalyzer {
             sessionActive = true
             lastScreen = NetworkDefenseScreen.START
             showStatus(R.string.overlay_network_start)
-            if (AutomationState.enabled && startTaps < 2) tryTap(detection, now) { startTaps++ }
+            // Retry only while the complete START dialog remains positively detected. The next
+            // state is confirmed by this dialog disappearing, not merely by dispatching a tap.
+            if (AutomationState.enabled) tryTap(detection, now, START_RETRY_INTERVAL) { startTaps++ }
             return true
         }
 
-        if (detection.screen == NetworkDefenseScreen.DIABOROMON) {
+        if (detection.screen == NetworkDefenseScreen.FINAL_BOSS) {
             // Accept a boss only after this loop started its own attempt.
             if (!sessionActive) return false
             bossCandidateFrames++
@@ -62,9 +75,9 @@ object NetworkDefenseFrameAnalyzer {
             }
             sessionActive = true
             lastBossSeen = now
-            lastScreen = NetworkDefenseScreen.DIABOROMON
+            lastScreen = NetworkDefenseScreen.FINAL_BOSS
             showStatus(R.string.overlay_network_give_up)
-            if (AutomationState.enabled) tryTap(detection, now)
+            if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
             return true
         }
 
@@ -79,7 +92,7 @@ object NetworkDefenseFrameAnalyzer {
         }
 
         // Keep the last certain boss status stable during the transition instead of alternating
-        // between 'Diaboromon' and 'waiting' when animation frames temporarily hide the banner.
+        // between 'final boss' and 'waiting' when animation frames temporarily hide the banner.
         if (lastBossSeen != 0L && now - lastBossSeen < BOSS_STATUS_HOLD) {
             showStatus(R.string.overlay_network_give_up)
             return true
@@ -89,15 +102,22 @@ object NetworkDefenseFrameAnalyzer {
         return true
     }
 
-    private fun tryTap(detection: NetworkDefenseDetection, now: Long, afterDispatch: () -> Unit = {}) {
+    private fun tryTap(
+        detection: NetworkDefenseDetection,
+        now: Long,
+        baseInterval: Long,
+        afterSuccess: () -> Unit = {},
+    ) {
         if (pending || now - lastTap < nextTapInterval) return
         val service = DigiWorldAccessibilityService.instance ?: return
         pending = true
+        pendingSince = now
         lastTap = now
-        nextTapInterval = SafeTapRandomizer.delay(TAP_INTERVAL, 25L)
-        afterDispatch()
+        nextTapInterval = SafeTapRandomizer.delay(baseInterval, (baseInterval / 8).coerceAtLeast(25L))
         service.dispatchNormalizedTap(detection.tapXRatio, detection.tapYRatio) { ok ->
             pending = false
+            pendingSince = 0L
+            if (ok) afterSuccess()
             Log.i("DigiWorldNetwork", "${detection.screen} tap=$ok normalized=${detection.tapXRatio},${detection.tapYRatio} confidence=${detection.confidence}")
         }
     }
@@ -109,8 +129,9 @@ object NetworkDefenseFrameAnalyzer {
     fun reset() {
         sessionActive = false
         pending = false
+        pendingSince = 0L
         lastTap = 0L
-        nextTapInterval = TAP_INTERVAL
+        nextTapInterval = START_RETRY_INTERVAL
         sessionStarted = 0L
         lastBossSeen = 0L
         lastScreen = NetworkDefenseScreen.NONE

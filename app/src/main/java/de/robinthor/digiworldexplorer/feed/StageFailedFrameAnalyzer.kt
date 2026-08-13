@@ -7,17 +7,23 @@ import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
-/** Language-independent detector for the Stage Failed growth-guide dialog. */
+/** Global, language-independent detector for the Stage Failed growth-guide dialog. */
 object StageFailedFrameAnalyzer {
-    private const val CHECK_COOLDOWN_MS = 30_000L
-    private var stableFrames = 0
+    private const val SCAN_INTERVAL_MS = 10_000L
+    private const val TAP_RETRY_MS = 10_000L
+    private var nextScanAt = 0L
     private var nextTapAt = 0L
     private var dialogWasVisible = false
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
-        if (!AutomationState.autoFeedEnabled) { reset(); return false }
-        val plane = image.planes.firstOrNull() ?: return false
-        if (plane.pixelStride < 3) return false
+        val now = SystemClock.elapsedRealtime()
+        // No extra capture loop: this runs on the existing MediaProjection stream. Between scans,
+        // retain exclusive ownership only while a failure dialog was positively detected.
+        if (now < nextScanAt) return dialogWasVisible
+        nextScanAt = now + SCAN_INTERVAL_MS
+
+        val plane = image.planes.firstOrNull() ?: return dialogWasVisible
+        if (plane.pixelStride < 3) return dialogWasVisible
         val buffer = plane.buffer
         fun pixel(x: Int, y: Int): Int {
             val offset = y * plane.rowStride + x * plane.pixelStride
@@ -25,7 +31,8 @@ object StageFailedFrameAnalyzer {
         }
         fun ratio(x0: Double, y0: Double, x1: Double, y1: Double, match: (Int, Int, Int) -> Boolean): Double {
             val step = (width / 240).coerceAtLeast(2)
-            var hits = 0; var total = 0
+            var hits = 0
+            var total = 0
             for (y in (height * y0).toInt() until (height * y1).toInt() step step) {
                 for (x in (width * x0).toInt() until (width * x1).toInt() step step) {
                     val c = pixel(x.coerceIn(0, width - 1), y.coerceIn(0, height - 1))
@@ -42,23 +49,26 @@ object StageFailedFrameAnalyzer {
         val homeNavy = ratio(.30, .88, .70, .99) { r, g, b -> b > 45 && b > r * 1.20 && r < 90 }
         val detected = headerRed >= .08 && panelGray >= .28 && guideRed >= .02 && homeNavy >= .25
         if (!detected) {
-            stableFrames = 0
             if (dialogWasVisible) FeedFrameAnalyzer.allowImmediateScan()
             dialogWasVisible = false
             return false
         }
 
         dialogWasVisible = true
-        stableFrames++
-        val now = SystemClock.elapsedRealtime()
-        DigiWorldAccessibilityService.instance?.let { it.updateStatusKeepingGrid(it.getString(R.string.overlay_stage_failed), true) }
-        if (stableFrames >= 2 && now >= nextTapAt && AutomationState.enabled) {
-            nextTapAt = now + CHECK_COOLDOWN_MS
-            // Empty area below the guide and above the blue world/home button.
+        DigiWorldAccessibilityService.instance?.let {
+            it.updateStatusKeepingGrid(it.getString(R.string.overlay_stage_failed), true)
+        }
+        if (now >= nextTapAt && AutomationState.enabled) {
+            nextTapAt = now + TAP_RETRY_MS
+            // Same resolution-independent safe area below the guide and above the home button.
             DigiWorldAccessibilityService.instance?.dispatchNormalizedTap(.50f, .865f) { }
         }
         return true
     }
 
-    fun reset() { stableFrames = 0; nextTapAt = 0L; dialogWasVisible = false }
+    fun reset() {
+        nextScanAt = 0L
+        nextTapAt = 0L
+        dialogWasVisible = false
+    }
 }

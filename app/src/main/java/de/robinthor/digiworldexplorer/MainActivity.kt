@@ -15,7 +15,6 @@ import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -27,8 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -413,15 +410,12 @@ class MainActivity : ComponentActivity() {
 @Composable private fun FeatureHelpDialog(kind: Int, onClose: () -> Unit) {
     val title = when (kind) { 0 -> R.string.summon_help_title; 1 -> R.string.dungeon_help_title; 2 -> R.string.digiworld_help_title; 3 -> R.string.network_help_title; 5 -> R.string.partner_rotation_help_title; else -> R.string.feed_help_title }
     val body = when (kind) { 0 -> R.string.summon_help_body; 1 -> R.string.dungeon_help_body; 2 -> R.string.digiworld_help_body; 3 -> R.string.network_help_body; 5 -> R.string.partner_rotation_help_body; else -> R.string.feed_help_body }
-    val image = when (kind) { 0 -> R.drawable.help_auto_summon; 1 -> R.drawable.help_vs_dungeon; 2 -> R.drawable.help_digiworld_navigation; 3 -> R.drawable.help_network_defense_start; 5 -> R.drawable.help_partner_rotation_preview; else -> R.drawable.help_auto_feed }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(title)) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Text(stringResource(body))
-                Image(painter = painterResource(image), contentDescription = null, modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp), contentScale = ContentScale.Fit)
-                if (kind == 3) Image(painter = painterResource(R.drawable.help_network_defense_boss), contentDescription = null, modifier = Modifier.fillMaxWidth().heightIn(max = 320.dp), contentScale = ContentScale.Fit)
             }
         },
         confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.close)) } },

@@ -13,9 +13,9 @@ class NetworkDefenseScreenDetectorTest {
         assertTrue(result.tapXRatio > 0 && result.tapYRatio > 0)
     }
 
-    @Test fun diaboromonBannerTargetsGiveUpButton() {
+    @Test fun finalBossBannerTargetsGiveUpButton() {
         val result = detect("network_defense_boss.png")
-        assertEquals(NetworkDefenseScreen.DIABOROMON, result.screen)
+        assertEquals(NetworkDefenseScreen.FINAL_BOSS, result.screen)
         assertTrue(result.tapYRatio > 0)
     }
 
