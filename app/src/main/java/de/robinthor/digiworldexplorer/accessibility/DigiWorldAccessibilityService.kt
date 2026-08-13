@@ -1,5 +1,7 @@
 package de.robinthor.digiworldexplorer.accessibility
 
+import de.robinthor.digiworldexplorer.R
+
 import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.GestureDescription
 import android.graphics.*

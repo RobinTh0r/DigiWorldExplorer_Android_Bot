@@ -43,8 +43,8 @@ object NetworkDefenseScreenDetector {
                     ((giveUpButtonCenter?.second ?: .925f) + .035f).coerceAtMost(.98f),
                     bossScore,
                 )
-            titleCyan >= .28 && attemptCyan >= .25 && previousPurple >= .18 && partyCyan >= .14 &&
-                startPanelNavy >= .48 && startTicketPurple >= .01 ->
+            titleCyan >= .15 && attemptCyan >= .25 && previousPurple >= .18 && partyCyan >= .14 &&
+                startPanelNavy >= .48 && startTicketPurple >= .008 ->
                 NetworkDefenseDetection(
                     NetworkDefenseScreen.START,
                     attemptButtonCenter?.first ?: .65f,
