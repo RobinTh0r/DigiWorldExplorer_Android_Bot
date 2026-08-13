@@ -5,6 +5,7 @@
     <string name="accessibility_service_name">DigiWorldExplorer Bot-Steuerung</string>
     <string name="accessibility_service_description">Führt nur bewusst gestartete, lokal berechnete Gesten zur Rasternavigation aus.</string>
     <string name="status_title">Status</string>
+    <string name="overlay_bot_ready">Bot bereit</string>
     <string name="status_ready">Bereit – Automatik ist aus</string>
     <string name="status_capture">Bildanalyse aktiv – Automatik ist aus</string>
     <string name="status_auto">Automatik aktiv – Stopp ist jederzeit möglich</string>

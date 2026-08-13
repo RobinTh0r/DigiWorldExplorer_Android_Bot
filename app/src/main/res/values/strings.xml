@@ -5,6 +5,7 @@
     <string name="accessibility_service_name">DigiWorldExplorer Bot controls</string>
     <string name="accessibility_service_description">Performs only user-started, locally calculated gestures for grid navigation.</string>
     <string name="status_title">Status</string>
+    <string name="overlay_bot_ready">Bot ready</string>
     <string name="status_ready">Ready — automation is off</string>
     <string name="status_capture">Screen analysis active — automation is off</string>
     <string name="status_auto">Automation active — stop is always available</string>
