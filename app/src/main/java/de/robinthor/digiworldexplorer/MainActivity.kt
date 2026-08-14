@@ -37,6 +37,7 @@ import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityServic
 import de.robinthor.digiworldexplorer.capture.CaptureSessionState
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
+import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
 import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.license.SupporterLicense
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
@@ -149,6 +150,7 @@ class MainActivity : ComponentActivity() {
                     autoNetworkDefense = allowed
                     AutomationState.autoNetworkDefenseEnabled = allowed
                     if (allowed) {
+                        StageFailedFrameAnalyzer.reset()
                         autoFeed = false
                         AutomationState.autoFeedEnabled = false
                         FeedFrameAnalyzer.reset()

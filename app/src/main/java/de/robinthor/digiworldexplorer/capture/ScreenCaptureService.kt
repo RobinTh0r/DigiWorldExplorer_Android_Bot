@@ -165,7 +165,10 @@ class ScreenCaptureService : Service() {
                 if (captureBlocked) {
                     recognized = captureImageMissing
                 } else {
-                    val stageFailedScreen = StageFailedFrameAnalyzer.analyze(image, width, height)
+                    // Network Defense has its own battle/menu recovery flow. Its bright battle UI
+                    // can resemble the global failure guide, which never occurs in this mode.
+                    val stageFailedScreen = !AutomationState.autoNetworkDefenseEnabled &&
+                        StageFailedFrameAnalyzer.analyze(image, width, height)
                     // Network Defense has priority because FeedFrameAnalyzer intentionally owns a
                     // confirmed main-screen frame even when no food bubble is currently visible.
                     // Active runs inspect every frame because the final-boss banner is brief.
