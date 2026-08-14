@@ -4,19 +4,29 @@
 
 **Native, local grid-navigation automation for Android 9+**
 
-[![Version](https://img.shields.io/badge/version-3.0-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-3.1-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.0.0/DigiWorldExplorer-Bot-v3.0.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.1.0/DigiWorldExplorer-Bot-v3.1.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-_Version 3.0 is the current public release._
+_Version 3.1 is the current public release._
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
 
 </div>
+
+## 💬 Join the community
+
+<p align="center">
+  <a href="https://discord.gg/JMGMvZyyVN"><img src="app/src/main/res/drawable/discord_logo.png" width="72" alt="Discord community"></a>
+</p>
+
+Join the **[DigiWorldExplorer Discord community](https://discord.gg/JMGMvZyyVN)** to follow development, receive release and compatibility notices, report bugs, suggest features and exchange feedback with other users.
+
+Supporter reports are reviewed with priority and are generally handled faster when enough diagnostic information is provided. Supporters may also receive dedicated private test pre-releases for device-specific fixes or upcoming features before a public beta is available. Response times and individual test builds cannot be guaranteed.
 
 > [!WARNING]
 > This is an independent, unofficial fan project. It is not affiliated with or endorsed by any game developer or publisher. Automation may violate a game's terms of service. Use it at your own risk.
@@ -75,7 +85,7 @@ The bot detects the multilingual **Stage Failed** growth-guide dialog globally, 
 Network Defense ticket recognition uses the ticket badge layout rather than OCR of its numeric value, so visible counters such as `1/2`, `2/2` and `10/2` are supported.
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.0.0/DigiWorldExplorer-Bot-v3.0.0.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.1.0/DigiWorldExplorer-Bot-v3.1.0.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -152,9 +162,18 @@ When reporting another device, include its exact model, Android version, OEM bui
 
 ## ☕ Support development
 
-If the app is useful to you, you can support continued development through **[PayPal.me/thor666 — €4 / $4](https://paypal.me/thor666/4)**. Supporters receive early beta access to Network Defense Ops Loop and Bond & Friendship while these features are tested for a planned future free public release. Include your Discord, Reddit or email contact in the PayPal message so the early-access activation code can be delivered.
+If the app is useful to you, you can support continued development through **[PayPal.me/thor666 — €4 / $4](https://paypal.me/thor666/4)**. Supporters receive early beta access to Network Defense Ops Loop and Bond & Friendship while these features are tested for a planned future free public release. Supporter reports are reviewed with priority, and dedicated private test pre-releases may be provided for device-specific fixes or upcoming features. Include your Discord, Reddit or email contact in the PayPal message so the early-access activation code can be delivered.
 
 ## 📝 Changelog
+
+### v3.1.0 — 14 August 2026
+
+- 🔄 Improved mode switching between navigation, Auto Summon, VS. Dungeon, Network Defense and Bond & Friendship
+- 🎯 Improved automation detection and reduced false activations outside the intended screen
+- 🛡️ Improved Network Defense detection and compatibility for Pixel and OnePlus devices
+- ⚡ Automatically releases stale navigation grids so other enabled automation modes can continue
+- 🎨 Added clearer running/ready states and compact source, contact and community controls
+- 🎉 Added a one-time Discord community announcement with a direct invitation link
 
 ### v3.0.0 — 12 August 2026
 
@@ -375,6 +394,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.0.0/DigiWorldExplorer-Bot-v3.0.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.1.0/DigiWorldExplorer-Bot-v3.1.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>
