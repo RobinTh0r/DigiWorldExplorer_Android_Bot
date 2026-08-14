@@ -36,6 +36,8 @@ import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.capture.CaptureSessionState
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
+import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
+import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.license.SupporterLicense
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
 import de.robinthor.digiworldexplorer.strategy.AutomationState
@@ -120,6 +122,10 @@ class MainActivity : ComponentActivity() {
         supporterLicense = SupporterLicenseManager.load(this)
         autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
         autoFeed = supporterLicense != null && settings.getBoolean("auto_feed", false)
+        if (autoNetworkDefense && autoFeed) {
+            autoFeed = false
+            settings.edit().putBoolean("auto_feed", false).apply()
+        }
         AutomationState.overlayEnabled = grid
         AutomationState.autoPurchaseEnabled = autoPurchase
         AutomationState.autoDungeonEnabled = autoDungeon
@@ -139,14 +145,26 @@ class MainActivity : ComponentActivity() {
                 onAutoDungeon = { enabled -> autoDungeon = enabled; AutomationState.autoDungeonEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", enabled).apply() },
                 onAutoNetworkDefense = { enabled ->
                     val allowed = enabled && supporterLicense != null
-                    autoNetworkDefense = allowed; AutomationState.autoNetworkDefenseEnabled = allowed
+                    NetworkDefenseFrameAnalyzer.reset()
+                    autoNetworkDefense = allowed
+                    AutomationState.autoNetworkDefenseEnabled = allowed
+                    if (allowed) {
+                        autoFeed = false
+                        AutomationState.autoFeedEnabled = false
+                        FeedFrameAnalyzer.reset()
+                    }
                     settings.edit().putBoolean("auto_network_defense", allowed).putBoolean("auto_feed", autoFeed).apply()
                     if (enabled && !allowed) showLicenseDialog = true
                 },
                 onAutoFeed = { enabled ->
                     val allowed = enabled && supporterLicense != null
-                    autoFeed = allowed; AutomationState.autoFeedEnabled = allowed
+                    FeedFrameAnalyzer.reset()
+                    autoFeed = allowed
+                    AutomationState.autoFeedEnabled = allowed
                     if (allowed) {
+                        autoNetworkDefense = false
+                        AutomationState.autoNetworkDefenseEnabled = false
+                        NetworkDefenseFrameAnalyzer.reset()
                         if (!settings.getBoolean("feed_delay_notice_seen", false)) {
                             showFeedDelayNotice = true
                             settings.edit().putBoolean("feed_delay_notice_seen", true).apply()

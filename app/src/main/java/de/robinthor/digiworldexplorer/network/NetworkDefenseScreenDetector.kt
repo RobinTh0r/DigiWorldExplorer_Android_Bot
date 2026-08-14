@@ -31,11 +31,12 @@ object NetworkDefenseScreenDetector {
         val giveUpPanelNavy = ratio(width, height, .00, .75, 1.0, 1.0, argbAt, ::navy)
         val giveUpButtonCyan = ratio(width, height, .25, .86, .75, .99, argbAt, ::cyan)
         val giveUpButtonCenter = centerOfMatch(width, height, .25, .86, .75, .99, argbAt, ::cyan)
-        val bossScore = waveDemonRed + bannerLeft + bannerCenter + bannerRight + giveUpPanelNavy + giveUpButtonCyan
+        val battleBackgroundBright = ratio(width, height, .05, .10, .95, .72, argbAt, ::brightBackground)
+        val bossScore = waveDemonRed + bannerLeft + bannerCenter + bannerRight + giveUpPanelNavy + giveUpButtonCyan + battleBackgroundBright
 
         return when {
             // Full-width banner + give-up panel are stable across scaling and languages.
-            waveDemonRed >= .015 && bannerLeft >= .20 && bannerCenter >= .24 && bannerRight >= .18 &&
+            battleBackgroundBright >= .20 && waveDemonRed >= .015 && bannerLeft >= .20 && bannerCenter >= .24 && bannerRight >= .18 &&
                 giveUpPanelNavy >= .55 && giveUpButtonCyan >= .10 ->
                 NetworkDefenseDetection(
                     NetworkDefenseScreen.FINAL_BOSS,
@@ -53,7 +54,7 @@ object NetworkDefenseScreenDetector {
                 )
             // The lower give-up panel exists throughout a Network Defense battle. It is kept as a
             // separate state so an armed final-boss action can be retried after the short banner.
-            waveDemonRed >= .015 && giveUpPanelNavy >= .55 && giveUpButtonCyan >= .10 ->
+            battleBackgroundBright >= .20 && waveDemonRed >= .015 && giveUpPanelNavy >= .55 && giveUpButtonCyan >= .10 ->
                 NetworkDefenseDetection(
                     NetworkDefenseScreen.BATTLE,
                     giveUpButtonCenter?.first ?: .50f,
@@ -68,6 +69,7 @@ object NetworkDefenseScreenDetector {
     private fun purple(r: Int, g: Int, b: Int) = r > 80 && b > 100 && b > g * 1.15
     private fun navy(r: Int, g: Int, b: Int) = b > 35 && b > r * 1.15 && b > g * .72 && r < 80 && g < 130
     private fun brightRed(r: Int, g: Int, b: Int) = r > 125 && r > g * 1.35 && r > b * 1.10
+    private fun brightBackground(r: Int, g: Int, b: Int) = r > 175 && g > 175 && b > 175
     private fun darkOrRed(r: Int, g: Int, b: Int) = (r < 85 && g < 75 && b < 85) || (r > 90 && r > g * 1.30 && r > b * 1.05)
 
     private inline fun centerOfMatch(

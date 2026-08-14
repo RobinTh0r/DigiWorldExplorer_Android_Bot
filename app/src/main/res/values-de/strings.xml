@@ -49,7 +49,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">Network Defense hat während eines aktiven Loops jetzt Vorrang. Dadurch kann Bond &amp; Freundschaft eingeschaltet bleiben, ohne die Erkennung des Dungeon-Menüs oder Kampfes zu blockieren. Die bisherigen Kompatibilitäts- und Stabilitätsverbesserungen bleiben enthalten.</string>
+    <string name="release_notes_body">Die Network-Defense-Erkennung funktioniert jetzt zuverlässiger auf unterschiedlichen Bildschirmen und Geräten. Um Fehlerkennungen zu vermeiden, werden Network Defense Ops und Bond &amp; Freundschaft wieder getrennt verwendet. Stage-Failed-Dialoge werden weiterhin automatisch geschlossen.</string>
     <string name="update_notice_title">Neue Version verfügbar</string>
     <string name="update_notice_body">Version %1$s ist verfügbar. Bitte aktualisiere für bestmögliche Stabilität und Gerätekompatibilität.</string>
     <string name="update_notice_install">Update öffnen</string>

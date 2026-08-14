@@ -97,12 +97,17 @@ object NetworkDefenseFrameAnalyzer {
             return true
         }
 
-        // Keep the last certain boss status stable during the transition instead of alternating
-        // between 'final boss' and 'waiting' when animation frames temporarily hide the banner.
-        if (finalBossArmed && detection.screen == NetworkDefenseScreen.BATTLE) {
-            lastBossSeen = now
-            showStatus(R.string.overlay_network_give_up)
-            if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
+        // Only a positively recognized bright Network Defense battle may display a dungeon status
+        // or receive a give-up tap. Other game modes can have similar red/blue UI elements.
+        if (detection.screen == NetworkDefenseScreen.BATTLE) {
+            lastScreen = NetworkDefenseScreen.BATTLE
+            if (finalBossArmed) {
+                lastBossSeen = now
+                showStatus(R.string.overlay_network_give_up)
+                if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
+            } else {
+                showStatus(R.string.overlay_network_waiting)
+            }
             return true
         }
         if (lastBossSeen != 0L && now - lastBossSeen < BOSS_STATUS_HOLD) {
@@ -110,7 +115,7 @@ object NetworkDefenseFrameAnalyzer {
             return true
         }
         lastScreen = NetworkDefenseScreen.NONE
-        showStatus(R.string.overlay_network_waiting)
+        DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
         return true
     }
 
