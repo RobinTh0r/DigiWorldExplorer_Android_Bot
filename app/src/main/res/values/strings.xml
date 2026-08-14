@@ -35,6 +35,9 @@
     <string name="safety_note">Stop ends screen sharing and automation. START requests screen sharing again when needed.</string>
     <string name="character_tip">Tip: small, visually distinct player sprites currently provide the most reliable detection.</string>
     <string name="source_code">Source code · RobinTh0r</string>
+    <string name="source_code_short">Source</string>
+    <string name="join_community">Join community</string>
+    <string name="discord_url">https://discord.gg/JMGMvZyyVN</string>
     <string name="footer_repo_url">https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
     <string name="notification_auto_on">Automation active</string>
     <string name="notification_auto_off">Screen analysis active — automation off</string>
@@ -49,7 +52,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">Network Defense now releases unrelated screens immediately and automatically clears stale dungeon states. This keeps DigiWorld navigation and other modes smoother when the toggle remains enabled. Stage Failed detection now runs only with Bond &amp; Friendship and can no longer interrupt DigiWorld navigation by mistake.</string>
+    <string name="release_notes_body">• Smoother DigiWorld navigation — Bond &amp; Friendship pauses while the grid is visible.\n• Improved mode separation — Network Defense releases unrelated screens reliably.\n• Safer message detection — Stage Failed stays limited to Bond &amp; Friendship.\n• Quieter Supporter experience — no recurring support prompt after activation.\n• New community link — join the Discord server directly from the app.</string>
     <string name="update_notice_title">New version available</string>
     <string name="update_notice_body">Version %1$s is available. Please update for the best stability and device compatibility.</string>
     <string name="update_notice_install">Open update</string>

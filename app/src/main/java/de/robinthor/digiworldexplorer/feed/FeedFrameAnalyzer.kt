@@ -81,6 +81,13 @@ object FeedFrameAnalyzer {
         cooldownUntil = 0L
     }
 
+    fun pauseForDigiWorld() {
+        stableFrames = 0
+        mainScreenFrames = 0
+        tappingUntil = 0L
+        nextTapAt = 0L
+        tapsLeft = 0
+    }
     private fun progressSequence(now:Long):Boolean {
         if (tapsLeft > 0) {
             if (now > tappingUntil) { tapsLeft=0; cooldownUntil=now+60_000L; return true }

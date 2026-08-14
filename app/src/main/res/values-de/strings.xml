@@ -35,6 +35,9 @@
     <string name="safety_note">Stopp beendet Bildschirmfreigabe und Automatik. START fragt bei Bedarf erneut nach der Freigabe.</string>
     <string name="character_tip">Tipp: Kleine, optisch klar abgegrenzte Spielfiguren werden derzeit am zuverlässigsten erkannt.</string>
     <string name="source_code">Quellcode · RobinTh0r</string>
+    <string name="source_code_short">Quellcode</string>
+    <string name="join_community">Community</string>
+    <string name="discord_url">https://discord.gg/JMGMvZyyVN</string>
     <string name="footer_repo_url">https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
     <string name="notification_auto_on">Automatik aktiv</string>
     <string name="notification_auto_off">Bildanalyse aktiv – Automatik aus</string>
@@ -49,7 +52,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">Network Defense gibt fremde Bildschirme jetzt sofort frei und verwirft alte Dungeon-Zustände automatisch. Dadurch bleiben DigiWorld-Laufen und andere Modi flüssiger, wenn der Schalter eingeschaltet bleibt. Die Stage-Failed-Erkennung läuft nur noch mit Bond &amp; Friendship und kann den DigiWorld-Läufer nicht mehr fälschlich unterbrechen.</string>
+    <string name="release_notes_body">• Flüssigeres DigiWorld-Laufen — Bond &amp; Freundschaft pausiert bei sichtbarem Raster.\n• Verbesserte Modus-Trennung — Network Defense gibt fremde Bildschirme zuverlässig frei.\n• Sicherere Meldungserkennung — Stage Failed bleibt auf Bond &amp; Freundschaft begrenzt.\n• Ruhigere Supporter-Nutzung — nach der Freischaltung erscheint kein regelmäßiger Support-Hinweis mehr.\n• Neuer Community-Link — Discord direkt aus der App öffnen.</string>
     <string name="update_notice_title">Neue Version verfügbar</string>
     <string name="update_notice_body">Version %1$s ist verfügbar. Bitte aktualisiere für bestmögliche Stabilität und Gerätekompatibilität.</string>
     <string name="update_notice_install">Update öffnen</string>

@@ -175,16 +175,19 @@ class ScreenCaptureService : Service() {
                     // Active runs inspect every frame because the final-boss banner is brief.
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
                     val networkScreen = !stageFailedScreen && networkFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
-                    // Feed remains enabled in parallel, but only receives frames that Network
-                    // Defense did not identify or reserve as part of an active dungeon session.
-                    val feedScreen = !stageFailedScreen && !networkScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
-                    val dungeonScreen = !stageFailedScreen && !feedScreen && !networkScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
-                    val rewardScreen = !stageFailedScreen && !feedScreen && !networkScreen && !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
-                    if (stageFailedScreen || networkScreen || dungeonScreen || rewardScreen || feedScreen) {
+                    // Once a grid has been calibrated, let navigation inspect the frame before
+                    // Feed. This pauses the Feed scanner (and pending feed taps) while the
+                    // DigiWorld grid is visible, then resumes it automatically after leaving.
+                    val gridScreen = !stageFailedScreen && !networkScreen && featureFrame &&
+                        CaptureFrameAnalyzer.isCalibrated &&
+                        CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                    if (gridScreen && AutomationState.autoFeedEnabled) FeedFrameAnalyzer.pauseForDigiWorld()
+                    val feedScreen = !stageFailedScreen && !networkScreen && !gridScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
+                    val dungeonScreen = !stageFailedScreen && !feedScreen && !networkScreen && !gridScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
+                    val rewardScreen = !stageFailedScreen && !feedScreen && !networkScreen && !gridScreen && !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                    if (stageFailedScreen || networkScreen || gridScreen || dungeonScreen || rewardScreen || feedScreen) {
                         recognized = true // The feature analyzer owns this frame; never run movement here.
-                    } else if (CaptureFrameAnalyzer.isCalibrated) {
-                        if (featureFrame) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
-                    } else {
+                    } else if (!CaptureFrameAnalyzer.isCalibrated) {
                         if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
                         if (framesSeen % 10 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
                     }

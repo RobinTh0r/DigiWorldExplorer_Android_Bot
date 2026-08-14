@@ -15,6 +15,7 @@ import android.view.accessibility.AccessibilityManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -187,6 +189,7 @@ class MainActivity : ComponentActivity() {
                 onLicense = { showLicenseDialog = true },
                 onRepo = { openUrl(getString(R.string.footer_repo_url)) },
                 onContact = { },
+                onCommunity = { openUrl(getString(R.string.discord_url)) },
             )
             if (showFeedDelayNotice) FeedDelayNoticeDialog(onClose = { showFeedDelayNotice = false })
             if (showReleaseNotes) ReleaseNotesDialog(onClose = {
@@ -236,7 +239,7 @@ class MainActivity : ComponentActivity() {
         val preferences = getSharedPreferences("settings", MODE_PRIVATE)
         val starts = preferences.getInt("automation_start_count", 0) + 1
         preferences.edit().putInt("automation_start_count", starts).apply()
-        if (starts % 5 == 0) showSupportPrompt = true else beginAutomation()
+        if (supporterLicense == null && starts % 5 == 0) showSupportPrompt = true else beginAutomation()
     }
 
     private fun beginAutomation() {
@@ -315,7 +318,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
     var showContactDialog by remember { mutableStateOf(false) }
@@ -366,9 +369,14 @@ class MainActivity : ComponentActivity() {
             Text(stringResource(if (supporterLicense == null) R.string.supporter_license_import else R.string.supporter_license_active), maxLines = 1, fontWeight = if (supporterLicense != null) FontWeight.SemiBold else FontWeight.Normal)
         }
         OutlinedButton(onClick = { showExperimental = true }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.experimental_settings)) }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick = onRepo, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.source_code), style = MaterialTheme.typography.labelSmall) }
-            OutlinedButton(onClick = { showContactDialog = true }, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.contact_me), style = MaterialTheme.typography.labelSmall) }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            OutlinedButton(onClick = onRepo, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 5.dp, vertical = 4.dp)) { Text(stringResource(R.string.source_code_short), style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+            OutlinedButton(onClick = { showContactDialog = true }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 5.dp, vertical = 4.dp)) { Text(stringResource(R.string.contact_me), style = MaterialTheme.typography.labelSmall, maxLines = 1) }
+            OutlinedButton(onClick = onCommunity, modifier = Modifier.weight(1.25f), contentPadding = PaddingValues(horizontal = 5.dp, vertical = 4.dp)) {
+                Image(painter = painterResource(R.drawable.discord_logo), contentDescription = null, modifier = Modifier.size(16.dp))
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(R.string.join_community), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+            }
         }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = { onLanguage("de") }, contentPadding = PaddingValues(horizontal = 5.dp)) { Text("🇩🇪 DE") }
