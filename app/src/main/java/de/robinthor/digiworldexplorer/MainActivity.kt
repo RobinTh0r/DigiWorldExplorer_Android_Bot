@@ -73,6 +73,7 @@ class MainActivity : ComponentActivity() {
     private var supporterLicense by mutableStateOf<SupporterLicense?>(null)
     private var showLicenseDialog by mutableStateOf(false)
     private var showReleaseNotes by mutableStateOf(false)
+    private var showCommunityIntro by mutableStateOf(false)
     private var showUpdateNotice by mutableStateOf(false)
     private var showFeedDelayNotice by mutableStateOf(false)
     private var access by mutableStateOf(false)
@@ -114,7 +115,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
         val releaseNotesKey = "release_notes_${BuildConfig.VERSION_NAME}"
+        val communityIntroKey = "discord_community_intro_v1"
         showReleaseNotes = !settings.getBoolean(releaseNotesKey, false)
+        showCommunityIntro = !showReleaseNotes && !settings.getBoolean(communityIntroKey, false)
         grid = settings.getBoolean("grid_enabled", !isHuaweiOrHonor())
         autoPurchase = settings.getBoolean("auto_purchase", true)
         autoDungeon = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_dungeon", true)
@@ -195,7 +198,19 @@ class MainActivity : ComponentActivity() {
             if (showReleaseNotes) ReleaseNotesDialog(onClose = {
                 showReleaseNotes = false
                 settings.edit().putBoolean(releaseNotesKey, true).apply()
+                if (!settings.getBoolean(communityIntroKey, false)) showCommunityIntro = true
             })
+            if (showCommunityIntro) CommunityIntroDialog(
+                onJoin = {
+                    showCommunityIntro = false
+                    settings.edit().putBoolean(communityIntroKey, true).apply()
+                    openUrl(getString(R.string.discord_url))
+                },
+                onClose = {
+                    showCommunityIntro = false
+                    settings.edit().putBoolean(communityIntroKey, true).apply()
+                },
+            )
             if (showUpdateNotice) UpdateAvailableDialog(
                 version = updateVersion,
                 onUpdate = { showUpdateNotice = false; if (updateUrl.isNotBlank()) openUrl(updateUrl) },
@@ -351,7 +366,7 @@ class MainActivity : ComponentActivity() {
 
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedButton(onClick = onGrid, enabled = overlay, modifier = Modifier.weight(1f)) { Text(stringResource(if (grid) R.string.grid_hide else R.string.grid_show)) }
-            Button(onClick = onStart, enabled = access && !auto, modifier = Modifier.weight(1f)) { Text(stringResource(if (capture) R.string.auto_start else R.string.auto_start_with_capture)) }
+            Button(onClick = onStart, enabled = access && !auto, modifier = Modifier.weight(1f)) { Text(stringResource(if (auto) R.string.bot_running else if (capture) R.string.auto_start else R.string.auto_start_with_capture)) }
         }
         FeatureInfoRow(R.string.digiworld_help_title, onHelp = { featureHelp = 2 })
         FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
@@ -487,6 +502,16 @@ class MainActivity : ComponentActivity() {
     )
 }
 
+@Composable private fun CommunityIntroDialog(onJoin: () -> Unit, onClose: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onClose,
+        icon = { Image(painterResource(R.drawable.discord_logo), contentDescription = null, Modifier.size(64.dp)) },
+        title = { Text(stringResource(R.string.community_intro_title)) },
+        text = { Text(stringResource(R.string.community_intro_body)) },
+        confirmButton = { Button(onClick = onJoin) { Text(stringResource(R.string.community_intro_join)) } },
+        dismissButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.close)) } },
+    )
+}
 @Composable private fun UpdateAvailableDialog(version: String, onUpdate: () -> Unit, onLater: () -> Unit) {
     AlertDialog(
         onDismissRequest = onLater,

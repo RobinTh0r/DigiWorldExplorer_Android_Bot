@@ -5,7 +5,7 @@
     <string name="accessibility_service_name">DigiWorldExplorer Bot controls</string>
     <string name="accessibility_service_description">Performs only user-started, locally calculated gestures for grid navigation.</string>
     <string name="status_title">Status</string>
-    <string name="overlay_bot_ready">Bot ready</string>
+    <string name="overlay_bot_ready">Bot ready — please press START</string>
     <string name="status_ready">Ready — automation is off</string>
     <string name="status_capture">Screen analysis active — automation is off</string>
     <string name="status_auto">Automation active — stop is always available</string>
@@ -31,11 +31,12 @@
     <string name="grid_show">Show grid</string>
     <string name="auto_start">START</string>
     <string name="auto_start_with_capture">START + SHARE</string>
+    <string name="bot_running">BOT RUNNING</string>
     <string name="auto_stop">STOP AUTOMATION</string>
     <string name="safety_note">Stop ends screen sharing and automation. START requests screen sharing again when needed.</string>
     <string name="character_tip">Tip: small, visually distinct player sprites currently provide the most reliable detection.</string>
     <string name="source_code">Source code · RobinTh0r</string>
-    <string name="source_code_short">Source</string>
+    <string name="source_code_short">💻 Source</string>
     <string name="join_community">Join community</string>
     <string name="discord_url">https://discord.gg/JMGMvZyyVN</string>
     <string name="footer_repo_url">https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
@@ -52,7 +53,10 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">• Smoother DigiWorld navigation — Bond &amp; Friendship pauses while the grid is visible.\n• Improved mode separation — Network Defense releases unrelated screens reliably.\n• Safer message detection — Stage Failed stays limited to Bond &amp; Friendship.\n• Quieter Supporter experience — no recurring support prompt after activation.\n• New community link — join the Discord server directly from the app.</string>
+    <string name="release_notes_body">• Improved mode switching\n• Improved automation detection\n• Network Defense fixes for Pixel and OnePlus devices\n• UI adjustments</string>
+    <string name="community_intro_title">🎉 New Discord community</string>
+    <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
+    <string name="community_intro_join">Join Discord</string>
     <string name="update_notice_title">New version available</string>
     <string name="update_notice_body">Version %1$s is available. Please update for the best stability and device compatibility.</string>
     <string name="update_notice_install">Open update</string>
@@ -125,7 +129,7 @@
     <string name="payment_contact_title">Contact details for your unlock</string>
     <string name="payment_contact_body">Please include your Discord name, Reddit name or email address in the PayPal payment message. Otherwise I will not know where to send your personal activation code.</string>
     <string name="payment_continue">Continue to PayPal</string>
-    <string name="contact_me">Contact</string>
+    <string name="contact_me">✉️ Contact</string>
     <string name="contact_title">Contact &amp; help</string>
     <string name="contact_body">For questions, problems, feedback or anything else, contact me at this address. Tap Copy and paste the address into your email app.</string>
     <string name="contact_copy">Copy email address</string>

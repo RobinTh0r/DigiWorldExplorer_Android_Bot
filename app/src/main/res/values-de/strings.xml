@@ -5,7 +5,7 @@
     <string name="accessibility_service_name">DigiWorldExplorer Bot-Steuerung</string>
     <string name="accessibility_service_description">Führt nur bewusst gestartete, lokal berechnete Gesten zur Rasternavigation aus.</string>
     <string name="status_title">Status</string>
-    <string name="overlay_bot_ready">Bot bereit</string>
+    <string name="overlay_bot_ready">Bot bereit — Bitte START drücken</string>
     <string name="status_ready">Bereit – Automatik ist aus</string>
     <string name="status_capture">Bildanalyse aktiv – Automatik ist aus</string>
     <string name="status_auto">Automatik aktiv – Stopp ist jederzeit möglich</string>
@@ -31,11 +31,12 @@
     <string name="grid_show">Raster an</string>
     <string name="auto_start">START</string>
     <string name="auto_start_with_capture">START + FREIGABE</string>
+    <string name="bot_running">BOT LÄUFT</string>
     <string name="auto_stop">AUTOMATIK STOPPEN</string>
     <string name="safety_note">Stopp beendet Bildschirmfreigabe und Automatik. START fragt bei Bedarf erneut nach der Freigabe.</string>
     <string name="character_tip">Tipp: Kleine, optisch klar abgegrenzte Spielfiguren werden derzeit am zuverlässigsten erkannt.</string>
     <string name="source_code">Quellcode · RobinTh0r</string>
-    <string name="source_code_short">Quellcode</string>
+    <string name="source_code_short">💻 Quellcode</string>
     <string name="join_community">Community</string>
     <string name="discord_url">https://discord.gg/JMGMvZyyVN</string>
     <string name="footer_repo_url">https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot</string>
@@ -52,7 +53,10 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">• Flüssigeres DigiWorld-Laufen — Bond &amp; Freundschaft pausiert bei sichtbarem Raster.\n• Verbesserte Modus-Trennung — Network Defense gibt fremde Bildschirme zuverlässig frei.\n• Sicherere Meldungserkennung — Stage Failed bleibt auf Bond &amp; Freundschaft begrenzt.\n• Ruhigere Supporter-Nutzung — nach der Freischaltung erscheint kein regelmäßiger Support-Hinweis mehr.\n• Neuer Community-Link — Discord direkt aus der App öffnen.</string>
+    <string name="release_notes_body">• Verbesserter Moduswechsel\n• Verbesserte Automatik-Erkennung\n• Network-Defense-Fixes für Pixel- und OnePlus-Geräte\n• UI-Anpassungen</string>
+    <string name="community_intro_title">🎉 Neue Discord-Community</string>
+    <string name="community_intro_body">Tritt unserer neuen Community bei, um auf dem aktuellen Stand zu bleiben, Fehler zu melden, neue Funktionen vorzuschlagen und dich mit anderen Nutzern auszutauschen.</string>
+    <string name="community_intro_join">Discord beitreten</string>
     <string name="update_notice_title">Neue Version verfügbar</string>
     <string name="update_notice_body">Version %1$s ist verfügbar. Bitte aktualisiere für bestmögliche Stabilität und Gerätekompatibilität.</string>
     <string name="update_notice_install">Update öffnen</string>
@@ -125,7 +129,7 @@
     <string name="payment_contact_title">Kontakt für deine Freischaltung</string>
     <string name="payment_contact_body">Bitte gib in der PayPal-Zahlungsnachricht deinen Discord-Namen, Reddit-Namen oder deine E-Mail-Adresse an. Nur so kann ich dir den persönlichen Aktivierungscode anschließend zusenden.</string>
     <string name="payment_continue">Weiter zu PayPal</string>
-    <string name="contact_me">Kontakt</string>
+    <string name="contact_me">✉️ Kontakt</string>
     <string name="contact_title">Kontakt &amp; Hilfe</string>
     <string name="contact_body">Bei Fragen, Problemen, Feedback oder sonstigen Anliegen kannst du mich unter dieser Adresse kontaktieren. Tippe auf Kopieren und füge die Adresse in deiner E-Mail-App ein.</string>
     <string name="contact_copy">E-Mail-Adresse kopieren</string>
