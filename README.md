@@ -143,7 +143,9 @@ Compatibility depends on the exact device, Android/OEM build and graphics compos
 | BlueStacks 5 (`5.22.245.1004`) | Android 11 emulator | ✅ Working | Capture, overlay, grid recognition and accessibility gestures tested successfully. |
 | BlueStacks 5 Pie 64 | Android 9 / Pie 64 emulator | ✅ Working | Screen capture, DigiWorld navigation, Auto Summon and accessibility gestures tested successfully. |
 | OnePlus 8 Pro EU (`IN2023`) | OxygenOS 13.1 / Android 13 | ✅ Working | Screen capture, recognition and automation tested successfully after the capture/display-metrics compatibility improvements. |
-| LDPlayer | Exact build not recorded | ⚠️ Unconfirmed failure | Automation did not work in the reported test. Without the emulator version, Android image and diagnostic frame, the precise cause is still unknown. |
+| Samsung Galaxy Z Fold5 | Physical device; Android/OEM build not reported | ✅ Community-confirmed | Screen capture and automation reported working. Folded/unfolded display behavior has not been documented separately yet. |
+| OnePlus 15 | OxygenOS 16.0.9; 2722×1272 reported | ✅ Community-confirmed | Screen capture and automation, including Network Defense, reported working with the current compatibility handling. |
+| LDPlayer | Exact build and Android image not recorded | ✅ Community-confirmed | Screen capture and automation reported working. Please include the LDPlayer version and Android image in future diagnostic reports. |
 
 When reporting another device, include its exact model, Android version, OEM build, bot version, whether the system recorder captures the game, and the app's `dynamic_grid.png`. Remove private notifications or account information before sharing diagnostics.
 
