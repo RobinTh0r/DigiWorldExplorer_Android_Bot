@@ -44,6 +44,7 @@ class ScreenCaptureService : Service() {
     private var badCaptureSince = 0L
     private var healthyCaptureSince = 0L
     private var captureImageMissing = false
+    private var lastGridRecognized = 0L
     @Volatile private var shuttingDown = false
 
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -128,6 +129,7 @@ class ScreenCaptureService : Service() {
         lastRecognizedContent = SystemClock.elapsedRealtime()
         missingStatusShown = false
         idleStopRequested = false
+        lastGridRecognized = 0L
         val manager = getSystemService(MediaProjectionManager::class.java)
         val mediaProjection = manager.getMediaProjection(resultCode, resultData)
         if (mediaProjection == null) {
@@ -178,9 +180,23 @@ class ScreenCaptureService : Service() {
                     // Once a grid has been calibrated, let navigation inspect the frame before
                     // Feed. This pauses the Feed scanner (and pending feed taps) while the
                     // DigiWorld grid is visible, then resumes it automatically after leaving.
-                    val gridScreen = !stageFailedScreen && !networkScreen && featureFrame &&
+                    var gridScreen = !stageFailedScreen && !networkScreen && featureFrame &&
                         CaptureFrameAnalyzer.isCalibrated &&
                         CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                    val now = SystemClock.elapsedRealtime()
+                    if (gridScreen) {
+                        lastGridRecognized = now
+                    } else if (
+                        CaptureFrameAnalyzer.isCalibrated &&
+                        lastGridRecognized > 0L &&
+                        now - lastGridRecognized >= GRID_RELEASE_TIMEOUT
+                    ) {
+                        android.util.Log.i("DigiWorldCapture", "grid absent for ${now - lastGridRecognized} ms - releasing DigiWorld mode")
+                        CaptureFrameAnalyzer.resetCalibration()
+                        DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
+                        lastGridRecognized = 0L
+                        gridScreen = false
+                    }
                     if (gridScreen && AutomationState.autoFeedEnabled) FeedFrameAnalyzer.pauseForDigiWorld()
                     val feedScreen = !stageFailedScreen && !networkScreen && !gridScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
                     val dungeonScreen = !stageFailedScreen && !feedScreen && !networkScreen && !gridScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
@@ -189,7 +205,10 @@ class ScreenCaptureService : Service() {
                         recognized = true // The feature analyzer owns this frame; never run movement here.
                     } else if (!CaptureFrameAnalyzer.isCalibrated) {
                         if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
-                        if (framesSeen % 10 == 0) recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                        if (framesSeen % 10 == 0) {
+                            recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                            if (recognized) lastGridRecognized = SystemClock.elapsedRealtime()
+                        }
                     }
                 }
                 if (recognized) markContentRecognized() else checkRecognitionTimeouts()
@@ -277,6 +296,7 @@ class ScreenCaptureService : Service() {
         badCaptureSince = 0L
         healthyCaptureSince = 0L
         captureImageMissing = false
+        lastGridRecognized = 0L
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
@@ -326,6 +346,7 @@ class ScreenCaptureService : Service() {
         private const val STUCK_NOTIFICATION_ID = 1002
         private const val IDLE_NOTIFICATION_ID = 1003
         private const val GRID_HIDE_TIMEOUT = 3_000L
+        private const val GRID_RELEASE_TIMEOUT = 7_000L
         private const val MISSING_IMAGE_CONFIRMATION = 2_000L
         private const val CAPTURE_RECOVERY_CONFIRMATION = 750L
         private const val IDLE_STOP_TIMEOUT = 60_000L
