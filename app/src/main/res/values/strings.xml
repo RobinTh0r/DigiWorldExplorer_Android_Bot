@@ -49,7 +49,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">Stage Failed detection is now disabled while Network Defense Ops is active. This prevents battle screens from being mistaken for the failure guide and interrupting later loop runs. Stage Failed recovery remains available in all other automation modes.</string>
+    <string name="release_notes_body">Network Defense now releases unrelated screens immediately and automatically clears stale dungeon states. This keeps DigiWorld navigation and other modes smoother when the toggle remains enabled. Stage Failed detection now runs only with Bond &amp; Friendship and can no longer interrupt DigiWorld navigation by mistake.</string>
     <string name="update_notice_title">New version available</string>
     <string name="update_notice_body">Version %1$s is available. Please update for the best stability and device compatibility.</string>
     <string name="update_notice_install">Open update</string>

@@ -18,6 +18,7 @@ object NetworkDefenseFrameAnalyzer {
     private const val BOSS_RETRY_INTERVAL = 650L
     private const val PENDING_GESTURE_TIMEOUT = 1_800L
     private const val SESSION_TIMEOUT = 5 * 60_000L
+    private const val SESSION_EVIDENCE_GRACE = 20_000L
     private const val BOSS_STATUS_HOLD = 5_000L
     private var sessionActive = false
     private var pending = false
@@ -30,6 +31,7 @@ object NetworkDefenseFrameAnalyzer {
     private var startTaps = 0
     private var startVisibleSince = 0L
     private var finalBossArmed = false
+    private var lastEvidenceAt = 0L
 
     fun isSessionActive(): Boolean = AutomationState.autoNetworkDefenseEnabled && sessionActive
 
@@ -62,6 +64,7 @@ object NetworkDefenseFrameAnalyzer {
                 startVisibleSince = now
             }
             sessionActive = true
+            lastEvidenceAt = now
             // A newly confirmed start dialog begins a fresh run. Never carry the previous boss arm.
             finalBossArmed = false
             lastBossSeen = 0L
@@ -81,6 +84,7 @@ object NetworkDefenseFrameAnalyzer {
             // Accept a boss only after this loop started its own attempt.
             if (!sessionActive) return false
             sessionActive = true
+            lastEvidenceAt = now
             finalBossArmed = true
             lastBossSeen = now
             lastScreen = NetworkDefenseScreen.FINAL_BOSS
@@ -100,6 +104,7 @@ object NetworkDefenseFrameAnalyzer {
         // Only a positively recognized bright Network Defense battle may display a dungeon status
         // or receive a give-up tap. Other game modes can have similar red/blue UI elements.
         if (detection.screen == NetworkDefenseScreen.BATTLE) {
+            lastEvidenceAt = now
             lastScreen = NetworkDefenseScreen.BATTLE
             if (finalBossArmed) {
                 lastBossSeen = now
@@ -116,7 +121,18 @@ object NetworkDefenseFrameAnalyzer {
         }
         lastScreen = NetworkDefenseScreen.NONE
         DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
-        return true
+        // Keep watching briefly through loading transitions, but never reserve unrelated frames.
+        // This lets DigiWorld movement continue when the Network Defense toggle was left enabled.
+        if (lastEvidenceAt != 0L && now - lastEvidenceAt >= SESSION_EVIDENCE_GRACE) {
+            sessionActive = false
+            finalBossArmed = false
+            pending = false
+            pendingSince = 0L
+            sessionStarted = 0L
+            lastEvidenceAt = 0L
+            Log.i("DigiWorldNetwork", "Released stale Network Defense session")
+        }
+        return false
     }
 
     private fun tryTap(
@@ -155,5 +171,6 @@ object NetworkDefenseFrameAnalyzer {
         startTaps = 0
         startVisibleSince = 0L
         finalBossArmed = false
+        lastEvidenceAt = 0L
     }
 }

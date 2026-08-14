@@ -49,7 +49,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">Die Stage-Failed-Erkennung ist jetzt deaktiviert, solange Network Defense Ops aktiv ist. Dadurch werden Kampfbildschirme nicht mehr mit dem Fehlerdialog verwechselt und spätere Loop-Durchläufe nicht unterbrochen. In allen anderen Automatikmodi bleibt die Stage-Failed-Funktion erhalten.</string>
+    <string name="release_notes_body">Network Defense gibt fremde Bildschirme jetzt sofort frei und verwirft alte Dungeon-Zustände automatisch. Dadurch bleiben DigiWorld-Laufen und andere Modi flüssiger, wenn der Schalter eingeschaltet bleibt. Die Stage-Failed-Erkennung läuft nur noch mit Bond &amp; Friendship und kann den DigiWorld-Läufer nicht mehr fälschlich unterbrechen.</string>
     <string name="update_notice_title">Neue Version verfügbar</string>
     <string name="update_notice_body">Version %1$s ist verfügbar. Bitte aktualisiere für bestmögliche Stabilität und Gerätekompatibilität.</string>
     <string name="update_notice_install">Update öffnen</string>
