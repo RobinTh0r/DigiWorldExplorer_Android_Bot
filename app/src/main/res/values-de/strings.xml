@@ -21,6 +21,17 @@
     <string name="experimental_settings">🧪 Experimentelle Einstellungen</string>
     <string name="digiworld_help_title">DigiWorld Explorer</string>
     <string name="digiworld_help_body">Läuft automatisch durch die DigiWorld, erkennt das Raster dynamisch und sammelt Energie ein. Bedienungshilfe einmal aktivieren, dann START drücken und die Bildschirmfreigabe bestätigen.\n\nWICHTIG: Wähle Botamon als sichtbaren Sprite aus. Andere Sprites können dazu führen, dass der Spieler nicht erkannt wird.</string>
+    <string name="dws_settings_button">⚙️ DWS-Einstellungen · SUPPORTER</string>
+    <string name="dws_settings_title">DWS-Laufeinstellungen</string>
+    <string name="dws_settings_body">Supporter-Testeinstellungen für die DigiWorld-Navigation. Standard behält das bewährte Verhalten aus v3.1 bei. Experimentelle Optionen können jederzeit deaktiviert werden, ohne den normalen Planner zu verändern.</string>
+    <string name="dws_never_left">Nie nach links laufen (experimentell)</string>
+    <string name="dws_force_attack">Force Forward &amp; Attack</string>
+    <string name="dws_force_attack_hint">Läuft niemals nach links. Sichtbare Energie wird direkt angesteuert; sonst bleibt der Bot horizontal und greift ein Hindernis direkt vor ihm an. Deaktivieren stellt den unveränderten v3.1-Planner wieder her.</string>
+    <string name="dws_dash_spam">Dash-Spam bis 0</string>
+    <string name="dws_dash_spam_hint">Wenn keine Energie sichtbar ist, wird Dash nur so lange wiederholt, wie die HUD-Zahl sicher größer als 0 gelesen wird. Eine unlesbare Zahl startet keinen Spam, eine erkannte 0 beendet ihn.</string>
+    <string name="dws_never_left_hint">Entfernt Linksbewegungen aus jeder Wegsuche. Dadurch können Items ausgelassen oder Angriff, Dash beziehungsweise ein sicherer Stopp nötig werden, wenn kein Vorwärtsweg übrig bleibt.</string>
+    <string name="dws_profile_standard">Aktives Profil: Standard (v3.1-Verhalten)</string>
+    <string name="dws_profile_forward">Aktives Profil: Nur vorwärts</string>
     <string name="legacy_capture">Legacy-Aufnahmegröße</string>
     <string name="legacy_capture_hint">Nur bei Aufnahmeproblemen vor dem Start der Bildschirmfreigabe aktivieren</string>
     <string name="summon_touch_correction">Summon-Touch-Ausgleich</string>

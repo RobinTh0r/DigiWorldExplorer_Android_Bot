@@ -21,6 +21,17 @@
     <string name="experimental_settings">🧪 Experimental settings</string>
     <string name="digiworld_help_title">DigiWorld Explorer</string>
     <string name="digiworld_help_body">Automatically navigates DigiWorld, detects the grid dynamically and collects energy. Enable accessibility once, then press START and confirm screen sharing when Android asks.\n\nIMPORTANT: Select Botamon as the visible sprite. Other sprites may prevent reliable player detection.</string>
+    <string name="dws_settings_button">⚙️ DWS settings · SUPPORTER</string>
+    <string name="dws_settings_title">DWS navigation settings</string>
+    <string name="dws_settings_body">Supporter test settings for DigiWorld navigation. Standard keeps the proven v3.1 behavior. Experimental options can be disabled at any time without changing the normal planner.</string>
+    <string name="dws_never_left">Never walk left (experimental)</string>
+    <string name="dws_force_attack">Force Forward &amp; Attack</string>
+    <string name="dws_force_attack_hint">Never walks left. Visible energy is targeted directly; otherwise the bot stays horizontal and attacks an obstacle directly ahead. Disable this profile to restore the unchanged v3.1 planner.</string>
+    <string name="dws_dash_spam">Dash spam until 0</string>
+    <string name="dws_dash_spam_hint">When no energy is visible, repeatedly uses Dash only while the HUD counter is reliably read above 0. An unreadable counter never starts spam, and a confirmed 0 stops it.</string>
+    <string name="dws_never_left_hint">Removes left movement from every route search. This may skip items or require attack, dash or a safe stop when no forward route remains.</string>
+    <string name="dws_profile_standard">Active profile: Standard (v3.1 behavior)</string>
+    <string name="dws_profile_forward">Active profile: Forward only</string>
     <string name="legacy_capture">Legacy capture size</string>
     <string name="legacy_capture_hint">Enable only for capture problems before starting screen sharing</string>
     <string name="summon_touch_correction">Summon touch correction</string>

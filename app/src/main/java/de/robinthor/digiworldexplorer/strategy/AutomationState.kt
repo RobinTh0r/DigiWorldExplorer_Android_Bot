@@ -9,5 +9,6 @@ object AutomationState {
  @Volatile var autoFeedEnabled=false
  @Volatile var forceLegacyCaptureMetrics=false
  @Volatile var summonTouchCorrection=false
+ @Volatile var dwsNavigationSettings=DwsNavigationSettings()
  fun stop(){enabled=false;AutoMoveController.reset()}
 }

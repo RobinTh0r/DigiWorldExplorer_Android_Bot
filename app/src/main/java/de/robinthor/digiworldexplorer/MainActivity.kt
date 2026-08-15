@@ -44,6 +44,8 @@ import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.license.SupporterLicense
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
 import de.robinthor.digiworldexplorer.strategy.AutomationState
+import de.robinthor.digiworldexplorer.strategy.AutoMoveController
+import de.robinthor.digiworldexplorer.strategy.DwsNavigationSettings
 import de.robinthor.digiworldexplorer.update.UpdateChecker
 import de.robinthor.digiworldexplorer.update.UpdateResult
 import java.util.Locale
@@ -66,6 +68,9 @@ class MainActivity : ComponentActivity() {
     private var autoDungeon by mutableStateOf(true)
     private var autoNetworkDefense by mutableStateOf(false)
     private var autoFeed by mutableStateOf(false)
+    private var dwsNeverLeft by mutableStateOf(false)
+    private var dwsForceForwardAttack by mutableStateOf(false)
+    private var dwsDashSpam by mutableStateOf(false)
     private var showSupportPrompt by mutableStateOf(false)
     private var legacyCapture by mutableStateOf(false)
     private var summonTouchCorrection by mutableStateOf(false)
@@ -128,6 +133,9 @@ class MainActivity : ComponentActivity() {
         supporterLicense = SupporterLicenseManager.load(this)
         autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
         autoFeed = supporterLicense != null && settings.getBoolean("auto_feed", false)
+        dwsNeverLeft = supporterLicense != null && settings.getBoolean("dws_never_left", false)
+        dwsForceForwardAttack = dwsNeverLeft
+        dwsDashSpam = dwsNeverLeft && settings.getBoolean("dws_dash_spam", false)
         if (autoNetworkDefense && autoFeed) {
             autoFeed = false
             settings.edit().putBoolean("auto_feed", false).apply()
@@ -137,13 +145,14 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoDungeonEnabled = autoDungeon
         AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
         AutomationState.autoFeedEnabled = autoFeed
+        AutomationState.dwsNavigationSettings = DwsNavigationSettings(allowLeft = !dwsNeverLeft, forceForwardAttack = dwsForceForwardAttack, dashSpamUntilZero = dwsDashSpam)
         AutomationState.forceLegacyCaptureMetrics = legacyCapture
         AutomationState.summonTouchCorrection = summonTouchCorrection
         DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid)
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent { MaterialTheme { Surface(Modifier.fillMaxSize()) {
             ControlScreen(
-                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, legacyCapture, summonTouchCorrection, preReleaseUpdates, supporterLicense, access, overlay, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, legacyCapture, summonTouchCorrection, preReleaseUpdates, supporterLicense, access, overlay, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
                 onGrid = { grid = !grid; AutomationState.overlayEnabled = grid; DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid); settings.edit().putBoolean("grid_enabled", grid).apply() },
@@ -179,6 +188,23 @@ class MainActivity : ComponentActivity() {
                     }
                     settings.edit().putBoolean("auto_feed", allowed).putBoolean("auto_network_defense", autoNetworkDefense).apply()
                     if (enabled && !allowed) showLicenseDialog = true
+                },
+                onDwsSettings = { neverLeft, _, dashSpam ->
+                    val allowed = supporterLicense != null
+                    dwsNeverLeft = allowed && neverLeft
+                    dwsForceForwardAttack = dwsNeverLeft
+                    dwsDashSpam = dwsNeverLeft && dashSpam
+                    AutomationState.dwsNavigationSettings = DwsNavigationSettings(
+                        allowLeft = !dwsNeverLeft,
+                        forceForwardAttack = dwsForceForwardAttack,
+                        dashSpamUntilZero = dwsDashSpam,
+                    )
+                    AutoMoveController.reset()
+                    settings.edit()
+                        .putBoolean("dws_never_left", dwsNeverLeft)
+                        .putBoolean("dws_force_forward_attack", dwsForceForwardAttack)
+                        .putBoolean("dws_dash_spam", dwsDashSpam)
+                        .apply()
                 },
                 onLegacyCapture = { enabled -> ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED; legacyCapture = enabled; AutomationState.forceLegacyCaptureMetrics = enabled; settings.edit().putBoolean("legacy_capture", enabled).apply() },
                 onSummonTouchCorrection = { enabled -> ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED; summonTouchCorrection = enabled; AutomationState.summonTouchCorrection = enabled; settings.edit().putBoolean("summon_touch_correction", enabled).apply() },
@@ -227,7 +253,8 @@ class MainActivity : ComponentActivity() {
                     SupporterLicenseManager.remove(this)
                     supporterLicense = null
                     autoFeed = false; AutomationState.autoFeedEnabled = false
-                    settings.edit().putBoolean("auto_feed", false).apply()
+                    dwsNeverLeft = false; dwsForceForwardAttack = false; dwsDashSpam = false; AutomationState.dwsNavigationSettings = DwsNavigationSettings()
+                    settings.edit().putBoolean("auto_feed", false).putBoolean("dws_never_left", false).putBoolean("dws_force_forward_attack", false).putBoolean("dws_dash_spam", false).apply()
                 },
                 onDonate = { openUrl(getString(R.string.supporter_purchase_url)) },
                 onClose = { showLicenseDialog = false },
@@ -333,15 +360,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
     var showContactDialog by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     var showExperimental by remember { mutableStateOf(false) }
+    var showDwsSettings by remember { mutableStateOf(false) }
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
     if (showAccessHelp) AlertDialog(onDismissRequest = { showAccessHelp = false }, title = { Text(stringResource(R.string.accessibility_help_title)) }, text = { Text(stringResource(R.string.accessibility_help_body)) }, confirmButton = { TextButton(onClick = { showAccessHelp = false }) { Text(stringResource(R.string.close)) } })
     featureHelp?.let { FeatureHelpDialog(it, onClose = { featureHelp = null }) }
+    if (showDwsSettings) DwsSettingsDialog(dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, onDwsSettings, onClose = { showDwsSettings = false })
     if (showExperimental) ExperimentalSettingsDialog(legacyCapture, summonTouchCorrection, preReleaseUpdates, onLegacyCapture, onSummonTouchCorrection, onPreReleaseUpdates, onClose = { showExperimental = false })
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 29.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF075E73), Color(0xFF168A75), Color(0xFF514A93))), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -369,6 +398,17 @@ class MainActivity : ComponentActivity() {
             Button(onClick = onStart, enabled = access && !auto, modifier = Modifier.weight(1f)) { Text(stringResource(if (auto) R.string.bot_running else if (capture) R.string.auto_start else R.string.auto_start_with_capture)) }
         }
         FeatureInfoRow(R.string.digiworld_help_title, onHelp = { featureHelp = 2 })
+        OutlinedButton(
+            onClick = { showDwsSettings = true },
+            enabled = supporterLicense != null,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(
+                containerColor = Color(0xFFE3F5E9),
+                disabledContainerColor = Color(0xFFE3F5E9),
+                contentColor = Color(0xFF176B3A),
+                disabledContentColor = Color(0xFF176B3A).copy(alpha = .55f),
+            ),
+        ) { Text(stringResource(R.string.dws_settings_button), fontWeight = FontWeight.SemiBold) }
         FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
         FeatureSwitch(R.string.auto_dungeon, autoDungeon, onAutoDungeon, onHelp = { featureHelp = 1 })
         FeatureSwitch(R.string.auto_network_defense, autoNetworkDefense, onAutoNetworkDefense, onHelp = { featureHelp = 3 }, enabled = supporterLicense != null, supporterStyle = true)
@@ -414,6 +454,48 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable private fun DwsSettingsDialog(
+    neverLeft: Boolean,
+    forceForwardAttack: Boolean,
+    dashSpam: Boolean,
+    onSettings: (Boolean, Boolean, Boolean) -> Unit,
+    onClose: () -> Unit,
+) {
+    var helpKind by remember { mutableStateOf<Int?>(null) }
+    helpKind?.let { kind ->
+        AlertDialog(
+            onDismissRequest = { helpKind = null },
+            title = { Text(stringResource(if (kind == 0) R.string.dws_force_attack else R.string.dws_dash_spam)) },
+            text = { Text(stringResource(if (kind == 0) R.string.dws_force_attack_hint else R.string.dws_dash_spam_hint)) },
+            confirmButton = { TextButton(onClick = { helpKind = null }) { Text(stringResource(R.string.close)) } },
+        )
+    }
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.dws_settings_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(stringResource(R.string.dws_settings_body), style = MaterialTheme.typography.bodySmall)
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.dws_force_attack), modifier = Modifier.weight(1f))
+                    IconButton(onClick = { helpKind = 0 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
+                    Switch(checked = neverLeft && forceForwardAttack, onCheckedChange = { onSettings(it, it, if (it) dashSpam else false) })
+                }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.dws_dash_spam), modifier = Modifier.weight(1f))
+                    IconButton(onClick = { helpKind = 1 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
+                    Switch(checked = dashSpam, onCheckedChange = { onSettings(neverLeft, neverLeft, it) }, enabled = neverLeft)
+                }
+                Text(
+                    stringResource(if (neverLeft) R.string.dws_profile_forward else R.string.dws_profile_standard),
+                    color = Color(0xFF176B3A),
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+        },
+        confirmButton = { Button(onClick = onClose) { Text(stringResource(R.string.close)) } },
+    )
+}
 @Composable private fun CompactStatusCard(statusText: Int, modifier: Modifier = Modifier) {
     Card(modifier) { Column(Modifier.padding(horizontal = 8.dp, vertical = 6.dp)) { Text(stringResource(R.string.status_title), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold); Text(stringResource(statusText), style = MaterialTheme.typography.labelSmall, maxLines = 2) } }
 }

@@ -166,4 +166,40 @@ class MovementPlannerTest{
   val a=MovementPlanner.choose(Cell(2,1),board(items=setOf(Cell(1,1),Cell(2,4))),emptyList())
   assertEquals(Direction.UP,a?.direction)
   assertEquals(Cell(1,1),a?.target)
- }}
+ }
+
+ @Test fun forwardProfileNeverMovesLeft(){
+  val settings=DwsNavigationSettings(allowLeft=false,forceForwardAttack=true)
+  val a=MovementPlanner.choose(Cell(2,2),board(items=setOf(Cell(2,1))),emptyList(),settings=settings)
+  assertEquals(Direction.RIGHT,a?.direction)
+ }
+
+ @Test fun forwardProfileAttacksObstacleDirectlyAhead(){
+  val settings=DwsNavigationSettings(allowLeft=false,forceForwardAttack=true)
+  val a=MovementPlanner.choose(Cell(2,1),board(obstacles=setOf(Cell(2,2))),emptyList(),claws=2,settings=settings)
+  assertEquals(ActionKind.ATTACK,a?.kind)
+  assertEquals(Cell(2,2),a?.target)
+  assertEquals(Direction.RIGHT,a?.direction)
+ }
+
+ @Test fun forwardProfileStillTargetsVisibleEnergy(){
+  val settings=DwsNavigationSettings(allowLeft=false,forceForwardAttack=true)
+  val a=MovementPlanner.choose(Cell(2,1),board(items=setOf(Cell(1,1))),emptyList(),settings=settings)
+  assertEquals(ActionKind.MOVE,a?.kind)
+  assertEquals(Cell(1,1),a?.target)
+  assertEquals(Direction.UP,a?.direction)
+ }
+
+ @Test fun dashSpamUsesOnlyConfirmedPositiveCounter(){
+  val settings=DwsNavigationSettings(allowLeft=false,forceForwardAttack=true,dashSpamUntilZero=true)
+  assertEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,1),board(),emptyList(),dashAvailable=true,dashCharges=2,settings=settings)?.kind)
+  assertNotEquals(ActionKind.DASH,MovementPlanner.choose(Cell(2,1),board(),emptyList(),dashAvailable=true,dashCharges=0,settings=settings)?.kind)
+ }
+
+ @Test fun visibleEnergySuppressesDashSpam(){
+  val settings=DwsNavigationSettings(allowLeft=false,forceForwardAttack=true,dashSpamUntilZero=true)
+  val a=MovementPlanner.choose(Cell(2,1),board(items=setOf(Cell(1,1))),emptyList(),dashAvailable=true,dashCharges=3,settings=settings)
+  assertNotEquals(ActionKind.DASH,a?.kind)
+  assertEquals(Cell(1,1),a?.target)
+ }
+}
