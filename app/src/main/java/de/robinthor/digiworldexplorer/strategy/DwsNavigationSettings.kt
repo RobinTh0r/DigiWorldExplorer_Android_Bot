@@ -5,6 +5,6 @@ data class DwsNavigationSettings(
     val forceForwardAttack: Boolean = false,
     val dashSpamUntilZero: Boolean = false,
     val collectOnlyEnergy: Boolean = false,
-    val betterEnergyCollect: Boolean = false,
+    val betterEnergyCollect: Boolean = true,
     val blindStageFailedTap: Boolean = false,
 )

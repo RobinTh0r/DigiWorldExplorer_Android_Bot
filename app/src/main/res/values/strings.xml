@@ -21,9 +21,9 @@
     <string name="experimental_settings">🧪 Experimental settings</string>
     <string name="digiworld_help_title">DigiWorld Explorer</string>
     <string name="digiworld_help_body">Automatically navigates DigiWorld, detects the grid dynamically and collects energy. Enable accessibility once, then press START and confirm screen sharing when Android asks.\n\nIMPORTANT: Select Botamon as the visible sprite. Other sprites may prevent reliable player detection.</string>
-    <string name="dws_settings_button">⚙️ DWS settings · SUPPORTER</string>
-    <string name="dws_settings_title">DWS navigation settings</string>
-    <string name="dws_settings_body">Supporter test settings for DigiWorld navigation. Standard keeps the proven v3.1 behavior. Experimental options can be disabled at any time without changing the normal planner.</string>
+    <string name="dws_settings_button">⚙️ Advanced Settings</string>
+    <string name="dws_settings_title">Advanced DigiWorld Mode</string>
+    <string name="dws_settings_body">For testing, it is best to enable all options.</string>
     <string name="dws_never_left">Never walk left (experimental)</string>
     <string name="dws_force_attack">Force Forward &amp; Attack</string>
     <string name="dws_force_attack_hint">Never walks left. Visible energy is targeted directly; otherwise the bot stays horizontal and attacks an obstacle directly ahead. Disable this profile to restore the unchanged v3.1 planner.</string>
@@ -36,8 +36,6 @@
     <string name="dws_blind_stage_tap">Stage Failed dismiss (test)</string>
     <string name="dws_blind_stage_tap_hint">Only after a securely detected DWS grid: detects the broad game-message area and taps the safe lower-center area once or twice with slight randomization, at most every 10 seconds. It never taps after leaving DWS mode.</string>
     <string name="dws_never_left_hint">Removes left movement from every route search. This may skip items or require attack, dash or a safe stop when no forward route remains.</string>
-    <string name="dws_profile_standard">Active profile: Standard (v3.1 behavior)</string>
-    <string name="dws_profile_forward">Active profile: Forward only</string>
     <string name="legacy_capture">Legacy capture size</string>
     <string name="legacy_capture_hint">Enable only for capture problems before starting screen sharing</string>
     <string name="summon_touch_correction">Summon touch correction</string>
@@ -70,7 +68,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">• Improved mode switching\n• Improved automation detection\n• Network Defense fixes for Pixel and OnePlus devices\n• UI adjustments</string>
+    <string name="release_notes_body">NEW FEATURES\n• Advanced DigiWorld Settings · Supporter Beta\n• Auto Summon for Crests\n• Network Defense with x2 battle speed\n• Bond &amp; Friendship is now free for everyone\n\nBUG FIXES\n• Adjusted DWS navigation logic\n• Energy is now skipped only rarely</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>
@@ -80,15 +78,15 @@
     <string name="update_notice_later">Later</string>
     <string name="donate">💚 Help keep development moving · Support via PayPal</string>
     <string name="donate_url">https://paypal.me/thor666/4</string>    <string name="supporter_purchase_url">https://paypal.me/thor666/4</string>
-    <string name="supporter_license_import">♥ Unlock Supporter features</string>
-    <string name="supporter_license_active">♥ Supporter features</string>
-    <string name="supporter_license_title">Supporter features</string>
-    <string name="supporter_license_body">Support development with €4 / $4 via PayPal and request your personal activation code from RobinTh0r. Paste the complete code below once; the app stores and verifies it locally.</string>
+    <string name="supporter_license_import">♥ Unlock Supporter Beta</string>
+    <string name="supporter_license_active">♥ Supporter Beta</string>
+    <string name="supporter_license_title">Supporter Beta</string>
+    <string name="supporter_license_body">Support development with €4 / $4 and receive access to optional Supporter Beta test features. These features may change during testing. Paste your personal activation code once; the app stores and verifies it locally.</string>
     <string name="supporter_license_paypal">Support with €4 / $4 via PayPal</string>
     <string name="supporter_license_code">Activation code</string>
     <string name="supporter_license_activate">Activate</string>
     <string name="supporter_license_invalid">This activation code is invalid or incomplete.</string>
-    <string name="supporter_license_enabled">Thank you! Supporter features are unlocked on this installation.</string>
+    <string name="supporter_license_enabled">Thank you! Supporter Beta features are unlocked on this installation.</string>
     <string name="supporter_license_remove">Remove unlock</string>
     <string name="overlay_wait_dialog">WAIT: Game message visible</string>
     <string name="overlay_wait_motion">WAIT: Scene is moving</string>
@@ -105,10 +103,10 @@
     <string name="accessibility_help_title">Troubleshooting and blocked access</string>
     <string name="accessibility_help_body">Samsung: trigger the blocked-access warning once, then open Settings → Apps → DigiWorldExplorer Bot → three-dot menu → Allow restricted settings.\n\nImportant: use the small, dark starter sprite supported by the navigation detector.\n\nIf something does not work, first use “Stop everything”, then fully close the game and DigiWorldExplorer. Start the game first and wait until the game is fully loaded. Only then open DigiWorldExplorer, press START and confirm screen sharing.</string>
     <string name="close">Close</string>
-    <string name="auto_purchase">Auto summon</string>
-    <string name="auto_network_defense">Network Defense Ops · SUPPORTER</string>
-    <string name="network_help_title">Network Defense Ops · Supporter feature</string>
-    <string name="network_help_body">Supporter feature, OFF by default. Automatically starts Network Defense Ops, waits through all five waves and then detects the distinctive red-and-black final boss banner. The bot repeatedly taps “Give up”, returns to the selection and starts the next attempt. This can count roughly 40 defeated enemies per run. Enable only inside Network Defense Ops.</string>
+    <string name="auto_purchase">Auto Summon (Tickets &amp; Crests)</string>
+    <string name="auto_network_defense">Network Defense Ops · SUPPORTER BETA</string>
+    <string name="network_help_title">Network Defense Ops · Supporter Beta</string>
+    <string name="network_help_body">Supporter Beta feature, OFF by default. Automatically starts Network Defense Ops, waits through all five waves and then detects the distinctive red-and-black final boss banner. The bot repeatedly taps “Give up”, returns to the selection and starts the next attempt. This can count roughly 40 defeated enemies per run. Enable only inside Network Defense Ops.</string>
     <string name="overlay_network_disabled">Network Defense Ops detected — loop is off</string>
     <string name="overlay_network_start">AUTO: Starting Network Defense Ops</string>
     <string name="overlay_network_waiting">AUTO: Network Defense Ops — waiting for the final boss</string>
@@ -122,7 +120,7 @@
     <string name="overlay_dungeon_disabled">Dungeon detected — auto dungeon off</string>
     <string name="overlay_dungeon_timeout">Auto dungeon stopped — no progress for 15 seconds</string>
     <string name="summon_help_title">Auto summon</string>
-    <string name="summon_help_body">Automatically uses the yellow 30-ticket summon button on supported green and purple reward screens. It keeps tapping briefly through the loading transition and stops when the ticket cost turns red. Disable this option whenever you want to summon manually.</string>
+    <string name="summon_help_body">Automatically uses the yellow summon button on supported ticket and Crest screens. Crest summons also confirm the additional dialog automatically. It keeps tapping briefly through loading and reward transitions and stops when the cost turns red. Disable this option whenever you want to summon manually.</string>
     <string name="dungeon_help_title">VS. Dungeon</string>
     <string name="dungeon_help_body">Automatically starts a detected VS dungeon challenge, waits without tapping during the battle, closes the reward screen and starts the next level. Detection uses the screen layout and works independently of the game language. The mode stops after 15 seconds without visible progress.</string>
     <string name="overlay_no_digiworld">No DigiWorld detected</string>
@@ -131,18 +129,18 @@
     <string name="overlay_purchase_disabled">Summon screen detected — auto summon off</string>
     <string name="notification_idle_title">Capture stopped: no game detected</string>
     <string name="notification_idle_body">No DigiWorld, summon or VS. Dungeon screen was detected for 1 minute. Capture and automation were stopped to protect the device.</string>
-    <string name="auto_feed">Bond &amp; Friendship · SUPPORTER</string>
-    <string name="feed_help_title">Bond &amp; Friendship · Supporter feature</string>
-    <string name="feed_help_body">Detects the small white food bubble on the main battle screen and taps it three times with safe randomized positions and timing. This helps you reach Bond/Friendship levels and the Partner-icon reward faster. For safety, detection runs at intervals; after enabling it may take up to 30 seconds before the first feeding starts. The main-screen layout and bubble must remain stable across multiple frames. Supporter features must be unlocked.</string>
+    <string name="auto_feed">Bond &amp; Friendship · FREE</string>
+    <string name="feed_help_title">Bond &amp; Friendship · Free for everyone</string>
+    <string name="feed_help_body">Detects the small white food bubble on the main battle screen and taps it three times with safe randomized positions and timing. This helps you reach Bond/Friendship levels and the Partner-icon reward faster. For safety, detection runs at intervals; after enabling it may take up to 30 seconds before the first feeding starts. The main-screen layout and bubble must remain stable across multiple frames. This feature is free for everyone.</string>
     <string name="overlay_auto_feed">AUTO: Bond &amp; Friendship</string>
     <string name="overlay_stage_failed">AUTO: Stage failed — closing dialog</string>
     <string name="overlay_auto_feed_open_partner">AUTO: Opening partner menu</string>
     <string name="partner_rotation_preview">Partner rotation &amp; feeding cycle</string>
-    <string name="coming_soon_supporter">COMING SOON · SUPPORTER</string>
+    <string name="coming_soon_supporter">COMING SOON · SUPPORTER BETA</string>
     <string name="partner_rotation_help_title">Partner rotation · Coming Soon</string>
-    <string name="partner_rotation_help_body">Planned: The app cycles through the visible partners, starts their growth, returns to the main world and feeds them when a food bubble is available. The originally selected partner should be restored afterwards. This Supporter feature is still in development and is intentionally disabled for now.</string>
-    <string name="supporter_intro_title">New: Supporter features</string>
-    <string name="supporter_intro_body">This version introduces optional Supporter features. Every previously available feature remains completely free. Supporter features help fund the continued development of the project.</string>
+    <string name="partner_rotation_help_body">Planned: The app cycles through the visible partners, starts their growth, returns to the main world and feeds them when a food bubble is available. The originally selected partner should be restored afterwards. This Supporter Beta feature is still in development and is intentionally disabled for now.</string>
+    <string name="supporter_intro_title">New: Supporter Beta</string>
+    <string name="supporter_intro_body">This version introduces optional Supporter Beta test features. Every previously available feature remains free. Support helps fund development while these beta features are tested and refined.</string>
     <string name="payment_contact_title">Contact details for your unlock</string>
     <string name="payment_contact_body">Please include your Discord name, Reddit name or email address in the PayPal payment message. Otherwise I will not know where to send your personal activation code.</string>
     <string name="payment_continue">Continue to PayPal</string>
@@ -152,4 +150,5 @@
     <string name="contact_copy">Copy email address</string>
     <string name="feed_delay_notice_title">Bond &amp; Friendship enabled</string>
     <string name="feed_delay_notice_body">For safety, detection runs at intervals. It may take up to 30 seconds before the first feeding starts.</string>
+    <string name="dws_unlock_options">♥ Unlock Supporter Beta</string>
 </resources>

@@ -13,6 +13,7 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 object RewardPurchaseFrameAnalyzer {
     private const val TAP_INTERVAL = 200L
     private const val SEQUENCE_TIMEOUT = 5_000L
+    private const val CREST_REVEAL_TIMEOUT = 10_000L
     @Volatile private var pending = false
     private var lastTap = 0L
     private var nextTapInterval = TAP_INTERVAL
@@ -26,11 +27,31 @@ object RewardPurchaseFrameAnalyzer {
         val pixelStride = plane.pixelStride
         val rowStride = plane.rowStride
         if (pixelStride < 3) return false
-        val detection = RewardPurchaseDetector.detect(width, height) { x, y ->
+        val argbAt = { x: Int, y: Int ->
             val offset = y * rowStride + x * pixelStride
             Color.rgb(buffer.get(offset).toInt() and 255, buffer.get(offset + 1).toInt() and 255, buffer.get(offset + 2).toInt() and 255)
         }
+        val detection = RewardPurchaseDetector.detect(width, height, argbAt)
         val now = SystemClock.elapsedRealtime()
+
+        // Crest summons insert a second confirmation dialog between the regular yellow buy button
+        // and the reveal sequence. Only accept it while a summon initiated by this analyzer is
+        // active, so other blue/yellow dialogs can never trigger the confirmation tap.
+        if (sequenceUntil > now) {
+            val crestConfirmation = RewardPurchaseDetector.detectCrestConfirmation(width, height, argbAt)
+            if (crestConfirmation.recognized) {
+                AutoMoveController.pauseForPurchaseScreen()
+                DigiWorldAccessibilityService.instance?.let { service ->
+                    service.showStatusOnly(service.getString(R.string.overlay_auto_purchase))
+                    if (AutomationState.enabled && AutomationState.autoPurchaseEnabled) {
+                        sequenceUntil = now + CREST_REVEAL_TIMEOUT
+                        tryTap(service, crestConfirmation.tapX, crestConfirmation.tapY, now)
+                    }
+                }
+                return true
+            }
+        }
+
         if (!detection.recognized) {
             if (sequenceUntil > now && AutomationState.enabled && AutomationState.autoPurchaseEnabled) {
                 AutoMoveController.pauseForPurchaseScreen()
@@ -50,7 +71,7 @@ object RewardPurchaseFrameAnalyzer {
         }
         if (!AutomationState.enabled || !AutomationState.autoPurchaseEnabled || !detection.affordable) {
             sequenceUntil = 0L
-            if (!detection.affordable) Log.i("DigiWorldPurchase", "cost 30 is red; summon sequence stopped")
+            if (!detection.affordable) Log.i("DigiWorldPurchase", "summon cost is red; summon sequence stopped")
             return true
         }
         sequenceTapX = detection.tapX
@@ -74,5 +95,4 @@ object RewardPurchaseFrameAnalyzer {
     }
 
     fun reset() { pending = false; lastTap = 0L; nextTapInterval = TAP_INTERVAL; sequenceUntil = 0L }
-
 }

@@ -8,7 +8,7 @@
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.1.0/DigiWorldExplorer-Bot-v3.1.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.2.0/DigiWorldExplorer-Bot-v3.2.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
@@ -57,26 +57,26 @@ The optional **VS. Dungeon** mode automatically recognizes the multilingual chal
 The mode stops after 15 seconds without visible progress. This provides a safe fallback for defeat screens or unexpected dialogs that have not yet been explicitly classified.
 
 
-### ⚡ Auto Summon
+### ⚡ Auto Summon (Tickets & Crests)
 
-When enabled in the app, **Auto Summon** recognizes green and purple 30-ticket summon screens and repeatedly presses the yellow summon button. It continues advancing loading/reward screens every 200 ms for up to five seconds. It stops as soon as the 30-ticket cost turns red.
+When enabled in the app, **Auto Summon** recognizes green and purple ticket screens as well as Crest summon screens. It presses the yellow summon button, confirms the additional Crest dialog, and advances loading/reward screens automatically. It stops as soon as the displayed cost turns red.
 
 
-### 🛡️ Network Defense Ops Loop — Supporter Early Access Beta
+### 🍖 Bond & Friendship — Free for everyone
 
-The **Network Defense Ops Loop** is currently available as a Supporter Early Access beta. It starts an attempt, waits through all five waves and detects the final boss banner together with the final-wave indicator. It then presses **Give up / Aufgeben**, returns to the dungeon dialog and automatically starts the next run. This can count roughly 40 defeated enemies per completed loop.
+The **Bond & Friendship** feature is free for everyone. It detects the stable white food bubble on the main battle screen and taps it locally with safe position and timing variation, helping reach the Partner-icon reward faster. It is mutually exclusive with Network Defense Ops to prevent the two specialized analyzers from interfering with each other.
 
-The mode is **off by default** and must only be enabled inside Network Defense Ops. Its stricter session tracking prevents ordinary battles and the general dungeon overview from triggering the loop. Button positions are detected dynamically for different resolutions and Android display mappings.
 
-### 🍖 Bond & Friendship — Supporter Early Access Beta
+### 🛡️ Network Defense Ops Loop — Supporter Beta
 
-The **Bond & Friendship** feature is currently available as a Supporter Early Access beta. It detects the stable white food bubble on the main battle screen and taps it locally with safe position and timing variation, helping reach the Partner-icon reward faster. It is mutually exclusive with Network Defense Ops to prevent the two specialized analyzers from interfering with each other.
+The **Network Defense Ops Loop** is currently available as a Supporter Beta. It starts an attempt, waits through all five waves and detects the final boss banner together with the final-wave indicator. It then presses **Give up / Aufgeben**, returns to the dungeon dialog and automatically starts the next run. This can count roughly 40 defeated enemies per completed loop.
 
+The mode is **off by default** and must only be enabled inside Network Defense Ops. Its stricter session tracking prevents ordinary battles and the general dungeon overview from triggering the loop. Button positions are detected dynamically for different resolutions and Android display mappings. The loop has also been successfully tested with the game running at **x2 battle speed**.
 
 Partner rotation and automatic feeding across the full partner list are shown in the app as a **Coming Soon** preview and are intentionally not active yet.
 
 > [!NOTE]
-> Version 3 offers early beta access to **Network Defense Ops Loop** and **Bond & Friendship** for supporters who want to help test them before their planned inclusion in a future free public release. The €4 / $4 contribution supports development and grants early testing access; the public release date depends on stability and is not guaranteed. Core grid navigation, Auto Summon and VS. Dungeon remain free.
+> Version 3 offers Supporter Beta access to **Network Defense Ops Loop** for supporters who want to help test them before their planned inclusion in a future free public release. The €4 / $4 contribution supports development and grants early testing access; the public release date depends on stability and is not guaranteed. Core grid navigation, Auto Summon, VS. Dungeon and Bond & Friendship remain free.
 ### 🛡️ Global Stage Failed Recovery
 
 The bot detects the multilingual **Stage Failed** growth-guide dialog globally, including during DigiWorld Search and other active modes. It temporarily gives the recovery handler exclusive control, closes the modal in the safe area above the world/home button and automatically resumes the previously enabled automation. If the dialog remains visible, another closing tap is attempted no more than once every 30 seconds.
@@ -85,7 +85,7 @@ The bot detects the multilingual **Stage Failed** growth-guide dialog globally, 
 Network Defense ticket recognition uses the ticket badge layout rather than OCR of its numeric value, so visible counters such as `1/2`, `2/2` and `10/2` are supported.
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.1.0/DigiWorldExplorer-Bot-v3.1.0.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.2.0/DigiWorldExplorer-Bot-v3.2.0.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the two setup permissions. A check mark confirms each one:
@@ -164,9 +164,16 @@ When reporting another device, include its exact model, Android version, OEM bui
 
 ## ☕ Support development
 
-If the app is useful to you, you can support continued development through **[PayPal.me/thor666 — €4 / $4](https://paypal.me/thor666/4)**. Supporters receive early beta access to Network Defense Ops Loop and Bond & Friendship while these features are tested for a planned future free public release. Supporter reports are reviewed with priority, and dedicated private test pre-releases may be provided for device-specific fixes or upcoming features. Include your Discord, Reddit or email contact in the PayPal message so the early-access activation code can be delivered.
+If the app is useful to you, you can support continued development through **[PayPal.me/thor666 — €4 / $4](https://paypal.me/thor666/4)**. Supporters receive Supporter Beta access to Network Defense Ops Loop while these features are tested for a planned future free public release. Supporter reports are reviewed with priority, and dedicated private test pre-releases may be provided for device-specific fixes or upcoming features. Include your Discord, Reddit or email contact in the PayPal message so the Supporter Beta activation code can be delivered.
 
 ## 📝 Changelog
+
+### v3.2.0 — 16 August 2026
+
+- ⚡ Auto Summon supports ticket and Crest summon screens
+- 🍖 Bond & Friendship is now free for everyone
+- 🎯 Better Energy Search is enabled by default for every user and no longer requires a separate setting
+- ⏩ Network Defense Ops Loop supports x2 battle speed
 
 ### v3.1.0 — 14 August 2026
 
@@ -179,7 +186,8 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ### v3.0.0 — 12 August 2026
 
-- 💚 Adds Supporter Early Access beta testing for **Network Defense Ops Loop** and **Bond & Friendship**, planned for a future free public release after stabilization
+- 💚 Adds Supporter Beta testing for **Network Defense Ops Loop**
+- 🍖 Makes **Bond & Friendship** free for everyone
 - 🛡️ Automates Network Defense attempts, waits for the final boss, gives up safely and starts the next run; ticket badges such as `1/2`, `2/2` and `10/2` are supported
 - 🍖 Detects stable food bubbles on the main screen and taps them with safe randomized positions and timing to build Bond/Friendship
 - 🔐 Adds local activation using signed codes; only the public verification key is included in the app
@@ -396,6 +404,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.1.0/DigiWorldExplorer-Bot-v3.1.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.2.0/DigiWorldExplorer-Bot-v3.2.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

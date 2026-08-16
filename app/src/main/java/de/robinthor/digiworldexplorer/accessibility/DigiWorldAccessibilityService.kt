@@ -62,7 +62,6 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    p.style=Paint.Style.STROKE;p.pathEffect=null;p.color=dashColor;p.strokeWidth=unit*.035f
    hud.dashBox?.let{d->c.drawRoundRect(d.left-unit*.04f,d.top-unit*.04f,d.right+unit*.04f,d.bottom+unit*.04f,unit*.05f,unit*.05f,p)}
    dashButton?.let{(x,y)->c.drawCircle(x,y,unit*.25f,p)}
-   hud.dashBox?.let{d->p.textSize=ch*.20f;p.style=Paint.Style.FILL;p.color=dashColor;c.drawText("DASH ${hud.dash?.toString()?:"?"}",d.left.toFloat(),(d.top-ch*.10f).coerceAtLeast(ch*.20f),p)}
    // Status direkt unter dem Raster im hellen Bereich. Heller Umriss plus dunkle Füllung bleibt auf
    // hellem wie dunklem Untergrund lesbar; unterhalb von bounds.bottom liegt kein Abtastfenster mehr.
    val ts=ch*.24f;p.textSize=ts;val below=b.bottom+ts*1.15f;val ty=if(below<=height-ts*.3f)below else (b.top-ts*.45f).coerceAtLeast(ts)

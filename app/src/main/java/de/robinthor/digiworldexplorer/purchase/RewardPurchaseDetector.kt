@@ -11,6 +11,15 @@ data class RewardPurchaseDetection(
     val redCostRatio: Double,
 )
 
+data class CrestSummonConfirmationDetection(
+    val recognized: Boolean,
+    val tapX: Float,
+    val tapY: Float,
+    val titleCyanRatio: Double,
+    val panelNavyRatio: Double,
+    val yellowButtonRatio: Double,
+)
+
 object RewardPurchaseDetector {
     private const val YELLOW_MIN = .45
     private const val BLUE_MIN = .40
@@ -24,6 +33,19 @@ object RewardPurchaseDetector {
         val redCost = ratio(width, height, .57, .88, .72, .94, argbAt) { r, g, b -> r > 150 && g < 110 && b < 110 }
         val recognized = yellow >= YELLOW_MIN && blue >= BLUE_MIN && close >= CLOSE_MIN
         return RewardPurchaseDetection(recognized, recognized && redCost < RED_COST_MIN, width * .665f, height * .96f, yellow, blue, close, redCost)
+    }
+
+    /**
+     * Detects the extra confirmation dialog used by crest summons. The caller only acts on this
+     * result while a regular summon sequence is already active, preventing similarly coloured
+     * dialogs elsewhere in the game from receiving a tap.
+     */
+    fun detectCrestConfirmation(width: Int, height: Int, argbAt: (Int, Int) -> Int): CrestSummonConfirmationDetection {
+        val titleCyan = ratio(width, height, .12, .30, .88, .39, argbAt) { r, g, b -> r < 110 && g > 125 && b > 165 }
+        val panelNavy = ratio(width, height, .10, .36, .90, .72, argbAt) { r, g, b -> r < 55 && g < 115 && b in 75..175 }
+        val yellowButton = ratio(width, height, .34, .61, .66, .70, argbAt) { r, g, b -> r > 175 && g > 120 && b < 100 }
+        val recognized = titleCyan >= .06 && panelNavy >= .28 && yellowButton >= .16
+        return CrestSummonConfirmationDetection(recognized, width * .50f, height * .655f, titleCyan, panelNavy, yellowButton)
     }
 
     private inline fun ratio(

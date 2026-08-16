@@ -135,12 +135,12 @@ class MainActivity : ComponentActivity() {
         preReleaseUpdates = settings.getBoolean("pre_release_updates", false)
         supporterLicense = SupporterLicenseManager.load(this)
         autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
-        autoFeed = supporterLicense != null && settings.getBoolean("auto_feed", false)
+        autoFeed = settings.getBoolean("auto_feed", false)
         dwsNeverLeft = supporterLicense != null && settings.getBoolean("dws_never_left", false)
         dwsForceForwardAttack = dwsNeverLeft
         dwsDashSpam = supporterLicense != null && settings.getBoolean("dws_dash_spam", false)
         dwsOnlyEnergy = supporterLicense != null && settings.getBoolean("dws_only_energy", false)
-        dwsBetterCollect = supporterLicense != null && settings.getBoolean("dws_better_collect", false)
+        dwsBetterCollect = true
         dwsBlindStageTap = supporterLicense != null && settings.getBoolean("dws_blind_stage_tap", false)
         if (autoNetworkDefense && autoFeed) {
             autoFeed = false
@@ -179,11 +179,10 @@ class MainActivity : ComponentActivity() {
                     if (enabled && !allowed) showLicenseDialog = true
                 },
                 onAutoFeed = { enabled ->
-                    val allowed = enabled && supporterLicense != null
                     FeedFrameAnalyzer.reset()
-                    autoFeed = allowed
-                    AutomationState.autoFeedEnabled = allowed
-                    if (allowed) {
+                    autoFeed = enabled
+                    AutomationState.autoFeedEnabled = enabled
+                    if (enabled) {
                         autoNetworkDefense = false
                         AutomationState.autoNetworkDefenseEnabled = false
                         NetworkDefenseFrameAnalyzer.reset()
@@ -192,8 +191,7 @@ class MainActivity : ComponentActivity() {
                             settings.edit().putBoolean("feed_delay_notice_seen", true).apply()
                         }
                     }
-                    settings.edit().putBoolean("auto_feed", allowed).putBoolean("auto_network_defense", autoNetworkDefense).apply()
-                    if (enabled && !allowed) showLicenseDialog = true
+                    settings.edit().putBoolean("auto_feed", enabled).putBoolean("auto_network_defense", autoNetworkDefense).apply()
                 },
                 onDwsSettings = { neverLeft, _, dashSpam, onlyEnergy, betterCollect, blindStageTap ->
                     val allowed = supporterLicense != null
@@ -201,7 +199,7 @@ class MainActivity : ComponentActivity() {
                     dwsForceForwardAttack = dwsNeverLeft
                     dwsDashSpam = allowed && dashSpam
                     dwsOnlyEnergy = allowed && onlyEnergy
-                    dwsBetterCollect = allowed && betterCollect
+                    dwsBetterCollect = true
                     dwsBlindStageTap = allowed && blindStageTap
                     AutomationState.dwsNavigationSettings = DwsNavigationSettings(
                         allowLeft = !dwsNeverLeft,
@@ -267,9 +265,8 @@ class MainActivity : ComponentActivity() {
                 onRemove = {
                     SupporterLicenseManager.remove(this)
                     supporterLicense = null
-                    autoFeed = false; AutomationState.autoFeedEnabled = false
-                    dwsNeverLeft = false; dwsForceForwardAttack = false; dwsDashSpam = false; dwsOnlyEnergy = false; dwsBetterCollect = false; dwsBlindStageTap = false; AutomationState.dwsNavigationSettings = DwsNavigationSettings()
-                    settings.edit().putBoolean("auto_feed", false).putBoolean("dws_never_left", false).putBoolean("dws_force_forward_attack", false).putBoolean("dws_dash_spam", false).putBoolean("dws_only_energy", false).putBoolean("dws_better_collect", false).putBoolean("dws_blind_stage_tap", false).apply()
+                    dwsNeverLeft = false; dwsForceForwardAttack = false; dwsDashSpam = false; dwsOnlyEnergy = false; dwsBetterCollect = true; dwsBlindStageTap = false; AutomationState.dwsNavigationSettings = DwsNavigationSettings()
+                    settings.edit().putBoolean("dws_never_left", false).putBoolean("dws_force_forward_attack", false).putBoolean("dws_dash_spam", false).putBoolean("dws_only_energy", false).putBoolean("dws_better_collect", false).putBoolean("dws_blind_stage_tap", false).apply()
                 },
                 onDonate = { openUrl(getString(R.string.supporter_purchase_url)) },
                 onClose = { showLicenseDialog = false },
@@ -385,7 +382,7 @@ class MainActivity : ComponentActivity() {
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
     if (showAccessHelp) AlertDialog(onDismissRequest = { showAccessHelp = false }, title = { Text(stringResource(R.string.accessibility_help_title)) }, text = { Text(stringResource(R.string.accessibility_help_body)) }, confirmButton = { TextButton(onClick = { showAccessHelp = false }) { Text(stringResource(R.string.close)) } })
     featureHelp?.let { FeatureHelpDialog(it, onClose = { featureHelp = null }) }
-    if (showDwsSettings) DwsSettingsDialog(dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, onDwsSettings, onClose = { showDwsSettings = false })
+    if (showDwsSettings) DwsSettingsDialog(dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, supporterLicense != null, onDwsSettings, onUnlock = onLicense, onClose = { showDwsSettings = false })
     if (showExperimental) ExperimentalSettingsDialog(legacyCapture, summonTouchCorrection, preReleaseUpdates, onLegacyCapture, onSummonTouchCorrection, onPreReleaseUpdates, onClose = { showExperimental = false })
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 29.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Box(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF075E73), Color(0xFF168A75), Color(0xFF514A93))), RoundedCornerShape(12.dp)).padding(horizontal = 12.dp, vertical = 8.dp)) {
@@ -412,22 +409,11 @@ class MainActivity : ComponentActivity() {
             OutlinedButton(onClick = onGrid, enabled = overlay, modifier = Modifier.weight(1f)) { Text(stringResource(if (grid) R.string.grid_hide else R.string.grid_show)) }
             Button(onClick = onStart, enabled = access && !auto, modifier = Modifier.weight(1f)) { Text(stringResource(if (auto) R.string.bot_running else if (capture) R.string.auto_start else R.string.auto_start_with_capture)) }
         }
-        FeatureInfoRow(R.string.digiworld_help_title, onHelp = { featureHelp = 2 })
-        OutlinedButton(
-            onClick = { showDwsSettings = true },
-            enabled = supporterLicense != null,
-            modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                containerColor = Color(0xFFE3F5E9),
-                disabledContainerColor = Color(0xFFE3F5E9),
-                contentColor = Color(0xFF176B3A),
-                disabledContentColor = Color(0xFF176B3A).copy(alpha = .55f),
-            ),
-        ) { Text(stringResource(R.string.dws_settings_button), fontWeight = FontWeight.SemiBold) }
+        FeatureInfoRow(R.string.digiworld_help_title, onAdvanced = { showDwsSettings = true }, onHelp = { featureHelp = 2 })
         FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
         FeatureSwitch(R.string.auto_dungeon, autoDungeon, onAutoDungeon, onHelp = { featureHelp = 1 })
+        FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { featureHelp = 4 })
         FeatureSwitch(R.string.auto_network_defense, autoNetworkDefense, onAutoNetworkDefense, onHelp = { featureHelp = 3 }, enabled = supporterLicense != null, supporterStyle = true)
-        FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { featureHelp = 4 }, enabled = supporterLicense != null, supporterStyle = true)
         ComingSoonFeatureRow(onHelp = { featureHelp = 5 })
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
@@ -476,7 +462,9 @@ class MainActivity : ComponentActivity() {
     onlyEnergy: Boolean,
     betterCollect: Boolean,
     blindStageTap: Boolean,
+    supporterUnlocked: Boolean,
     onSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit,
+    onUnlock: () -> Unit,
     onClose: () -> Unit,
 ) {
     var helpKind by remember { mutableStateOf<Int?>(null) }
@@ -497,33 +485,28 @@ class MainActivity : ComponentActivity() {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.dws_force_attack), modifier = Modifier.weight(1f))
                     IconButton(onClick = { helpKind = 0 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = neverLeft && forceForwardAttack, onCheckedChange = { onSettings(it, it, dashSpam, onlyEnergy, betterCollect, blindStageTap) })
+                    Switch(checked = neverLeft && forceForwardAttack, enabled = supporterUnlocked, onCheckedChange = { onSettings(it, it, dashSpam, onlyEnergy, betterCollect, blindStageTap) })
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.dws_dash_spam), modifier = Modifier.weight(1f))
                     IconButton(onClick = { helpKind = 1 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = dashSpam, onCheckedChange = { onSettings(neverLeft, neverLeft, it, onlyEnergy, betterCollect, blindStageTap) })
+                    Switch(checked = dashSpam, enabled = supporterUnlocked, onCheckedChange = { onSettings(neverLeft, neverLeft, it, onlyEnergy, betterCollect, blindStageTap) })
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.dws_only_energy), modifier = Modifier.weight(1f))
                     IconButton(onClick = { helpKind = 2 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = onlyEnergy, onCheckedChange = { onSettings(neverLeft, neverLeft, dashSpam, it, betterCollect, blindStageTap) })
+                    Switch(checked = onlyEnergy, enabled = supporterUnlocked, onCheckedChange = { onSettings(neverLeft, neverLeft, dashSpam, it, betterCollect, blindStageTap) })
                 }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.dws_better_collect), modifier = Modifier.weight(1f))
-                    IconButton(onClick = { helpKind = 3 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = betterCollect, onCheckedChange = { onSettings(neverLeft, neverLeft, dashSpam, onlyEnergy, it, blindStageTap) })
-                }
+
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.dws_blind_stage_tap), modifier = Modifier.weight(1f))
                     IconButton(onClick = { helpKind = 4 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = blindStageTap, onCheckedChange = { onSettings(neverLeft, neverLeft, dashSpam, onlyEnergy, betterCollect, it) })
+                    Switch(checked = blindStageTap, enabled = supporterUnlocked, onCheckedChange = { onSettings(neverLeft, neverLeft, dashSpam, onlyEnergy, betterCollect, it) })
                 }
-                Text(
-                    stringResource(if (neverLeft) R.string.dws_profile_forward else R.string.dws_profile_standard),
-                    color = Color(0xFF176B3A),
-                    fontWeight = FontWeight.SemiBold,
-                )
+                if (!supporterUnlocked) {
+                    OutlinedButton(onClick = onUnlock, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.dws_unlock_options)) }
+                }
+
             }
         },
         confirmButton = { Button(onClick = onClose) { Text(stringResource(R.string.close)) } },
@@ -550,9 +533,17 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun FeatureInfoRow(label: Int, onHelp: () -> Unit) {
+@Composable private fun FeatureInfoRow(label: Int, onAdvanced: (() -> Unit)? = null, onHelp: () -> Unit) {
     Row(Modifier.fillMaxWidth().heightIn(min = 42.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(label), modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
+        if (onAdvanced != null) {
+            TextButton(
+                onClick = onAdvanced,
+                modifier = Modifier.background(Color(0xFFDDF3E5), RoundedCornerShape(8.dp)),
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
+            ) { Text(stringResource(R.string.dws_settings_button), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Normal, maxLines = 1) }
+        }
         IconButton(onClick = onHelp, modifier = Modifier.size(36.dp)) { Text("?", fontWeight = FontWeight.Bold) }
     }
 }

@@ -21,9 +21,9 @@
     <string name="experimental_settings">🧪 Experimentelle Einstellungen</string>
     <string name="digiworld_help_title">DigiWorld Explorer</string>
     <string name="digiworld_help_body">Läuft automatisch durch die DigiWorld, erkennt das Raster dynamisch und sammelt Energie ein. Bedienungshilfe einmal aktivieren, dann START drücken und die Bildschirmfreigabe bestätigen.\n\nWICHTIG: Wähle Botamon als sichtbaren Sprite aus. Andere Sprites können dazu führen, dass der Spieler nicht erkannt wird.</string>
-    <string name="dws_settings_button">⚙️ DWS-Einstellungen · SUPPORTER</string>
-    <string name="dws_settings_title">DWS-Laufeinstellungen</string>
-    <string name="dws_settings_body">Supporter-Testeinstellungen für die DigiWorld-Navigation. Standard behält das bewährte Verhalten aus v3.1 bei. Experimentelle Optionen können jederzeit deaktiviert werden, ohne den normalen Planner zu verändern.</string>
+    <string name="dws_settings_button">⚙️ Advanced Settings</string>
+    <string name="dws_settings_title">Erweiterter DigiWorld-Modus</string>
+    <string name="dws_settings_body">Zum Testen am besten alle Optionen aktivieren.</string>
     <string name="dws_never_left">Nie nach links laufen (experimentell)</string>
     <string name="dws_force_attack">Force Forward &amp; Attack</string>
     <string name="dws_force_attack_hint">Läuft niemals nach links. Sichtbare Energie wird direkt angesteuert; sonst bleibt der Bot horizontal und greift ein Hindernis direkt vor ihm an. Deaktivieren stellt den unveränderten v3.1-Planner wieder her.</string>
@@ -36,8 +36,6 @@
     <string name="dws_blind_stage_tap">Stage-Failed-Wegklick (Test)</string>
     <string name="dws_blind_stage_tap_hint">Nur nach einem sicher erkannten DWS-Raster: Erkennt die grobe spielweite Meldungsfläche und tippt höchstens alle 10 Sekunden ein- bis zweimal leicht zufällig in den sicheren unteren Mittelbereich. Nach Verlassen des DWS-Modus wird nicht getippt.</string>
     <string name="dws_never_left_hint">Entfernt Linksbewegungen aus jeder Wegsuche. Dadurch können Items ausgelassen oder Angriff, Dash beziehungsweise ein sicherer Stopp nötig werden, wenn kein Vorwärtsweg übrig bleibt.</string>
-    <string name="dws_profile_standard">Aktives Profil: Standard (v3.1-Verhalten)</string>
-    <string name="dws_profile_forward">Aktives Profil: Nur vorwärts</string>
     <string name="legacy_capture">Legacy-Aufnahmegröße</string>
     <string name="legacy_capture_hint">Nur bei Aufnahmeproblemen vor dem Start der Bildschirmfreigabe aktivieren</string>
     <string name="summon_touch_correction">Summon-Touch-Ausgleich</string>
@@ -70,7 +68,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">• Verbesserter Moduswechsel\n• Verbesserte Automatik-Erkennung\n• Network-Defense-Fixes für Pixel- und OnePlus-Geräte\n• UI-Anpassungen</string>
+    <string name="release_notes_body">NEUE FEATURES\n• Erweiterte DigiWorld-Einstellungen · Supporter Beta\n• Auto-Beschwören für Wappen\n• Network Defense mit x2-Kampfgeschwindigkeit\n• Bond &amp; Freundschaft ist ab sofort für alle kostenlos\n\nBUGFIXES\n• DWS-Logik angepasst\n• Energie wird nur noch selten übergangen</string>
     <string name="community_intro_title">🎉 Neue Discord-Community</string>
     <string name="community_intro_body">Tritt unserer neuen Community bei, um auf dem aktuellen Stand zu bleiben, Fehler zu melden, neue Funktionen vorzuschlagen und dich mit anderen Nutzern auszutauschen.</string>
     <string name="community_intro_join">Discord beitreten</string>
@@ -80,15 +78,15 @@
     <string name="update_notice_later">Später</string>
     <string name="donate">💚 Hilf mit, die Weiterentwicklung möglich zu machen · PayPal</string>
     <string name="donate_url">https://paypal.me/thor666/4</string>    <string name="supporter_purchase_url">https://paypal.me/thor666/4</string>
-    <string name="supporter_license_import">♥ Supporter-Features freischalten</string>
-    <string name="supporter_license_active">♥ Supporter-Features</string>
-    <string name="supporter_license_title">Supporter-Features</string>
-    <string name="supporter_license_body">Unterstütze die Entwicklung mit 4 € / 4 $ über PayPal und fordere deinen persönlichen Aktivierungscode bei RobinTh0r an. Füge den vollständigen Code hier einmal ein; die App speichert und prüft ihn anschließend lokal.</string>
+    <string name="supporter_license_import">♥ Supporter Beta freischalten</string>
+    <string name="supporter_license_active">♥ Supporter Beta</string>
+    <string name="supporter_license_title">Supporter Beta</string>
+    <string name="supporter_license_body">Unterstütze die Entwicklung mit 4 € / 4 $ und erhalte Zugriff auf optionale Supporter-Beta-Testfunktionen. Diese können sich während der Testphase ändern. Füge deinen persönlichen Aktivierungscode einmal ein; die App speichert und prüft ihn lokal.</string>
     <string name="supporter_license_paypal">Mit 4 € / 4 $ über PayPal unterstützen</string>
     <string name="supporter_license_code">Aktivierungscode</string>
     <string name="supporter_license_activate">Aktivieren</string>
     <string name="supporter_license_invalid">Dieser Aktivierungscode ist ungültig oder unvollständig.</string>
-    <string name="supporter_license_enabled">Danke! Die Supporter-Features sind in dieser Installation freigeschaltet.</string>
+    <string name="supporter_license_enabled">Danke! Die Supporter-Beta-Funktionen sind in dieser Installation freigeschaltet.</string>
     <string name="supporter_license_remove">Freischaltung entfernen</string>
     <string name="overlay_wait_dialog">WARTE: Spielmeldung sichtbar</string>
     <string name="overlay_wait_motion">WARTE: Bild in Bewegung</string>
@@ -105,10 +103,10 @@
     <string name="accessibility_help_title">Troubleshooting und gesperrter Zugriff</string>
     <string name="accessibility_help_body">Samsung: Einmal die Blockierungswarnung auslösen, dann Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü → Eingeschränkte Einstellungen zulassen.\n\nWichtig: Für die Navigation muss der unterstützte kleine, dunkle Start-Sprite sichtbar sein.\n\nBei Problemen am besten zuerst „Alles stoppen“, anschließend das Spiel und DigiWorldExplorer vollständig schließen. Danach zuerst das Spiel starten und warten, bis das Spiel vollständig geladen ist. Erst dann DigiWorldExplorer öffnen, START drücken und die Bildschirmfreigabe bestätigen.</string>
     <string name="close">Schließen</string>
-    <string name="auto_purchase">Automatisch beschwören</string>
-    <string name="auto_network_defense">Network Defense Ops · SUPPORTER</string>
-    <string name="network_help_title">Network Defense Ops · Supporter-Feature</string>
-    <string name="network_help_body">Supporter-Feature, standardmäßig AUS. Startet Network Defense Ops automatisch, wartet alle fünf Wellen ab und erkennt anschließend das markante rot-schwarze Endboss-Banner. Dann tippt der Bot wiederholt auf „Aufgeben“, kehrt zur Auswahl zurück und startet den nächsten Versuch. So können pro Durchlauf ungefähr 40 besiegte Gegner gezählt werden. Nur in Network Defense Ops aktivieren.</string>
+    <string name="auto_purchase">Auto-Beschwören (Tickets &amp; Wappen)</string>
+    <string name="auto_network_defense">Network Defense Ops · SUPPORTER BETA</string>
+    <string name="network_help_title">Network Defense Ops · Supporter Beta</string>
+    <string name="network_help_body">Supporter-Beta-Funktion, standardmäßig AUS. Startet Network Defense Ops automatisch, wartet alle fünf Wellen ab und erkennt anschließend das markante rot-schwarze Endboss-Banner. Dann tippt der Bot wiederholt auf „Aufgeben“, kehrt zur Auswahl zurück und startet den nächsten Versuch. So können pro Durchlauf ungefähr 40 besiegte Gegner gezählt werden. Nur in Network Defense Ops aktivieren.</string>
     <string name="overlay_network_disabled">Network Defense Ops erkannt — Loop ist aus</string>
     <string name="overlay_network_start">AUTO: Network Defense Ops starten</string>
     <string name="overlay_network_waiting">AUTO: Network Defense Ops — warte auf den Endboss</string>
@@ -122,7 +120,7 @@
     <string name="overlay_dungeon_disabled">Dungeon erkannt — Dungeon-Automatik aus</string>
     <string name="overlay_dungeon_timeout">Dungeon-Automatik gestoppt — 15 Sekunden kein Fortschritt</string>
     <string name="summon_help_title">Automatisch beschwören</string>
-    <string name="summon_help_body">Betätigt auf unterstützten grünen und lila Belohnungsseiten automatisch die gelbe Beschwörung für 30 Tickets. Während des Ladeübergangs wird kurz weitergetippt; sobald die Ticketkosten rot erscheinen, stoppt die Funktion. Zum manuellen Beschwören kannst du sie jederzeit ausschalten.</string>
+    <string name="summon_help_body">Betätigt auf unterstützten Ticket- und Wappenseiten automatisch den gelben Beschwören-Button. Bei Wappen wird zusätzlich das Bestätigungsfenster automatisch bestätigt. Während Lade- und Belohnungsübergängen wird kurz weitergetippt; sobald die Kosten rot erscheinen, stoppt die Funktion. Zum manuellen Beschwören kannst du sie jederzeit ausschalten.</string>
     <string name="dungeon_help_title">VS. Dungeon</string>
     <string name="dungeon_help_body">Startet eine erkannte VS.-Dungeon-Herausforderung, wartet während des Kampfes ohne zu tippen, schließt die Belohnungsseite und startet das nächste Level. Die Erkennung nutzt das Bildlayout und ist von der Spielsprache unabhängig. Nach 15 Sekunden ohne sichtbaren Fortschritt stoppt der Modus.</string>
     <string name="overlay_no_digiworld">Keine DigiWorld erkannt</string>
@@ -131,18 +129,18 @@
     <string name="overlay_purchase_disabled">Beschwörungsbildschirm erkannt — Automatik aus</string>
     <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>
     <string name="notification_idle_body">1 Minute lang wurde weder DigiWorld noch ein Beschwörungs- oder VS.-Dungeon-Bildschirm erkannt. Aufnahme und Automatik wurden zum Schutz des Geräts gestoppt.</string>
-    <string name="auto_feed">Bond &amp; Freundschaft · SUPPORTER</string>
-    <string name="feed_help_title">Bond &amp; Freundschaft · Supporter-Feature</string>
-    <string name="feed_help_body">Erkennt die kleine weiße Futterblase auf dem Hauptbildschirm und tippt sie dreimal mit sicher zufälliger Position und variablem Timing an. So erreichst du schneller die Bond-/Freundschaftsstufe und die Belohnung am Partner-Icon. Die Funktion prüft sicherheitsbedingt in Abständen; nach dem Aktivieren kann es bis zu 30 Sekunden dauern, bis die erste Fütterung startet. Hauptbildschirm und Blase müssen über mehrere Bilder stabil erkannt werden. Die Supporter-Features müssen freigeschaltet sein.</string>
+    <string name="auto_feed">Bond &amp; Freundschaft · KOSTENLOS</string>
+    <string name="feed_help_title">Bond &amp; Freundschaft · Für alle kostenlos</string>
+    <string name="feed_help_body">Erkennt die kleine weiße Futterblase auf dem Hauptbildschirm und tippt sie dreimal mit sicher zufälliger Position und variablem Timing an. So erreichst du schneller die Bond-/Freundschaftsstufe und die Belohnung am Partner-Icon. Die Funktion prüft sicherheitsbedingt in Abständen; nach dem Aktivieren kann es bis zu 30 Sekunden dauern, bis die erste Fütterung startet. Hauptbildschirm und Blase müssen über mehrere Bilder stabil erkannt werden. Diese Funktion ist für alle kostenlos.</string>
     <string name="overlay_auto_feed">AUTO: Bond &amp; Freundschaft</string>
     <string name="overlay_stage_failed">AUTO: Stage fehlgeschlagen — Fenster schließen</string>
     <string name="overlay_auto_feed_open_partner">AUTO: Partnermenü öffnen</string>
     <string name="partner_rotation_preview">Partner-Rotation &amp; Fütter-Cycle</string>
-    <string name="coming_soon_supporter">COMING SOON · SUPPORTER</string>
+    <string name="coming_soon_supporter">COMING SOON · SUPPORTER BETA</string>
     <string name="partner_rotation_help_title">Partner-Rotation · Coming Soon</string>
-    <string name="partner_rotation_help_body">Geplant: Die App durchläuft die sichtbaren Partner nacheinander, startet deren Entwicklung, kehrt zur Hauptwelt zurück und füttert sie bei vorhandener Futterblase. Der ursprünglich ausgewählte Partner soll anschließend wiederhergestellt werden. Diese Supporter-Funktion befindet sich noch in Entwicklung und ist derzeit bewusst deaktiviert.</string>
-    <string name="supporter_intro_title">Neu: Supporter-Funktionen</string>
-    <string name="supporter_intro_body">Diese Version führt optionale Supporter-Funktionen ein. Alle bisher verfügbaren Funktionen bleiben weiterhin vollständig kostenlos. Supporter-Features helfen dabei, die weitere Entwicklung des Projekts zu finanzieren.</string>
+    <string name="partner_rotation_help_body">Geplant: Die App durchläuft die sichtbaren Partner nacheinander, startet deren Entwicklung, kehrt zur Hauptwelt zurück und füttert sie bei vorhandener Futterblase. Der ursprünglich ausgewählte Partner soll anschließend wiederhergestellt werden. Diese Supporter-Beta-Funktion befindet sich noch in Entwicklung und ist derzeit bewusst deaktiviert.</string>
+    <string name="supporter_intro_title">Neu: Supporter Beta</string>
+    <string name="supporter_intro_body">Diese Version führt optionale Supporter-Beta-Testfunktionen ein. Alle bisher verfügbaren Funktionen bleiben kostenlos. Die Unterstützung finanziert die Entwicklung, während diese Beta-Funktionen getestet und verbessert werden.</string>
     <string name="payment_contact_title">Kontakt für deine Freischaltung</string>
     <string name="payment_contact_body">Bitte gib in der PayPal-Zahlungsnachricht deinen Discord-Namen, Reddit-Namen oder deine E-Mail-Adresse an. Nur so kann ich dir den persönlichen Aktivierungscode anschließend zusenden.</string>
     <string name="payment_continue">Weiter zu PayPal</string>
@@ -152,4 +150,5 @@
     <string name="contact_copy">E-Mail-Adresse kopieren</string>
     <string name="feed_delay_notice_title">Bond &amp; Freundschaft aktiviert</string>
     <string name="feed_delay_notice_body">Die Erkennung prüft sicherheitsbedingt in Abständen. Es kann bis zu 30 Sekunden dauern, bis die erste Fütterung startet.</string>
+    <string name="dws_unlock_options">♥ Supporter Beta freischalten</string>
 </resources>

@@ -40,6 +40,22 @@ class RewardPurchaseDetectorTest {
         assertFalse(result.affordable)
     }
 
+    @Test fun recognizesCrestConfirmationDialog() {
+        val pixels = IntArray(width * height) { rgb(20, 80, 140) }
+        fill(pixels, .12, .30, .88, .39, rgb(40, 175, 225))
+        fill(pixels, .10, .36, .90, .72, rgb(20, 65, 125))
+        fill(pixels, .34, .61, .66, .70, rgb(235, 180, 25))
+        val result = RewardPurchaseDetector.detectCrestConfirmation(width, height) { x, y -> pixels[y * width + x] }
+        assertTrue(result.recognized)
+        assertEquals(width * .50f, result.tapX, .1f)
+        assertEquals(height * .655f, result.tapY, .1f)
+    }
+
+    @Test fun ordinaryBlueScreenIsNotCrestConfirmation() {
+        val pixels = IntArray(width * height) { rgb(20, 80, 140) }
+        val result = RewardPurchaseDetector.detectCrestConfirmation(width, height) { x, y -> pixels[y * width + x] }
+        assertFalse(result.recognized)
+    }
     private fun fill(pixels: IntArray, x0: Double, y0: Double, x1: Double, y1: Double, color: Int) {
         for (y in (height * y0).toInt() until (height * y1).toInt())
             for (x in (width * x0).toInt() until (width * x1).toInt()) pixels[y * width + x] = color
