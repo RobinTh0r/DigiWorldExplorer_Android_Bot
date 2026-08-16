@@ -78,7 +78,10 @@ object CaptureFrameAnalyzer {
             val playerCell=player?.key
             val items=cells.filter { (cell,score) -> cell!=playerCell && score.item>.06 }.keys.sortedWith(compareBy({it.row},{it.col}))
             val obstacles=cells.filter { (cell,score) -> cell!=playerCell && score.obstacle() }.keys.sortedWith(compareBy({it.row},{it.col}))
-            val dashButton=de.robinthor.digiworldexplorer.detection.DashButtonLocator.locate(width,height,pixels,detection.bounds)
+            val detectedDashButton=de.robinthor.digiworldexplorer.detection.DashButtonLocator.locate(width,height,pixels,detection.bounds)
+            val dashButton=detectedDashButton ?: if(de.robinthor.digiworldexplorer.strategy.AutomationState.dwsNavigationSettings.dashSpamUntilZero)
+                de.robinthor.digiworldexplorer.detection.DashButtonLocator.relativeFallback(width,height,detection.bounds)
+            else null
             val hud=de.robinthor.digiworldexplorer.detection.HudCounterReader.read(width,height,pixels,detection.bounds)
             // Aufgezeichnet sind bisher nur die Ziffern 1 und 2. Unbekannte Formen werden hier
             // ausgegeben, damit die fehlenden Vorlagen aus echten Spielstaenden ergaenzt werden koennen.

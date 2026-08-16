@@ -51,6 +51,8 @@ object AutoMoveController{
  private const val DIALOG_TEXT=.08
  /** So viele ueberdeckte Zellen gelten als Dialog - eine Meldung zieht sich ueber das ganze Brett. */
  private const val DIALOG_CELLS=3
+ private const val BLIND_STAGE_INTERVAL=10_000L
+ private const val DWS_CONTEXT_TTL=8_000L
  private val main=Handler(Looper.getMainLooper());private val history=ArrayDeque<Cell>();private val recentItems=mutableMapOf<Cell,Int>()
  private var candidate:Cell?=null;private var stable=0;private var lastTap=0L;private var nextTapDelay=TAP_DELAY;private var pending=false;private var previous:Cell?=null;private var expected:Cell?=null
  /** Wird gesetzt, sobald onAnalysis eine Meldung im Bild erkennt. dispatchBurst liest diesen
@@ -64,6 +66,7 @@ object AutoMoveController{
   *  zweimal unveraendert, gilt die Aktion fuer diese Sitzung als leer oder unwirksam. */
  private var lastResourceKind:ActionKind?=null;private var resourcePlayer:Cell?=null;private var resourceUnchangedFrames=0
  private var attackUnavailable=false;private var dashUnavailable=false;private var dashBlockedUntil=0L
+ private var lastDwsGridSeen=0L;private var lastBlindStageTap=0L
  private var lastSignature:List<Double> = emptyList();private var lastSettledSignature:List<Double> = emptyList();private var expectedAge=0;private var unsettledFrames=0
  /** Laeuft die Figur nach rechts, scrollt bei diesem Spiel das Brett mit und die Figur bleibt auf
   *  derselben Bildschirmzelle. Das wird nicht angenommen, sondern am ersten Einzelschritt gemessen -
@@ -75,19 +78,30 @@ object AutoMoveController{
   // werden - ihr eigenes Sprite haelt den Item-Score sonst dauerhaft oben und die Figur
   // wird unauffindbar.
   val self=setOfNotNull(previous,expected)
-  recentItems.replaceAll{_,ttl->ttl-1};recentItems.entries.removeIf{it.value<=0||it.key in self};cells.filter{it.value.item>.06&&it.key !in self}.keys.forEach{recentItems[it]=6}
+  recentItems.replaceAll{_,ttl->ttl-1};recentItems.entries.removeIf{it.value<=0||it.key in self}
+  cells.filter{(_,score)->score.item>.06&&(!AutomationState.dwsNavigationSettings.collectOnlyEnergy||score.orange>.06)}
+   .filterKeys{it !in self}.keys.forEach{recentItems[it]=6}
   val service=DigiWorldAccessibilityService.instance
   if(pending&&SystemClock.elapsedRealtime()-lastTap>PENDING_TIMEOUT){
    Log.w("DigiWorldAuto","Tap-Rueckmeldung ausgeblieben - Sperre aufgehoben");pending=false;expected=null;trackingConfirmed=false
   }
   val entry=PlayerSelector.select(cells,previous,expected,recentItems.keys,MIN_PLAYER);val player=entry?.key;val valid=confidence>=MIN_GRID&&entry!=null
-  val obstacles=cells.filter{(c,s)->c!=player&&s.obstacle()}.keys+preview.filter{it.value.pyramid>.17&&it.value.item<=.06}.keys;val items=cells.filter{(c,s)->c!=player&&s.item>.06}.keys+preview.filter{it.value.item>.06}.keys
+  if(valid)lastDwsGridSeen=SystemClock.elapsedRealtime()
+  val obstacles=cells.filter{(c,s)->c!=player&&s.obstacle()}.keys+preview.filter{it.value.pyramid>.17&&it.value.item<=.06}.keys
+  val onlyEnergy=AutomationState.dwsNavigationSettings.collectOnlyEnergy
+  val energyVisible=cells.any{(c,s)->c!=player&&s.orange>.06}
+  val items=cells.filter{(c,s)->c!=player&&s.item>.06&&(!onlyEnergy||s.orange>.06)}.keys+
+   preview.filter{it.value.item>.06&&(!onlyEnergy||it.value.orange>.06)}.keys
   // Legt das Spiel eine Meldung ueber das Brett ("Bewegung nicht moeglich"), sind saemtliche
   // Zellwerte wertlos. Wird hier weitergetippt, verschiebt sich die Verfolgung endgueltig.
   val texty=cells.count{it.value.text>DIALOG_TEXT}
   if(texty>=DIALOG_CELLS){
+   val now=SystemClock.elapsedRealtime()
+   if(AutomationState.dwsNavigationSettings.blindStageFailedTap&&now-lastDwsGridSeen<=DWS_CONTEXT_TTL&&now-lastBlindStageTap>=BLIND_STAGE_INTERVAL&&service!=null){
+    lastBlindStageTap=now;dispatchBlindStageDismiss(service,bounds)
+   }
    Log.i("DigiWorldAuto","Meldung im Bild ($texty Zellen mit Schrift) - Automatik wartet")
-   service?.updateOverlay(bounds,null,emptySet(),emptySet(),null,service.getString(R.string.overlay_wait_dialog),AutomationState.overlayEnabled,hud)
+   service?.updateOverlay(bounds,null,emptySet(),emptySet(),null,service.getString(R.string.overlay_wait_dialog),AutomationState.overlayEnabled,hud,dashButton)
    dialogActive=true;candidate=null;stable=0;expected=null;expectedAge=0;trackingConfirmed=false;probeFrom=null;return
   }
   dialogActive=false
@@ -103,7 +117,7 @@ object AutoMoveController{
    // Ein einzelner unsicherer Analyseframe darf das zuletzt stabile Raster nicht loeschen.
    // ScreenCaptureService entfernt es weiterhin nach drei Sekunden ohne erkannten Spielinhalt.
    if(cells.isEmpty()||confidence<MIN_GRID)service?.updateStatusKeepingGrid(overlayStatus,AutomationState.overlayEnabled)
-   else service?.updateOverlay(bounds,player,items,obstacles,null,overlayStatus,AutomationState.overlayEnabled,hud)
+   else service?.updateOverlay(bounds,player,items,obstacles,null,overlayStatus,AutomationState.overlayEnabled,hud,dashButton)
    candidate=null;stable=0;return
   }
   lostFrames=0
@@ -117,7 +131,7 @@ object AutoMoveController{
   val settled=quiet||unsettledFrames>=SETTLE_LIMIT
   if(settled&&!quiet)Log.w("DigiWorldAuto","Bild nach $unsettledFrames Analysen nie ruhig - handle trotzdem")
   if(!settled){
-   service?.updateOverlay(bounds,player,items,obstacles,null,service.getString(R.string.overlay_wait_motion),AutomationState.overlayEnabled,hud)
+   service?.updateOverlay(bounds,player,items,obstacles,null,service.getString(R.string.overlay_wait_motion),AutomationState.overlayEnabled,hud,dashButton)
    candidate=null;stable=0;return
   }
   unsettledFrames=0
@@ -182,14 +196,14 @@ object AutoMoveController{
    return
   }
   // Gebuendelt wird nur, wenn die Verfolgung sitzt und das Scrollverhalten gemessen ist.
-  val burst=if(!trackingConfirmed||rightScrolls==null)1
-   else if(cells.any{(c,s)->c!=player&&s.item>.06})BURST_ITEM else BURST_RIGHT
+  val burst=if(!trackingConfirmed||rightScrolls==null||(AutomationState.dwsNavigationSettings.betterEnergyCollect&&energyVisible))1
+   else if(cells.any{(c,s)->c!=player&&s.item>.06&&(!onlyEnergy||s.orange>.06)})BURST_ITEM else BURST_RIGHT
   // Bringt ein Dash nach mehreren Versuchen nie echten Fortschritt (0 Ladungen oder Knopf falsch
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
-  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&dashFailures<3&&!dashUnavailable&&SystemClock.elapsedRealtime()>=dashBlockedUntil,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=if(dashUnavailable)0 else if(AutomationState.dwsNavigationSettings.dashSpamUntilZero)hud.dash?:0 else hud.dash?:UNKNOWN_DASH_FALLBACK,stuck=stuck,claws=if(attackUnavailable)0 else hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst,settings=AutomationState.dwsNavigationSettings)
+  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&dashFailures<3&&!dashUnavailable&&SystemClock.elapsedRealtime()>=dashBlockedUntil,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=if(dashUnavailable)0 else hud.dash?:UNKNOWN_DASH_FALLBACK,stuck=stuck,claws=if(attackUnavailable)0 else hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst,settings=AutomationState.dwsNavigationSettings)
   val action=plan.firstOrNull()
   val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
-  service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud)
+  service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud,dashButton)
   if(!AutomationState.enabled||pending||action==null)return
   // Nach einem bestaetigten Zug reicht eine Analyse zur Bestaetigung, sonst zwei.
   val needed=if(trackingConfirmed)1 else 2
@@ -226,6 +240,20 @@ object AutoMoveController{
   main.post{dispatchBurst(service,taps,0,info)}
  }
 
+ private fun dispatchBlindStageDismiss(service:DigiWorldAccessibilityService,bounds:GridBounds){
+  val gridWidth=(bounds.right-bounds.left).toFloat();val gridHeight=(bounds.bottom-bounds.top).toFloat()
+  val radius=minOf(gridWidth*.08f,service.resources.displayMetrics.density*38f)
+  val baseX=bounds.left+gridWidth*.50f;val baseY=bounds.bottom+gridHeight*.33f
+  val taps=if(kotlin.random.Random.nextBoolean())2 else 1
+  fun tap(index:Int){
+   val (x,y)=SafeTapRandomizer.point(baseX,baseY,radius,radius*.45f)
+   service.dispatchValidatedTap(x,y){ok->
+    Log.i("DigiWorldAuto","Stage-Failed-Testtap ${index+1}/$taps ok=$ok x=$x y=$y")
+    if(ok&&index+1<taps)main.postDelayed({tap(index+1)},SafeTapRandomizer.delay(240L,80L))
+   }
+  }
+  main.post{tap(0)}
+ }
  private fun cellCenter(bounds:GridBounds,row:Int,col:Int):Pair<Float,Float> {
   val cw=(bounds.right-bounds.left)/5f;val ch=(bounds.bottom-bounds.top)/5f
   // Nur die inneren 16 % der Zelle werden genutzt: selbst der maximale Zufallswert bleibt
@@ -247,5 +275,5 @@ object AutoMoveController{
   }
  }
  fun pauseForPurchaseScreen(){dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
- fun reset(){candidate=null;stable=0;pending=false;nextTapDelay=TAP_DELAY;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0;lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0;attackUnavailable=false;dashUnavailable=false;dashBlockedUntil=0L}
+ fun reset(){candidate=null;stable=0;pending=false;nextTapDelay=TAP_DELAY;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0;lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0;attackUnavailable=false;dashUnavailable=false;dashBlockedUntil=0L;lastDwsGridSeen=0L;lastBlindStageTap=0L}
 }

@@ -202,4 +202,20 @@ class MovementPlannerTest{
   assertNotEquals(ActionKind.DASH,a?.kind)
   assertEquals(Cell(1,1),a?.target)
  }
+
+ @Test fun betterCollectTakesSameColumnEnergyBeforeCloserForwardEnergy(){
+  val settings=DwsNavigationSettings(collectOnlyEnergy=true,betterEnergyCollect=true)
+  val a=MovementPlanner.choose(Cell(2,1),board(items=setOf(Cell(0,1),Cell(2,2))),emptyList(),settings=settings)
+  assertEquals(Direction.UP,a?.direction)
+  assertEquals(Cell(1,1),a?.target)
+ }
+
+ @Test fun onlyEnergyIgnoresOtherCollectables(){
+  val settings=DwsNavigationSettings(collectOnlyEnergy=true)
+  val cells=board(items=setOf(Cell(1,1))).toMutableMap()
+  cells[Cell(1,1)]=cells.getValue(Cell(1,1)).copy(orange=0.0)
+  val a=MovementPlanner.choose(Cell(2,1),cells,emptyList(),settings=settings)
+  assertNotEquals(Cell(1,1),a?.target)
+  assertEquals(Direction.RIGHT,a?.direction)
+ }
 }

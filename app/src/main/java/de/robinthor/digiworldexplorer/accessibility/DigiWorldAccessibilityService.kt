@@ -34,7 +34,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
  fun updateStatusKeepingGrid(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  fun showStatusOnly(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
- fun updateOverlay(bounds:GridBounds?,player:Cell?,items:Set<Cell>,obstacles:Set<Cell>,target:Cell?,status:String,visible:Boolean,hud:HudCounters=HudCounters()){overlay?.post{overlay?.apply{this.bounds=bounds;this.player=player;this.items=items;this.obstacles=obstacles;this.target=target;this.status=status;this.hud=hud;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
+ fun updateOverlay(bounds:GridBounds?,player:Cell?,items:Set<Cell>,obstacles:Set<Cell>,target:Cell?,status:String,visible:Boolean,hud:HudCounters=HudCounters(),dashButton:Pair<Float,Float>?=null){overlay?.post{overlay?.apply{this.bounds=bounds;this.player=player;this.items=items;this.obstacles=obstacles;this.target=target;this.status=status;this.hud=hud;this.dashButton=dashButton;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  // FLAG_LAYOUT_NO_LIMITS und LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS sind noetig, damit das Overlay im
  // selben Koordinatensystem liegt wie der Vollbild-Capture. Ohne beides ist das Fenster um die
  // Statusleistenhoehe nach unten versetzt; die gezeichneten Linien landen dann in den Abtastfenstern
@@ -42,7 +42,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  // FLAG_SECURE ist hier bewusst NICHT gesetzt: es schwaerzt auf Android 15 die gesamte MediaProjection.
  private fun showOverlay(){if(overlay!=null)return;android.util.Log.i("DigiWorldOverlay","create canDrawOverlays=${Settings.canDrawOverlays(this)}");overlay=GridOverlayView().also{getSystemService(WindowManager::class.java).addView(it,WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT,if(Settings.canDrawOverlays(this)) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT).apply{gravity=Gravity.TOP or Gravity.START;layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS})}}
  private fun removeOverlay(){overlay?.let{runCatching{getSystemService(WindowManager::class.java).removeView(it)}};overlay=null}
- inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status=getString(R.string.overlay_bot_ready);var hud:HudCounters=HudCounters();var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
+ inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status=getString(R.string.overlay_bot_ready);var hud:HudCounters=HudCounters();var dashButton:Pair<Float,Float>?=null;var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
   init{background=ColorDrawable(Color.TRANSPARENT)}
   // Alle Maße sind relativ zur Zellgröße, damit nichts in die Abtastfenster der Klassifizierung ragt:
   // CellClassifier und PreviewClassifier lassen an jeder Zellkante 7% Rand aus. Linien liegen auf den
@@ -56,6 +56,13 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    val inset=unit*.035f
    fun box(cell:Cell,color:Int,w:Float){p.color=color;p.strokeWidth=w;val l=b.left+cell.col*cw+inset;val t=b.top+cell.row*ch+inset;c.drawRect(l,t,l+cw-2*inset,t+ch-2*inset,p)}
    obstacles.forEach{box(it,Color.RED,unit*.035f)};items.forEach{box(it,Color.MAGENTA,unit*.04f)};player?.let{box(it,Color.YELLOW,unit*.05f)};target?.let{box(it,Color.CYAN,unit*.05f)}
+   // Dash-Debug: erkannte HUD-Zahl und gefundener Button. Grün = Vorrat > 0, Rot = sicher 0,
+   // Grau = Zahl unlesbar. Die Boxen liegen außerhalb der Raster-Abtastflächen.
+   val dashColor=when{hud.dash==0->Color.RED;hud.dash!=null&&hud.dash!!>0->Color.GREEN;else->Color.GRAY}
+   p.style=Paint.Style.STROKE;p.pathEffect=null;p.color=dashColor;p.strokeWidth=unit*.035f
+   hud.dashBox?.let{d->c.drawRoundRect(d.left-unit*.04f,d.top-unit*.04f,d.right+unit*.04f,d.bottom+unit*.04f,unit*.05f,unit*.05f,p)}
+   dashButton?.let{(x,y)->c.drawCircle(x,y,unit*.25f,p)}
+   hud.dashBox?.let{d->p.textSize=ch*.20f;p.style=Paint.Style.FILL;p.color=dashColor;c.drawText("DASH ${hud.dash?.toString()?:"?"}",d.left.toFloat(),(d.top-ch*.10f).coerceAtLeast(ch*.20f),p)}
    // Status direkt unter dem Raster im hellen Bereich. Heller Umriss plus dunkle Füllung bleibt auf
    // hellem wie dunklem Untergrund lesbar; unterhalb von bounds.bottom liegt kein Abtastfenster mehr.
    val ts=ch*.24f;p.textSize=ts;val below=b.bottom+ts*1.15f;val ty=if(below<=height-ts*.3f)below else (b.top-ts*.45f).coerceAtLeast(ts)

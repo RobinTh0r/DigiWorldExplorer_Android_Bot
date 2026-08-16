@@ -109,6 +109,10 @@ object MovementPlanner{
   // directly in front. No generic item route can pull the player sideways or backwards here.
   if(settings.forceForwardAttack){
    val energy=cells.filter{(cell,score)->cell!=player&&score.orange>ENERGY_ORANGE}.keys
+   if(settings.betterEnergyCollect){
+    val sameColumn=energy.filter{it.col==player.col}.toSet()
+    forwardItemPath(player,sameColumn,cells,blockedCells,settings)?.firstOrNull()?.let{return it.copy(reason="Energie in eigener Spalte zuerst")}
+   }
    forwardItemPath(player,energy,cells,blockedCells,settings)?.firstOrNull()?.let{return it.copy(reason="Energie direkt")}
    val right=Cell(player.row,player.col+1)
    cells[right]?.let{score->
@@ -170,11 +174,17 @@ object MovementPlanner{
   * naechstgelegene Symbol und lief an einer bereits sichtbaren Energie vorbei, bis sie weg war.
   */
  private fun itemPath(player:Cell,cells:Map<Cell,CellScores>,blocked:Set<Cell>,settings:DwsNavigationSettings):List<Action>?{
-  val items=cells.filter{(cell,s)->cell!=player&&s.item>ITEM_SCORE}.keys
+  val items=cells.filter{(cell,s)->
+   cell!=player&&s.item>ITEM_SCORE&&(!settings.collectOnlyEnergy||s.orange>ENERGY_ORANGE)
+  }.keys
   if(items.isEmpty())return null
   val any=forwardItemPath(player,items,cells,blocked,settings)
   val energy=items.filter{(cells[it]?.orange?:0.0)>ENERGY_ORANGE}.toSet()
   if(energy.isEmpty())return any
+  if(settings.betterEnergyCollect){
+   val sameColumn=energy.filter{it.col==player.col}.toSet()
+   forwardItemPath(player,sameColumn,cells,blocked,settings)?.let{return it}
+  }
   val toEnergy=forwardItemPath(player,energy,cells,blocked,settings)?:return any
   if(any==null)return toEnergy
   return if(toEnergy.size<=any.size+ENERGY_DETOUR)toEnergy else any

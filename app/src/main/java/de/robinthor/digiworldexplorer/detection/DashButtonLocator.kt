@@ -27,4 +27,13 @@ object DashButtonLocator{
   if(n<MIN_SAMPLES)return null
   return (sumX.toDouble()/n).toFloat() to (sumY.toDouble()/n).toFloat()
  }
+
+ /** Sicherer relativer Mittelpunkt nur fuer den expliziten experimentellen Dash-Spam-Fallback. */
+ fun relativeFallback(width:Int,height:Int,bounds:GridBounds):Pair<Float,Float>?{
+  val gridWidth=(bounds.right-bounds.left).toFloat();val gridHeight=(bounds.bottom-bounds.top).toFloat()
+  if(gridWidth<=0f||gridHeight<=0f)return null
+  val x=bounds.left+gridWidth*.66f;val y=bounds.bottom+gridHeight*.60f
+  if(x !in 0f..width.toFloat()||y !in 0f..height.toFloat())return null
+  return x to y
+ }
 }

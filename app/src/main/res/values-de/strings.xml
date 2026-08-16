@@ -28,7 +28,13 @@
     <string name="dws_force_attack">Force Forward &amp; Attack</string>
     <string name="dws_force_attack_hint">Läuft niemals nach links. Sichtbare Energie wird direkt angesteuert; sonst bleibt der Bot horizontal und greift ein Hindernis direkt vor ihm an. Deaktivieren stellt den unveränderten v3.1-Planner wieder her.</string>
     <string name="dws_dash_spam">Dash-Spam bis 0</string>
-    <string name="dws_dash_spam_hint">Wenn keine Energie sichtbar ist, wird Dash nur so lange wiederholt, wie die HUD-Zahl sicher größer als 0 gelesen wird. Eine unlesbare Zahl startet keinen Spam, eine erkannte 0 beendet ihn.</string>
+    <string name="dws_dash_spam_hint">Wenn keine Energie sichtbar ist, wird Dash bis zur HUD-Zahl 0 wiederholt. Ist die Zahl kurz unlesbar, gibt es höchstens drei sichere Versuche; kein Fortschritt oder eine erkannte 0 stoppt den Spam.</string>
+    <string name="dws_only_energy">Nur Energie sammeln</string>
+    <string name="dws_only_energy_hint">Nur orange Energie gilt als Sammelziel. Krallen, Schritte, Dash-Drops und andere Collectables werden wie leere begehbare Felder behandelt; Pyramiden bleiben Hindernisse.</string>
+    <string name="dws_better_collect">Better Energy Collect (Test)</string>
+    <string name="dws_better_collect_hint">Solange Energie sichtbar ist, werden Mehrfachschritte deaktiviert und das ganze Raster nach jedem Einzelschritt neu geprüft. Energie in derselben Spalte wird vertikal eingesammelt, bevor es weitergeht.</string>
+    <string name="dws_blind_stage_tap">Stage-Failed-Wegklick (Test)</string>
+    <string name="dws_blind_stage_tap_hint">Nur nach einem sicher erkannten DWS-Raster: Erkennt die grobe spielweite Meldungsfläche und tippt höchstens alle 10 Sekunden ein- bis zweimal leicht zufällig in den sicheren unteren Mittelbereich. Nach Verlassen des DWS-Modus wird nicht getippt.</string>
     <string name="dws_never_left_hint">Entfernt Linksbewegungen aus jeder Wegsuche. Dadurch können Items ausgelassen oder Angriff, Dash beziehungsweise ein sicherer Stopp nötig werden, wenn kein Vorwärtsweg übrig bleibt.</string>
     <string name="dws_profile_standard">Aktives Profil: Standard (v3.1-Verhalten)</string>
     <string name="dws_profile_forward">Aktives Profil: Nur vorwärts</string>
