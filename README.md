@@ -97,6 +97,12 @@ Network Defense ticket recognition uses the ticket badge layout rather than OCR 
 
 You can stop automation at any time from the app or Android notification.
 
+## ✅ One-time setup and built-in help
+
+The compact **One-time setup** panel shows the real state of Accessibility, overlay permission and background battery access. Once all three are granted it turns green and can be collapsed.
+
+Use **Troubleshooting** for a short guided checklist. It links directly to the relevant Android settings and covers blocked Accessibility on Samsung devices, the recommended restart and screen-sharing order, grid/player detection with the Botamon sprite, Legacy capture size and Network Ops loading issues.
+
 ## 🛡️ Safety and privacy
 
 - Every decision uses a newly analyzed frame.
