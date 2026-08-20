@@ -68,7 +68,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">NEUE FEATURES\n• Erweiterte DigiWorld-Einstellungen · Supporter Beta\n• Auto-Beschwören für Wappen\n• Network Defense mit x2-Kampfgeschwindigkeit\n• Bond &amp; Freundschaft ist ab sofort für alle kostenlos\n\nBUGFIXES\n• DWS-Logik angepasst\n• Energie wird nur noch selten übergangen</string>
+    <string name="release_notes_body">VERBESSERTE EINRICHTUNG\n• Akkufreigabe für Hintergrundbetrieb prüfen\n• Kompakte, einklappbare Einrichtung\n• Geführter Troubleshooting-Assistent\n\nOBERFLÄCHE\n• Klarer Zurück-zum-Spiel-Button bei aktivem Bot\n• Vereinfachte Bond-&amp;-Freundschaft-Beschriftung</string>
     <string name="community_intro_title">🎉 Neue Discord-Community</string>
     <string name="community_intro_body">Tritt unserer neuen Community bei, um auf dem aktuellen Stand zu bleiben, Fehler zu melden, neue Funktionen vorzuschlagen und dich mit anderen Nutzern auszutauschen.</string>
     <string name="community_intro_join">Discord beitreten</string>
@@ -129,9 +129,9 @@
     <string name="overlay_purchase_disabled">Beschwörungsbildschirm erkannt — Automatik aus</string>
     <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>
     <string name="notification_idle_body">1 Minute lang wurde weder DigiWorld noch ein Beschwörungs- oder VS.-Dungeon-Bildschirm erkannt. Aufnahme und Automatik wurden zum Schutz des Geräts gestoppt.</string>
-    <string name="auto_feed">Bond &amp; Freundschaft · KOSTENLOS</string>
-    <string name="feed_help_title">Bond &amp; Freundschaft · Für alle kostenlos</string>
-    <string name="feed_help_body">Erkennt die kleine weiße Futterblase auf dem Hauptbildschirm und tippt sie dreimal mit sicher zufälliger Position und variablem Timing an. So erreichst du schneller die Bond-/Freundschaftsstufe und die Belohnung am Partner-Icon. Die Funktion prüft sicherheitsbedingt in Abständen; nach dem Aktivieren kann es bis zu 30 Sekunden dauern, bis die erste Fütterung startet. Hauptbildschirm und Blase müssen über mehrere Bilder stabil erkannt werden. Diese Funktion ist für alle kostenlos.</string>
+    <string name="auto_feed">Bond &amp; Freundschaft</string>
+    <string name="feed_help_title">Bond &amp; Freundschaft</string>
+    <string name="feed_help_body">Erkennt die kleine weiße Futterblase auf dem Hauptbildschirm und tippt sie dreimal mit sicher zufälliger Position und variablem Timing an. So erreichst du schneller die Bond-/Freundschaftsstufe und die Belohnung am Partner-Icon. Die Funktion prüft sicherheitsbedingt in Abständen; nach dem Aktivieren kann es bis zu 30 Sekunden dauern, bis die erste Fütterung startet. Hauptbildschirm und Blase müssen über mehrere Bilder stabil erkannt werden. </string>
     <string name="overlay_auto_feed">AUTO: Bond &amp; Freundschaft</string>
     <string name="overlay_stage_failed">AUTO: Stage fehlgeschlagen — Fenster schließen</string>
     <string name="overlay_auto_feed_open_partner">AUTO: Partnermenü öffnen</string>
@@ -140,7 +140,7 @@
     <string name="partner_rotation_help_title">Partner-Rotation · Coming Soon</string>
     <string name="partner_rotation_help_body">Geplant: Die App durchläuft die sichtbaren Partner nacheinander, startet deren Entwicklung, kehrt zur Hauptwelt zurück und füttert sie bei vorhandener Futterblase. Der ursprünglich ausgewählte Partner soll anschließend wiederhergestellt werden. Diese Supporter-Beta-Funktion befindet sich noch in Entwicklung und ist derzeit bewusst deaktiviert.</string>
     <string name="supporter_intro_title">Neu: Supporter Beta</string>
-    <string name="supporter_intro_body">Diese Version führt optionale Supporter-Beta-Testfunktionen ein. Alle bisher verfügbaren Funktionen bleiben kostenlos. Die Unterstützung finanziert die Entwicklung, während diese Beta-Funktionen getestet und verbessert werden.</string>
+    <string name="supporter_intro_body">Diese Version führt optionale Supporter-Beta-Testfunktionen ein. Die Unterstützung finanziert die Entwicklung, während diese optionalen Testfunktionen weiter verbessert werden.</string>
     <string name="payment_contact_title">Kontakt für deine Freischaltung</string>
     <string name="payment_contact_body">Bitte gib in der PayPal-Zahlungsnachricht deinen Discord-Namen, Reddit-Namen oder deine E-Mail-Adresse an. Nur so kann ich dir den persönlichen Aktivierungscode anschließend zusenden.</string>
     <string name="payment_continue">Weiter zu PayPal</string>
@@ -151,4 +151,24 @@
     <string name="feed_delay_notice_title">Bond &amp; Freundschaft aktiviert</string>
     <string name="feed_delay_notice_body">Die Erkennung prüft sicherheitsbedingt in Abständen. Es kann bis zu 30 Sekunden dauern, bis die erste Fütterung startet.</string>
     <string name="dws_unlock_options">♥ Supporter Beta freischalten</string>
+<string name="setup_progress">Einmalige Einrichtung · %1$d/3 erledigt</string>
+    <string name="permission_battery">Akkunutzung im Hintergrund erlauben</string>
+    <string name="bot_return_game">↗ BOT LÄUFT — ZUM SPIEL</string>
+    <string name="troubleshooting_button">💬 Troubleshooting</string>
+    <string name="troubleshooting_title">Schnelle Problemlösung</string>
+    <string name="troubleshooting_intro">Wähle das Problem, das am besten passt. Der Assistent öffnet nur Android-Einstellungen oder ändert eine von dir gewählte Option.</string>
+    <string name="troubleshooting_check_setup">Einmalige Einrichtung prüfen</string>
+    <string name="troubleshooting_no_grid">DigiWorld-Raster fehlt oder läuft nicht</string>
+    <string name="troubleshooting_access_blocked">Bedienungshilfe ist gesperrt</string>
+    <string name="troubleshooting_capture_problem">Aufnahme ist grau, schwarz oder instabil</string>
+    <string name="troubleshooting_setup_title">Einmalige Einrichtung prüfen</string>
+    <string name="troubleshooting_setup_body">Alle drei Punkte sollten aktiv sein. Die Akkufreigabe verhindert, dass Android Aufnahme oder Bedienungshilfe im Hintergrund beendet.</string>
+    <string name="troubleshooting_grid_title">Raster- &amp; Aufnahmehilfe</string>
+    <string name="troubleshooting_grid_body">Öffne die DigiWorld, erlaube das Overlay und warte, bis das Bild ruhig ist. Starte dann die Automatik erneut. Bei grauem, schwarzem oder versetztem Bild kannst du Legacy-Aufnahmegröße testen und danach neu starten.</string>
+    <string name="troubleshooting_botamon">Wichtig: Für eine zuverlässige Spielererkennung Botamon als sichtbaren Partner-Sprite verwenden.</string>
+    <string name="troubleshooting_legacy_hint">Eine Änderung stoppt die Aufnahme. Danach Automatik neu starten.</string>
+    <string name="troubleshooting_samsung_title">Samsung: Eingeschränkte Einstellungen</string>
+    <string name="troubleshooting_samsung_body">Versuche zuerst einmal, die Bedienungshilfe zu aktivieren. Öffne dann Android-Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü → „Eingeschränkte Einstellungen zulassen“. Danach hierher zurückkehren und die Bedienungshilfe erneut aktivieren.</string>
+    <string name="troubleshooting_restart">Automatik neu starten</string>
+    <string name="troubleshooting_back">Zurück</string>
 </resources>

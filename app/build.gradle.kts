@@ -25,13 +25,19 @@ android {
         applicationId = "de.robinthor.digiworldexplorer"
         minSdk = 28
         targetSdk = 36
-        versionCode = 44
-        versionName = "3.2.0"
+        versionCode = 45
+        versionName = "3.3.0-beta.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file(".local/debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (keystorePropertiesFile.exists()) {
             create("release") {
                 storeFile = file(keystoreProperties.getProperty("storeFile"))

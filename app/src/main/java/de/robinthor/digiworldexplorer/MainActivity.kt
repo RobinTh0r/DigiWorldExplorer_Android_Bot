@@ -86,6 +86,7 @@ class MainActivity : ComponentActivity() {
     private var showFeedDelayNotice by mutableStateOf(false)
     private var access by mutableStateOf(false)
     private var overlay by mutableStateOf(false)
+    private var batteryExempt by mutableStateOf(false)
     private var updateStatus by mutableStateOf(UpdateStatus.CHECKING)
     private var updateVersion by mutableStateOf("")
     private var updateUrl by mutableStateOf("")
@@ -158,9 +159,10 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) notifications.launch(Manifest.permission.POST_NOTIFICATIONS)
         setContent { MaterialTheme { Surface(Modifier.fillMaxSize()) {
             ControlScreen(
-                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, supporterLicense, access, overlay, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
+                onBattery = ::requestBatteryOptimizationExemption,
                 onGrid = { grid = !grid; AutomationState.overlayEnabled = grid; DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid); settings.edit().putBoolean("grid_enabled", grid).apply() },
                 onAutoPurchase = { enabled -> autoPurchase = enabled; AutomationState.autoPurchaseEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_purchase", enabled).apply() },
                 onAutoDungeon = { enabled -> autoDungeon = enabled; AutomationState.autoDungeonEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", enabled).apply() },
@@ -223,6 +225,7 @@ class MainActivity : ComponentActivity() {
                 onSummonTouchCorrection = { enabled -> ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED; summonTouchCorrection = enabled; AutomationState.summonTouchCorrection = enabled; settings.edit().putBoolean("summon_touch_correction", enabled).apply() },
                 onPreReleaseUpdates = { enabled -> preReleaseUpdates = enabled; settings.edit().putBoolean("pre_release_updates", enabled).apply(); checkForUpdates() },
                 onStart = ::requestAutomationStart,
+                onReturnToGame = ::bringGameToForeground,
                 onStop = { ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED },
                 onLanguage = ::setLanguage,
                 onCheckUpdate = ::checkForUpdates,
@@ -332,6 +335,16 @@ class MainActivity : ComponentActivity() {
         } }
     }
 
+    private fun requestBatteryOptimizationExemption() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
+        val request = Intent(
+            Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
+            Uri.parse("package:$packageName"),
+        )
+        runCatching { startActivity(request) }.getOrElse {
+            startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
+        }
+    }
     private fun bringGameToForeground() {
         packageManager.getLaunchIntentForPackage(GAME_PACKAGE)?.let { launch ->
             launch.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -362,6 +375,9 @@ class MainActivity : ComponentActivity() {
             ?.split(':')?.any { it.contains(packageName, true) && it.contains("DigiWorldAccessibilityService", true) } == true
         access = DigiWorldAccessibilityService.instance != null || managerEnabled || secureEnabled
         overlay = Settings.canDrawOverlays(this)
+        batteryExempt = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
+        } else true
         syncSessionUi()
     }
 
@@ -372,15 +388,27 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onStart: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
+    var setupExpanded by remember { mutableStateOf(!(access && overlay && batteryExempt)) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
     var showContactDialog by remember { mutableStateOf(false) }
     val clipboard = LocalClipboardManager.current
     var showExperimental by remember { mutableStateOf(false) }
     var showDwsSettings by remember { mutableStateOf(false) }
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
-    if (showAccessHelp) AlertDialog(onDismissRequest = { showAccessHelp = false }, title = { Text(stringResource(R.string.accessibility_help_title)) }, text = { Text(stringResource(R.string.accessibility_help_body)) }, confirmButton = { TextButton(onClick = { showAccessHelp = false }) { Text(stringResource(R.string.close)) } })
+if (showAccessHelp) TroubleshootingAssistantDialog(
+        access = access,
+        overlay = overlay,
+        batteryExempt = batteryExempt,
+        legacyCapture = legacyCapture,
+        onAccess = onAccess,
+        onOverlay = onOverlay,
+        onBattery = onBattery,
+        onLegacyCapture = onLegacyCapture,
+        onRestart = onStart,
+        onClose = { showAccessHelp = false },
+    )
     featureHelp?.let { FeatureHelpDialog(it, onClose = { featureHelp = null }) }
     if (showDwsSettings) DwsSettingsDialog(dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, supporterLicense != null, onDwsSettings, onUnlock = onLicense, onClose = { showDwsSettings = false })
     if (showExperimental) ExperimentalSettingsDialog(legacyCapture, summonTouchCorrection, preReleaseUpdates, onLegacyCapture, onSummonTouchCorrection, onPreReleaseUpdates, onClose = { showExperimental = false })
@@ -396,19 +424,38 @@ class MainActivity : ComponentActivity() {
             CompactStatusCard(statusText, Modifier.weight(1.15f))
             CompactUpdateCard(update, updateVersion, onCheckUpdate, onOpenUpdate, Modifier.weight(.85f))
         }
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text(stringResource(R.string.setup_title), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-            TextButton(onClick = { showAccessHelp = true }, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(stringResource(R.string.accessibility_blocked_help), style = MaterialTheme.typography.labelSmall) }
+        Surface(
+            color = if (access && overlay && batteryExempt) Color(0xFFE3F5E9) else MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(Modifier.padding(horizontal = 6.dp, vertical = 3.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.setup_progress, listOf(access, overlay, batteryExempt).count { it }), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                    TextButton(onClick = { showAccessHelp = true }, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(stringResource(R.string.troubleshooting_button), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold) }
+                    TextButton(onClick = { setupExpanded = !setupExpanded }, contentPadding = PaddingValues(horizontal = 4.dp)) { Text(if (setupExpanded) "⌃" else "⌄") }
+                }
+                if (setupExpanded) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        CompactPermissionButton(1, R.string.permission_accessibility, access, onAccess, Modifier.weight(1f))
+                        CompactPermissionButton(2, R.string.permission_overlay, overlay, onOverlay, Modifier.weight(1f))
+                    }
+                    CompactPermissionButton(3, R.string.permission_battery, batteryExempt, onBattery, Modifier.fillMaxWidth())
+                }
+            }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            CompactPermissionButton(1, R.string.permission_accessibility, access, onAccess, Modifier.weight(1f))
-            CompactPermissionButton(2, R.string.permission_overlay, overlay, onOverlay, Modifier.weight(1f))
+        Button(
+            onClick = if (auto) onReturnToGame else onStart,
+            enabled = access,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.buttonColors(containerColor = if (auto) Color(0xFFFF9800) else MaterialTheme.colorScheme.primary),
+        ) {
+            Text(stringResource(if (auto) R.string.bot_return_game else if (capture) R.string.auto_start else R.string.auto_start_with_capture), fontWeight = FontWeight.Bold)
         }
-
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            OutlinedButton(onClick = onGrid, enabled = overlay, modifier = Modifier.weight(1f)) { Text(stringResource(if (grid) R.string.grid_hide else R.string.grid_show)) }
-            Button(onClick = onStart, enabled = access && !auto, modifier = Modifier.weight(1f)) { Text(stringResource(if (auto) R.string.bot_running else if (capture) R.string.auto_start else R.string.auto_start_with_capture)) }
+        OutlinedButton(onClick = { showAccessHelp = true }, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.troubleshooting_button), fontWeight = FontWeight.Bold)
         }
+        OutlinedButton(onClick = onGrid, enabled = overlay, modifier = Modifier.fillMaxWidth()) { Text(stringResource(if (grid) R.string.grid_hide else R.string.grid_show)) }
         FeatureInfoRow(R.string.digiworld_help_title, onAdvanced = { showDwsSettings = true }, onHelp = { featureHelp = 2 })
         FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
         FeatureSwitch(R.string.auto_dungeon, autoDungeon, onAutoDungeon, onHelp = { featureHelp = 1 })
@@ -455,6 +502,75 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@Composable private fun TroubleshootingAssistantDialog(
+    access: Boolean,
+    overlay: Boolean,
+    batteryExempt: Boolean,
+    legacyCapture: Boolean,
+    onAccess: () -> Unit,
+    onOverlay: () -> Unit,
+    onBattery: () -> Unit,
+    onLegacyCapture: (Boolean) -> Unit,
+    onRestart: () -> Unit,
+    onClose: () -> Unit,
+) {
+    var page by remember { mutableStateOf(0) }
+    val title = when (page) {
+        1 -> R.string.troubleshooting_setup_title
+        2 -> R.string.troubleshooting_grid_title
+        3 -> R.string.troubleshooting_samsung_title
+        else -> R.string.troubleshooting_title
+    }
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(title)) },
+        text = {
+            Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                when (page) {
+                    0 -> {
+                        Text(stringResource(R.string.troubleshooting_intro))
+                        TroubleshootingChoice(stringResource(R.string.troubleshooting_check_setup)) { page = 1 }
+                        TroubleshootingChoice(stringResource(R.string.troubleshooting_no_grid)) { page = 2 }
+                        TroubleshootingChoice(stringResource(R.string.troubleshooting_access_blocked)) { page = 3 }
+                        TroubleshootingChoice(stringResource(R.string.troubleshooting_capture_problem)) { page = 2 }
+                    }
+                    1 -> {
+                        Text(stringResource(R.string.troubleshooting_setup_body))
+                        CompactPermissionButton(1, R.string.permission_accessibility, access, onAccess, Modifier.fillMaxWidth())
+                        CompactPermissionButton(2, R.string.permission_overlay, overlay, onOverlay, Modifier.fillMaxWidth())
+                        CompactPermissionButton(3, R.string.permission_battery, batteryExempt, onBattery, Modifier.fillMaxWidth())
+                    }
+                    2 -> {
+                        Text(stringResource(R.string.troubleshooting_grid_body))
+                        Text(stringResource(R.string.troubleshooting_botamon), fontWeight = FontWeight.SemiBold)
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.legacy_capture))
+                                Text(stringResource(R.string.troubleshooting_legacy_hint), style = MaterialTheme.typography.labelSmall)
+                            }
+                            Switch(checked = legacyCapture, onCheckedChange = onLegacyCapture)
+                        }
+                    }
+                    else -> Text(stringResource(R.string.troubleshooting_samsung_body))
+                }
+            }
+        },
+        confirmButton = {
+            if (page == 0) TextButton(onClick = onClose) { Text(stringResource(R.string.close)) }
+            else Button(onClick = { onClose(); onRestart() }) { Text(stringResource(R.string.troubleshooting_restart)) }
+        },
+        dismissButton = {
+            if (page != 0) TextButton(onClick = { page = 0 }) { Text(stringResource(R.string.troubleshooting_back)) }
+        },
+    )
+}
+
+@Composable private fun TroubleshootingChoice(label: String, onClick: () -> Unit) {
+    OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(horizontal = 10.dp, vertical = 7.dp)) {
+        Text(label, modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
+        Text("›", style = MaterialTheme.typography.titleMedium)
+    }
+}
 @Composable private fun DwsSettingsDialog(
     neverLeft: Boolean,
     forceForwardAttack: Boolean,
@@ -527,7 +643,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable private fun CompactPermissionButton(number: Int, label: Int, granted: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButton(onClick = onClick, modifier, contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
+    OutlinedButton(onClick = onClick, modifier, colors = ButtonDefaults.outlinedButtonColors(containerColor = if (granted) Color(0xFFDDF3E5) else Color.Transparent), contentPadding = PaddingValues(horizontal = 6.dp, vertical = 4.dp)) {
         Text("$number. ${stringResource(label)}", Modifier.weight(1f), style = MaterialTheme.typography.labelSmall, maxLines = 2)
         Text(if (granted) "✓" else "○", fontWeight = FontWeight.Bold)
     }

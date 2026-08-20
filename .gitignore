@@ -14,3 +14,7 @@ keystore.properties
 .testvenv/
 .workfix/
 android-main/
+
+.local/
+.gradle-codex-build/
+.kotlin/

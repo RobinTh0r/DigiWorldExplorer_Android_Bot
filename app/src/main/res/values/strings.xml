@@ -68,7 +68,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">NEW FEATURES\n• Advanced DigiWorld Settings · Supporter Beta\n• Auto Summon for Crests\n• Network Defense with x2 battle speed\n• Bond &amp; Friendship is now free for everyone\n\nBUG FIXES\n• Adjusted DWS navigation logic\n• Energy is now skipped only rarely</string>
+    <string name="release_notes_body">IMPROVED SETUP\n• Background battery access check\n• Compact, collapsible setup cards\n• Guided Troubleshooting assistant\n\nUI\n• Clear return-to-game button while the bot runs\n• Simplified Bond &amp; Friendship label</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>
@@ -129,9 +129,9 @@
     <string name="overlay_purchase_disabled">Summon screen detected — auto summon off</string>
     <string name="notification_idle_title">Capture stopped: no game detected</string>
     <string name="notification_idle_body">No DigiWorld, summon or VS. Dungeon screen was detected for 1 minute. Capture and automation were stopped to protect the device.</string>
-    <string name="auto_feed">Bond &amp; Friendship · FREE</string>
-    <string name="feed_help_title">Bond &amp; Friendship · Free for everyone</string>
-    <string name="feed_help_body">Detects the small white food bubble on the main battle screen and taps it three times with safe randomized positions and timing. This helps you reach Bond/Friendship levels and the Partner-icon reward faster. For safety, detection runs at intervals; after enabling it may take up to 30 seconds before the first feeding starts. The main-screen layout and bubble must remain stable across multiple frames. This feature is free for everyone.</string>
+    <string name="auto_feed">Bond &amp; Friendship</string>
+    <string name="feed_help_title">Bond &amp; Friendship</string>
+    <string name="feed_help_body">Detects the small white food bubble on the main battle screen and taps it three times with safe randomized positions and timing. This helps you reach Bond/Friendship levels and the Partner-icon reward faster. For safety, detection runs at intervals; after enabling it may take up to 30 seconds before the first feeding starts. The main-screen layout and bubble must remain stable across multiple frames. </string>
     <string name="overlay_auto_feed">AUTO: Bond &amp; Friendship</string>
     <string name="overlay_stage_failed">AUTO: Stage failed — closing dialog</string>
     <string name="overlay_auto_feed_open_partner">AUTO: Opening partner menu</string>
@@ -140,7 +140,7 @@
     <string name="partner_rotation_help_title">Partner rotation · Coming Soon</string>
     <string name="partner_rotation_help_body">Planned: The app cycles through the visible partners, starts their growth, returns to the main world and feeds them when a food bubble is available. The originally selected partner should be restored afterwards. This Supporter Beta feature is still in development and is intentionally disabled for now.</string>
     <string name="supporter_intro_title">New: Supporter Beta</string>
-    <string name="supporter_intro_body">This version introduces optional Supporter Beta test features. Every previously available feature remains free. Support helps fund development while these beta features are tested and refined.</string>
+    <string name="supporter_intro_body">This version introduces optional Supporter Beta test features. Support helps fund development while these optional test features are refined.</string>
     <string name="payment_contact_title">Contact details for your unlock</string>
     <string name="payment_contact_body">Please include your Discord name, Reddit name or email address in the PayPal payment message. Otherwise I will not know where to send your personal activation code.</string>
     <string name="payment_continue">Continue to PayPal</string>
@@ -151,4 +151,24 @@
     <string name="feed_delay_notice_title">Bond &amp; Friendship enabled</string>
     <string name="feed_delay_notice_body">For safety, detection runs at intervals. It may take up to 30 seconds before the first feeding starts.</string>
     <string name="dws_unlock_options">♥ Unlock Supporter Beta</string>
+<string name="setup_progress">One-time setup · %1$d/3 complete</string>
+    <string name="permission_battery">Allow background battery use</string>
+    <string name="bot_return_game">↗ BOT RUNNING — RETURN TO GAME</string>
+    <string name="troubleshooting_button">💬 Troubleshooting</string>
+    <string name="troubleshooting_title">Quick troubleshooting</string>
+    <string name="troubleshooting_intro">Choose the problem that best matches your situation. The assistant only opens Android settings or changes the option you choose.</string>
+    <string name="troubleshooting_check_setup">Check one-time setup</string>
+    <string name="troubleshooting_no_grid">DigiWorld grid is missing or does not move</string>
+    <string name="troubleshooting_access_blocked">Accessibility control is blocked</string>
+    <string name="troubleshooting_capture_problem">Capture is gray, black or unstable</string>
+    <string name="troubleshooting_setup_title">Check one-time setup</string>
+    <string name="troubleshooting_setup_body">All three should be enabled. Background battery access prevents Android from stopping capture or accessibility while the app is running.</string>
+    <string name="troubleshooting_grid_title">Grid &amp; capture help</string>
+    <string name="troubleshooting_grid_body">Open the DigiWorld screen, enable the overlay permission and wait for the scene to settle. Then start automation again. If the image is gray, black or offset, try Legacy capture size and restart.</string>
+    <string name="troubleshooting_botamon">Important: use Botamon as the visible partner sprite for reliable player detection.</string>
+    <string name="troubleshooting_legacy_hint">Changing this stops capture. Restart automation afterwards.</string>
+    <string name="troubleshooting_samsung_title">Samsung restricted settings</string>
+    <string name="troubleshooting_samsung_body">First try enabling accessibility once. Then open Android Settings → Apps → DigiWorldExplorer Bot → three-dot menu and choose “Allow restricted settings”. Return here and enable accessibility again.</string>
+    <string name="troubleshooting_restart">Restart automation</string>
+    <string name="troubleshooting_back">Back</string>
 </resources>
