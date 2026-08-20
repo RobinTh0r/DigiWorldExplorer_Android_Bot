@@ -519,6 +519,8 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         1 -> R.string.troubleshooting_setup_title
         2 -> R.string.troubleshooting_grid_title
         3 -> R.string.troubleshooting_samsung_title
+        4 -> R.string.troubleshooting_start_title
+        5 -> R.string.troubleshooting_network_title
         else -> R.string.troubleshooting_title
     }
     AlertDialog(
@@ -530,7 +532,9 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                     0 -> {
                         Text(stringResource(R.string.troubleshooting_intro))
                         TroubleshootingChoice(stringResource(R.string.troubleshooting_check_setup)) { page = 1 }
+                        TroubleshootingChoice(stringResource(R.string.troubleshooting_start_problem)) { page = 4 }
                         TroubleshootingChoice(stringResource(R.string.troubleshooting_no_grid)) { page = 2 }
+                        TroubleshootingChoice(stringResource(R.string.troubleshooting_network_problem)) { page = 5 }
                         TroubleshootingChoice(stringResource(R.string.troubleshooting_access_blocked)) { page = 3 }
                         TroubleshootingChoice(stringResource(R.string.troubleshooting_capture_problem)) { page = 2 }
                     }
@@ -551,6 +555,8 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                             Switch(checked = legacyCapture, onCheckedChange = onLegacyCapture)
                         }
                     }
+                    4 -> Text(stringResource(R.string.troubleshooting_start_body))
+                    5 -> Text(stringResource(R.string.troubleshooting_network_body))
                     else -> Text(stringResource(R.string.troubleshooting_samsung_body))
                 }
             }

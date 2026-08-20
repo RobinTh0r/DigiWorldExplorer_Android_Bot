@@ -171,4 +171,10 @@
     <string name="troubleshooting_samsung_body">Versuche zuerst einmal, die Bedienungshilfe zu aktivieren. Öffne dann Android-Einstellungen → Apps → DigiWorldExplorer Bot → Drei-Punkte-Menü → „Eingeschränkte Einstellungen zulassen“. Danach hierher zurückkehren und die Bedienungshilfe erneut aktivieren.</string>
     <string name="troubleshooting_restart">Automatik neu starten</string>
     <string name="troubleshooting_back">Zurück</string>
+    <string name="troubleshooting_start_problem">Bot startet, tut aber nichts</string>
+    <string name="troubleshooting_network_problem">Network Ops wird nicht erkannt oder startet nicht</string>
+    <string name="troubleshooting_start_title">Start und Bildschirmfreigabe</string>
+    <string name="troubleshooting_start_body">Tippe auf AUTOMATIK STOPPEN und schließe beide Apps vollständig. Starte danach zuerst das Spiel und warte, bis es geladen ist. Öffne DigiWorldExplorer Bot, tippe START und bestätige die Bildschirmfreigabe. Wenn möglich, teste die Freigabe des gesamten Bildschirms statt nur einer App.</string>
+    <string name="troubleshooting_network_title">Network Ops</string>
+    <string name="troubleshooting_network_body">Aktiviere nur Network Defense Ops, öffne den Party-/Herausforderungsdialog und warte, bis Gruppenmitglieder und der Herausfordern-Button komplett sichtbar sind. Während das Spiel lädt, nichts antippen.</string>
 </resources>

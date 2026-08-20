@@ -171,4 +171,10 @@
     <string name="troubleshooting_samsung_body">First try enabling accessibility once. Then open Android Settings → Apps → DigiWorldExplorer Bot → three-dot menu and choose “Allow restricted settings”. Return here and enable accessibility again.</string>
     <string name="troubleshooting_restart">Restart automation</string>
     <string name="troubleshooting_back">Back</string>
+    <string name="troubleshooting_start_problem">Bot starts but does nothing</string>
+    <string name="troubleshooting_network_problem">Network Ops does not detect or start</string>
+    <string name="troubleshooting_start_title">Start and screen sharing</string>
+    <string name="troubleshooting_start_body">Tap STOP AUTOMATION, fully close both apps, then open the game first and wait until it has loaded. Open DigiWorldExplorer Bot, tap START and confirm screen sharing. If available, try sharing the whole screen instead of a single app.</string>
+    <string name="troubleshooting_network_title">Network Ops</string>
+    <string name="troubleshooting_network_body">Enable only Network Defense Ops, open its party/Attempt dialog and wait until party members and the Attempt button are fully visible. Do not tap while the game is still loading.</string>
 </resources>
