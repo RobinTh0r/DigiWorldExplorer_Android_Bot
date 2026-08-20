@@ -78,7 +78,7 @@
     <string name="update_notice_later">Später</string>
     <string name="donate">💚 Hilf mit, die Weiterentwicklung möglich zu machen · PayPal</string>
     <string name="donate_url">https://paypal.me/thor666/4</string>    <string name="supporter_purchase_url">https://paypal.me/thor666/4</string>
-    <string name="supporter_license_import">♥ Optionale Funktionen aktivieren</string>
+    <string name="supporter_license_import">♥ Testfunktionen freischalten</string>
     <string name="supporter_license_active">♥ Optionale Funktionen aktiv</string>
     <string name="supporter_license_title">Optionale Funktionen</string>
     <string name="supporter_license_body">Optionale Funktionen können sich während der Testphase ändern. Füge deinen persönlichen Aktivierungscode einmal ein; die App speichert und prüft ihn lokal.</string>
@@ -150,7 +150,7 @@
     <string name="contact_copy">E-Mail-Adresse kopieren</string>
     <string name="feed_delay_notice_title">Bond &amp; Freundschaft aktiviert</string>
     <string name="feed_delay_notice_body">Die Erkennung prüft sicherheitsbedingt in Abständen. Es kann bis zu 30 Sekunden dauern, bis die erste Fütterung startet.</string>
-    <string name="dws_unlock_options">♥ Optionale Funktionen aktivieren</string>
+    <string name="dws_unlock_options">♥ Testfunktionen freischalten</string>
 <string name="setup_progress">Einmalige Einrichtung · %1$d/3 erledigt</string>
     <string name="permission_battery">Akkunutzung im Hintergrund erlauben</string>
     <string name="bot_return_game">↗ BOT LÄUFT — ZUM SPIEL</string>

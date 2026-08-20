@@ -659,12 +659,16 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     Row(Modifier.fillMaxWidth().heightIn(min = 42.dp), verticalAlignment = Alignment.CenterVertically) {
         Text(stringResource(label), modifier = Modifier.weight(1f), fontWeight = FontWeight.Medium)
         if (onAdvanced != null) {
-            TextButton(
-                onClick = onAdvanced,
-                modifier = Modifier.background(Color(0xFFDDF3E5), RoundedCornerShape(8.dp)),
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 2.dp),
-            ) { Text(stringResource(R.string.dws_settings_button), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Normal, maxLines = 1) }
+            Text(
+                text = "TEST",
+                color = Color(0xFF176B3A),
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.background(Color(0xFFDDF3E5), RoundedCornerShape(8.dp)).padding(horizontal = 7.dp, vertical = 4.dp),
+            )
+            IconButton(onClick = onAdvanced, modifier = Modifier.size(42.dp)) {
+                Text("⚙", fontSize = 28.sp, fontWeight = FontWeight.Bold)
+            }
         }
         IconButton(onClick = onHelp, modifier = Modifier.size(36.dp)) { Text("?", fontWeight = FontWeight.Bold) }
     }
