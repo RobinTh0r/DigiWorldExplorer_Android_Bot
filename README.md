@@ -26,7 +26,7 @@ _Version 3.2 is the current public release._
 
 Join the **[DigiWorldExplorer Discord community](https://discord.gg/JMGMvZyyVN)** to follow development, receive release and compatibility notices, report bugs, suggest features and exchange feedback with other users.
 
-Supporter reports are reviewed with priority and are generally handled faster when enough diagnostic information is provided. Supporters may also receive dedicated private test pre-releases for device-specific fixes or upcoming features before a public beta is available. Response times and individual test builds cannot be guaranteed.
+Community reports are welcome. When reporting an issue, include your device, Android version, bot version and unmodified screenshots where possible.
 
 > [!WARNING]
 > This is an independent, unofficial fan project. It is not affiliated with or endorsed by any game developer or publisher. Automation may violate a game's terms of service. Use it at your own risk.
@@ -67,16 +67,14 @@ When enabled in the app, **Auto Summon** recognizes green and purple ticket scre
 It detects the stable white food bubble on the main battle screen and taps it locally with safe position and timing variation, helping reach the Partner-icon reward faster. It is mutually exclusive with Network Defense Ops to prevent the two specialized analyzers from interfering with each other.
 
 
-### 🛡️ Network Defense Ops Loop — Supporter Beta
+### 🛡️ Network Defense Ops Loop
 
-The **Network Defense Ops Loop** is currently available as a Supporter Beta. It starts an attempt, waits through all five waves and detects the final boss banner together with the final-wave indicator. It then presses **Give up / Aufgeben**, returns to the dungeon dialog and automatically starts the next run. This can count roughly 40 defeated enemies per completed loop.
+The **Network Defense Ops Loop** starts an attempt, waits through all five waves and detects the final boss banner together with the final-wave indicator. It then presses **Give up / Aufgeben**, returns to the dungeon dialog and automatically starts the next run. This can count roughly 40 defeated enemies per completed loop.
 
 The mode is **off by default** and must only be enabled inside Network Defense Ops. Its stricter session tracking prevents ordinary battles and the general dungeon overview from triggering the loop. Button positions are detected dynamically for different resolutions and Android display mappings. The loop has also been successfully tested with the game running at **x2 battle speed**.
 
 Partner rotation and automatic feeding across the full partner list are shown in the app as a **Coming Soon** preview and are intentionally not active yet.
 
-> [!NOTE]
-> Version 3 includes the optional **Network Defense Ops Loop** Supporter Beta. The €4 / $4 contribution supports development and activates this optional test feature locally. Core grid navigation, Auto Summon, VS. Dungeon and Bond & Friendship remain available without a Supporter unlock.
 ### 🛡️ Global Stage Failed Recovery
 
 The bot detects the multilingual **Stage Failed** growth-guide dialog globally, including during DigiWorld Search and other active modes. It temporarily gives the recovery handler exclusive control, closes the modal in the safe area above the world/home button and automatically resumes the previously enabled automation. If the dialog remains visible, another closing tap is attempted no more than once every 30 seconds.
@@ -173,7 +171,7 @@ When reporting another device, include its exact model, Android version, OEM bui
 
 ## ☕ Support development
 
-If the app is useful to you, you can support continued development through **[PayPal.me/thor666 — €4 / $4](https://paypal.me/thor666/4)**. Supporters can activate the optional Network Defense Ops Supporter Beta locally. Supporter reports are reviewed with priority, and dedicated private test pre-releases may be provided for device-specific fixes or upcoming features. Include your Discord, Reddit or email contact in the PayPal message so the Supporter Beta activation code can be delivered.
+If the app is useful to you, you can support continued development through **[PayPal.me/thor666](https://paypal.me/thor666)**. Contributions are optional and help cover development and testing time.
 
 ## 📝 Changelog
 
@@ -195,7 +193,7 @@ If the app is useful to you, you can support continued development through **[Pa
 
 ### v3.0.0 — 12 August 2026
 
-- 💚 Adds Supporter Beta testing for **Network Defense Ops Loop**
+- 🛡️ Adds **Network Defense Ops Loop**
 - 🍖 Adds **Bond & Friendship** automation
 - 🛡️ Automates Network Defense attempts, waits for the final boss, gives up safely and starts the next run; ticket badges such as `1/2`, `2/2` and `10/2` are supported
 - 🍖 Detects stable food bubbles on the main screen and taps them with safe randomized positions and timing to build Bond/Friendship
