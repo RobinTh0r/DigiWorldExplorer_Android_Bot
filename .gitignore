@@ -1,0 +1,16 @@
+.gradle/
+.idea/
+local.properties
+build/
+**/build/
+captures/
+*.iml
+*.jks
+*.keystore
+keystore.properties
+
+
+.tools/
+.testvenv/
+.workfix/
+android-main/
