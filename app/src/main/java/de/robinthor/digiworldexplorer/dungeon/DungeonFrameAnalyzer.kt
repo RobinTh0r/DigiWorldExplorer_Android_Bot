@@ -12,7 +12,8 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 object DungeonFrameAnalyzer {
     private const val TAP_INTERVAL = 350L
-    private const val INACTIVITY_TIMEOUT = 15_000L
+    private const val MENU_INACTIVITY_TIMEOUT = 15_000L
+    private const val ACTIVE_RUN_TIMEOUT = 120_000L
     private const val HASH_CHANGE_MIN = 5
     private var sessionActive = false
     private var pending = false
@@ -47,8 +48,8 @@ object DungeonFrameAnalyzer {
             }
             sessionActive = true
             if (detection.screen != lastScreen) { lastScreen = detection.screen; tapsOnScreen = 0; lastActivity = now }
-            if (now - lastActivity >= INACTIVITY_TIMEOUT) {
-                stopForTimeout()
+            if (now - lastActivity >= MENU_INACTIVITY_TIMEOUT) {
+                stopForTimeout("challenge menu", MENU_INACTIVITY_TIMEOUT)
                 return true
             }
             val service = DigiWorldAccessibilityService.instance
@@ -67,17 +68,20 @@ object DungeonFrameAnalyzer {
         }
 
         if (!AutomationState.autoDungeonEnabled) sessionActive = false
-        if (sessionActive && now - lastActivity >= INACTIVITY_TIMEOUT) {
-            stopForTimeout()
+        // A Tower battle and its loading transitions can take considerably longer than VS.
+        // Keep the short guard for a stuck challenge menu, but do not disable the loop while
+        // the run is active merely because no known menu is visible for 15 seconds.
+        if (sessionActive && now - lastActivity >= ACTIVE_RUN_TIMEOUT) {
+            stopForTimeout("active run", ACTIVE_RUN_TIMEOUT)
         }
         return sessionActive
     }
 
-    private fun stopForTimeout() {
+    private fun stopForTimeout(context: String, timeout: Long) {
         AutomationState.autoDungeonEnabled = false
         sessionActive = false
         DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_timeout)) }
-        Log.w("DigiWorldDungeon", "auto dungeon stopped after 15 seconds without visual progress")
+        Log.w("DigiWorldDungeon", "auto dungeon stopped in $context after ${timeout / 1_000} seconds without visual progress")
     }
 
     private fun frameHash(width: Int, height: Int, argbAt: (Int, Int) -> Int): Long {

@@ -41,6 +41,7 @@ import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
 import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
+import de.robinthor.digiworldexplorer.dungeon.DungeonFrameAnalyzer
 import de.robinthor.digiworldexplorer.license.SupporterLicense
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
 import de.robinthor.digiworldexplorer.strategy.AutomationState
@@ -301,6 +302,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun beginAutomation() {
+        // A feature analyzer may stop its current session after a safety timeout. Re-apply the
+        // switches shown in the UI whenever the user starts automation again so a stale runtime
+        // value cannot leave an enabled VS/Tower switch reporting "Loop off".
+        AutomationState.overlayEnabled = grid
+        AutomationState.autoPurchaseEnabled = autoPurchase
+        AutomationState.autoDungeonEnabled = autoDungeon
+        AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
+        AutomationState.autoFeedEnabled = autoFeed
+        DungeonFrameAnalyzer.reset()
         ScreenCaptureService.setAutomation(this, true)
         auto = true
         status = UiStatus.AUTOMATIC
