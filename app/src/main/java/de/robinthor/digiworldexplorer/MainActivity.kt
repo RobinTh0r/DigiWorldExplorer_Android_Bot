@@ -272,6 +272,7 @@ class MainActivity : ComponentActivity() {
                     settings.edit().putBoolean("dws_never_left", false).putBoolean("dws_force_forward_attack", false).putBoolean("dws_dash_spam", false).putBoolean("dws_only_energy", false).putBoolean("dws_better_collect", false).putBoolean("dws_blind_stage_tap", false).apply()
                 },
                 onDonate = { openUrl(getString(R.string.supporter_purchase_url)) },
+                onRequestDiscord = { openUrl(getString(R.string.discord_url)) },
                 onClose = { showLicenseDialog = false },
             )
             if (showSupportPrompt) SupportPromptDialog(
@@ -763,18 +764,43 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     )
 }
 
+@Composable private fun BetaCodeRequestDialog(onDiscord: () -> Unit, onClose: () -> Unit) {
+    val clipboard = LocalClipboardManager.current
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = { Text(stringResource(R.string.beta_request_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(stringResource(R.string.beta_request_body))
+                Text(stringResource(R.string.beta_request_contact), fontWeight = FontWeight.SemiBold)
+            }
+        },
+        confirmButton = { Button(onClick = onDiscord) { Text(stringResource(R.string.beta_request_discord)) } },
+        dismissButton = {
+            TextButton(onClick = { clipboard.setText(AnnotatedString("support@robinthor.de")) }) {
+                Text(stringResource(R.string.beta_request_copy_email))
+            }
+        },
+    )
+}
 @Composable private fun SupporterLicenseDialog(
     currentLicense: SupporterLicense?,
     onActivate: (String) -> Boolean,
     onRemove: () -> Unit,
     onDonate: () -> Unit,
+    onRequestDiscord: () -> Unit,
     onClose: () -> Unit,
 ) {
     var code by remember { mutableStateOf("") }
     var invalid by remember { mutableStateOf(false) }
     var showPaymentInfo by remember { mutableStateOf(false) }
+    var showBetaRequest by remember { mutableStateOf(false) }
     if (showPaymentInfo) {
         PaymentContactDialog(onContinue = { showPaymentInfo = false; onDonate() }, onClose = { showPaymentInfo = false })
+        return
+    }
+    if (showBetaRequest) {
+        BetaCodeRequestDialog(onDiscord = onRequestDiscord, onClose = { showBetaRequest = false })
         return
     }
     AlertDialog(
@@ -787,8 +813,25 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                     Text(currentLicense.licenseId, fontWeight = FontWeight.Bold)
                 } else {
                     Text(stringResource(R.string.supporter_license_body))
-                    Button(onClick = { showPaymentInfo = true }, colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF168A45))) {
-                        Text(stringResource(R.string.supporter_license_paypal))
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Button(
+                            onClick = { showPaymentInfo = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF168A45)),
+                        ) {
+                            Text(stringResource(R.string.supporter_license_paypal), fontSize = 11.sp, maxLines = 1)
+                        }
+                        OutlinedButton(
+                            onClick = { showBetaRequest = true },
+                            modifier = Modifier.weight(1f),
+                            contentPadding = PaddingValues(horizontal = 8.dp, vertical = 6.dp),
+                        ) {
+                            Text(stringResource(R.string.beta_request_button), fontSize = 11.sp, maxLines = 1)
+                        }
                     }
                     OutlinedTextField(
                         value = code,

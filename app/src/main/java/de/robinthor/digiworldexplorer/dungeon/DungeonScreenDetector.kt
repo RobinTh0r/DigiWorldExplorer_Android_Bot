@@ -17,6 +17,10 @@ object DungeonScreenDetector {
         val challengeFrame = ratio(width, height, .07, .18, .93, .84, argbAt, ::cyan)
         val challengeScore = challengeButton * 2.2 + challengePanel * .7 + challengeFrame * .5
         val challengeDistance = challengeTemplateDistance(width, height, argbAt)
+        // VS places the action button on the right, while Tower uses one centered button.
+        // Tap the centroid of the actual cyan button instead of sharing one fixed X position.
+        val challengeTapX = colorCentroidX(width, height, .20, .735, .90, .835, argbAt, ::cyan)
+            ?: width * .64f
 
         val rewardBlue = ratio(width, height, .04, .18, .96, .74, argbAt, ::blueOverlay)
         val rewardTiles = ratio(width, height, .10, .29, .86, .47, argbAt, ::navy)
@@ -25,7 +29,7 @@ object DungeonScreenDetector {
 
         return when {
             challengeButton >= .10 && challengePanel >= .28 && challengeFrame >= .025 && challengeDistance <= CHALLENGE_TEMPLATE_MAX_DISTANCE ->
-                DungeonDetection(DungeonScreen.CHALLENGE, width * .64f, height * .78f, challengeScore)
+                DungeonDetection(DungeonScreen.CHALLENGE, challengeTapX, height * .78f, challengeScore)
             rewardBlue >= .55 && rewardTiles >= .45 && rewardDistance <= REWARD_TEMPLATE_MAX_DISTANCE ->
                 DungeonDetection(DungeonScreen.REWARD, width * .50f, height * .66f, rewardScore)
             else -> DungeonDetection(DungeonScreen.NONE, 0f, 0f, maxOf(challengeScore, rewardScore))
@@ -113,5 +117,25 @@ object DungeonScreenDetector {
             }
         }
         return hits / total.coerceAtLeast(1).toDouble()
+    }
+
+    private inline fun colorCentroidX(
+        width: Int, height: Int, x0: Double, y0: Double, x1: Double, y1: Double,
+        argbAt: (Int, Int) -> Int,
+        match: (Int, Int, Int) -> Boolean,
+    ): Float? {
+        val step = (width / 240).coerceAtLeast(2)
+        var xSum = 0L
+        var hits = 0
+        for (y in (height * y0).toInt() until (height * y1).toInt() step step) {
+            for (x in (width * x0).toInt() until (width * x1).toInt() step step) {
+                val p = argbAt(x, y)
+                if (match(p shr 16 and 255, p shr 8 and 255, p and 255)) {
+                    xSum += x
+                    hits++
+                }
+            }
+        }
+        return if (hits >= 12) xSum.toFloat() / hits else null
     }
 }

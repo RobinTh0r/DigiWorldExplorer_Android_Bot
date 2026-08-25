@@ -81,8 +81,14 @@
     <string name="supporter_license_import">♥ Beta Test Features</string>
     <string name="supporter_license_active">♥ Beta Test Features active</string>
     <string name="supporter_license_title">Beta Test Features</string>
-    <string name="supporter_license_body">Beta test features may contain bugs, crashes or unexpected behavior. If you prefer a reliable experience, please wait for the public stable release.\n\nYou can request a beta code free of charge via Discord (robinthor) or email. Optional PayPal support helps development and testing, but is not required and does not guarantee access.</string>
-    <string name="supporter_license_paypal">Optional support via PayPal</string>
+    <string name="supporter_license_body">Beta test features may contain bugs, crashes or unexpected behavior. If you prefer a reliable experience, please wait for the public stable release.\n\nA code for the beta test features can be requested via Discord (robinthor) or email. An optional donation can help speed up further development and testing.</string>
+    <string name="supporter_license_paypal">💚 Support development</string>
+    <string name="beta_request_button">Request beta code</string>
+    <string name="beta_request_title">Request Beta Access</string>
+    <string name="beta_request_body">Beta testing takes time, devices and ongoing development work. If you would like to support this work, a PayPal contribution is appreciated.</string>
+    <string name="beta_request_contact">Request your beta code via Discord (robinthor) or email.</string>
+    <string name="beta_request_discord">Open Discord</string>
+    <string name="beta_request_copy_email">Copy email</string>
     <string name="supporter_license_code">Unlock Beta Features</string>
     <string name="supporter_license_activate">Unlock</string>
     <string name="supporter_license_invalid">This activation code is invalid or incomplete.</string>
@@ -92,7 +98,7 @@
     <string name="overlay_wait_motion">WAIT: Scene is moving</string>
     <string name="overlay_no_game">PAUSE: No game grid</string>
     <string name="overlay_grid_uncertain">PAUSE: Grid uncertain</string>
-    <string name="overlay_player_uncertain">Player not detected — use the Botamon sprite</string>
+    <string name="overlay_player_uncertain">Wrong sprite selected. Please switch to Botamon.</string>
     <string name="overlay_auto_action">AUTO: %1$s</string>
     <string name="overlay_paused">PAUSE: Automation off</string>
     <string name="overlay_action_move">MOVE</string>
@@ -115,14 +121,15 @@
     <string name="support_prompt_title">♥ Thank you for your support</string>
     <string name="support_prompt_body">Developing and testing this app takes a lot of time and also costs money. Every euro helps fix bugs and keep new features coming. Thank you! ♥</string>
     <string name="support_prompt_continue">Continue</string>
-    <string name="support_prompt_donate">Support via PayPal</string>    <string name="auto_dungeon">VS. Dungeon</string>
-    <string name="overlay_auto_dungeon">AUTO: Dungeon</string>
-    <string name="overlay_dungeon_disabled">Dungeon detected — auto dungeon off</string>
+    <string name="support_prompt_donate">Support via PayPal</string>    <string name="auto_dungeon">VS / Tower Loop</string>
+    <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
+    <string name="overlay_dungeon_failed">AUTO: VS / Tower failed — closing dialog</string>
+    <string name="overlay_dungeon_disabled">VS / Tower detected — loop off</string>
     <string name="overlay_dungeon_timeout">Auto dungeon stopped — no progress for 15 seconds</string>
     <string name="summon_help_title">Auto summon</string>
     <string name="summon_help_body">Automatically uses the yellow summon button on supported ticket and Crest screens. Crest summons also confirm the additional dialog automatically. It keeps tapping briefly through loading and reward transitions and stops when the cost turns red. Disable this option whenever you want to summon manually.</string>
-    <string name="dungeon_help_title">VS. Dungeon</string>
-    <string name="dungeon_help_body">Automatically starts a detected VS dungeon challenge, waits without tapping during the battle, closes the reward screen and starts the next level. Detection uses the screen layout and works independently of the game language. The mode stops after 15 seconds without visible progress.</string>
+    <string name="dungeon_help_title">VS / Tower Loop</string>
+    <string name="dungeon_help_body">Automatically starts supported VS and Tower challenges, waits without tapping during a battle, closes reward and loss dialogs, then starts the next run. The loss dialog is handled only after this loop has confirmed a VS or Tower screen, so other modes are not affected. The mode stops after 15 seconds without visible progress.</string>
     <string name="overlay_no_digiworld">No DigiWorld detected</string>
     <string name="overlay_no_capture_image">No game image received — capture is gray or black</string>
     <string name="overlay_auto_purchase">AUTO: Summoning</string>
@@ -142,7 +149,7 @@
     <string name="supporter_intro_title">New optional features</string>
     <string name="supporter_intro_body">This version introduces optional test features that may change while they are refined.</string>
     <string name="payment_contact_title">Optional support</string>
-    <string name="payment_contact_body">Support is completely optional. Beta codes can also be requested free of charge via Discord (robinthor) or email. A contribution is not required and does not guarantee beta access.</string>
+    <string name="payment_contact_body">Your support helps cover development time, testing devices and ongoing maintenance. Thank you for considering a contribution.</string>
     <string name="payment_continue">Open PayPal</string>
     <string name="contact_me">✉️ Contact</string>
     <string name="contact_title">Contact &amp; help</string>

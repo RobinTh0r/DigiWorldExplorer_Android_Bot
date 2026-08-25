@@ -167,20 +167,28 @@ class ScreenCaptureService : Service() {
                 if (captureBlocked) {
                     recognized = captureImageMissing
                 } else {
-                    // The failure guide belongs to the main-screen Bond & Friendship flow. Running
-                    // this detector globally can misread battles or the DigiWorld grid.
-                    val stageFailedScreen = AutomationState.autoFeedEnabled &&
-                        !AutomationState.autoNetworkDefenseEnabled &&
+                    // Persistent failure dialogs are checked centrally at a low cadence before
+                    // individual modes can claim the frame. Network Defense is excluded because
+                    // its battle layout can contain similar red/gray regions but never this dialog.
+                    val stageFailedScreen = !AutomationState.autoNetworkDefenseEnabled &&
                         StageFailedFrameAnalyzer.analyze(image, width, height)
+                    if (stageFailedScreen) {
+                        if (AutomationState.autoDungeonEnabled) {
+                            DungeonFrameAnalyzer.onFailureDialogHandled()
+                        }
+                        recognized = true
+                        markContentRecognized()
+                        return@use
+                    }
                     // Network Defense has priority because FeedFrameAnalyzer intentionally owns a
                     // confirmed main-screen frame even when no food bubble is currently visible.
                     // Active runs inspect every frame because the final-boss banner is brief.
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
-                    val networkScreen = !stageFailedScreen && networkFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
+                    val networkScreen = networkFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
                     // Once a grid has been calibrated, let navigation inspect the frame before
                     // Feed. This pauses the Feed scanner (and pending feed taps) while the
                     // DigiWorld grid is visible, then resumes it automatically after leaving.
-                    var gridScreen = !stageFailedScreen && !networkScreen && featureFrame &&
+                    var gridScreen = !networkScreen && featureFrame &&
                         CaptureFrameAnalyzer.isCalibrated &&
                         CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
                     val now = SystemClock.elapsedRealtime()
@@ -198,8 +206,10 @@ class ScreenCaptureService : Service() {
                         gridScreen = false
                     }
                     if (gridScreen && AutomationState.autoFeedEnabled) FeedFrameAnalyzer.pauseForDigiWorld()
-                    val feedScreen = !stageFailedScreen && !networkScreen && !gridScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
-                    val dungeonScreen = !stageFailedScreen && !feedScreen && !networkScreen && !gridScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
+                    // Keep the established VS/Tower cadence. The loss dialog remains visible,
+                    // so the next feature frame can close it without adding a costly full-frame scan.
+                    val dungeonScreen = !networkScreen && !gridScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
+                    val feedScreen = !stageFailedScreen && !networkScreen && !gridScreen && !dungeonScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
                     val rewardScreen = !stageFailedScreen && !feedScreen && !networkScreen && !gridScreen && !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
                     if (stageFailedScreen || networkScreen || gridScreen || dungeonScreen || rewardScreen || feedScreen) {
                         recognized = true // The feature analyzer owns this frame; never run movement here.

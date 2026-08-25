@@ -81,8 +81,14 @@
     <string name="supporter_license_import">♥ Beta-Testfunktionen</string>
     <string name="supporter_license_active">♥ Beta-Testfunktionen aktiv</string>
     <string name="supporter_license_title">Beta-Testfunktionen</string>
-    <string name="supporter_license_body">Beta-Testfunktionen können Fehler, Abstürze oder unerwartetes Verhalten enthalten. Wenn du eine zuverlässige Erfahrung möchtest, warte bitte auf das öffentliche Stable-Release.\n\nEinen Beta-Code kannst du kostenlos über Discord (robinthor) oder per E-Mail anfordern. Eine freiwillige PayPal-Unterstützung hilft bei Entwicklung und Tests, ist aber keine Voraussetzung und garantiert keinen Zugang.</string>
-    <string name="supporter_license_paypal">Freiwillig über PayPal unterstützen</string>
+    <string name="supporter_license_body">Beta-Testfunktionen können Fehler, Abstürze oder unerwartetes Verhalten enthalten. Wenn du eine zuverlässige Erfahrung möchtest, warte bitte auf das öffentliche Stable-Release.\n\nDer Code für die Beta-Testfunktionen kann über Discord (robinthor) oder per E-Mail angefordert werden. Eine optionale Spende kann die weitere Entwicklung und Tests beschleunigen.</string>
+    <string name="supporter_license_paypal">💚 Entwicklung unterstützen</string>
+    <string name="beta_request_button">Beta-Code anfragen</string>
+    <string name="beta_request_title">Beta-Zugang anfragen</string>
+    <string name="beta_request_body">Beta-Tests benötigen Zeit, Testgeräte und laufende Entwicklungsarbeit. Wenn du diese Arbeit unterstützen möchtest, freut mich ein PayPal-Beitrag.</string>
+    <string name="beta_request_contact">Fordere deinen Beta-Code über Discord (robinthor) oder per E-Mail an.</string>
+    <string name="beta_request_discord">Discord öffnen</string>
+    <string name="beta_request_copy_email">E-Mail kopieren</string>
     <string name="supporter_license_code">Beta-Funktionen freischalten</string>
     <string name="supporter_license_activate">Freischalten</string>
     <string name="supporter_license_invalid">Dieser Aktivierungscode ist ungültig oder unvollständig.</string>
@@ -92,7 +98,7 @@
     <string name="overlay_wait_motion">WARTE: Bild in Bewegung</string>
     <string name="overlay_no_game">PAUSE: Kein Spielraster</string>
     <string name="overlay_grid_uncertain">PAUSE: Raster unsicher</string>
-    <string name="overlay_player_uncertain">Spieler nicht erkannt — Botamon-Sprite verwenden</string>
+    <string name="overlay_player_uncertain">Falsches Sprite ausgewählt. Bitte zu Botamon wechseln.</string>
     <string name="overlay_auto_action">AUTO: %1$s</string>
     <string name="overlay_paused">PAUSE: Automatik aus</string>
     <string name="overlay_action_move">LAUFEN</string>
@@ -115,14 +121,15 @@
     <string name="support_prompt_title">♥ Danke für deine Unterstützung</string>
     <string name="support_prompt_body">Die Entwicklung und das Testen dieser App benötigen viel Zeit und verursachen auch Kosten. Jeder Euro hilft dabei, Fehler zu beheben und neue Funktionen weiterzuentwickeln. Danke! ♥</string>
     <string name="support_prompt_continue">Weiter</string>
-    <string name="support_prompt_donate">Mit PayPal unterstützen</string>    <string name="auto_dungeon">VS. Dungeon</string>
-    <string name="overlay_auto_dungeon">AUTO: Dungeon</string>
-    <string name="overlay_dungeon_disabled">Dungeon erkannt — Dungeon-Automatik aus</string>
+    <string name="support_prompt_donate">Mit PayPal unterstützen</string>    <string name="auto_dungeon">VS / Tower Loop</string>
+    <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
+    <string name="overlay_dungeon_failed">AUTO: VS / Tower fehlgeschlagen — Dialog wird geschlossen</string>
+    <string name="overlay_dungeon_disabled">VS / Tower erkannt — Loop aus</string>
     <string name="overlay_dungeon_timeout">Dungeon-Automatik gestoppt — 15 Sekunden kein Fortschritt</string>
     <string name="summon_help_title">Automatisch beschwören</string>
     <string name="summon_help_body">Betätigt auf unterstützten Ticket- und Wappenseiten automatisch den gelben Beschwören-Button. Bei Wappen wird zusätzlich das Bestätigungsfenster automatisch bestätigt. Während Lade- und Belohnungsübergängen wird kurz weitergetippt; sobald die Kosten rot erscheinen, stoppt die Funktion. Zum manuellen Beschwören kannst du sie jederzeit ausschalten.</string>
-    <string name="dungeon_help_title">VS. Dungeon</string>
-    <string name="dungeon_help_body">Startet eine erkannte VS.-Dungeon-Herausforderung, wartet während des Kampfes ohne zu tippen, schließt die Belohnungsseite und startet das nächste Level. Die Erkennung nutzt das Bildlayout und ist von der Spielsprache unabhängig. Nach 15 Sekunden ohne sichtbaren Fortschritt stoppt der Modus.</string>
+    <string name="dungeon_help_title">VS / Tower Loop</string>
+    <string name="dungeon_help_body">Startet unterstützte VS- und Tower-Herausforderungen, wartet während des Kampfs ohne zu tippen, schließt Belohnungs- und Niederlagen-Dialoge und startet danach den nächsten Durchlauf. Der Niederlagen-Dialog wird nur verarbeitet, nachdem dieser Loop einen VS- oder Tower-Bildschirm bestätigt hat; andere Modi bleiben unberührt. Nach 15 Sekunden ohne sichtbaren Fortschritt stoppt der Modus.</string>
     <string name="overlay_no_digiworld">Keine DigiWorld erkannt</string>
     <string name="overlay_no_capture_image">Kein Spielbild empfangen — Aufnahme ist grau oder schwarz</string>
     <string name="overlay_auto_purchase">AUTO: Beschwören</string>
@@ -142,7 +149,7 @@
     <string name="supporter_intro_title">Neue optionale Funktionen</string>
     <string name="supporter_intro_body">Diese Version führt optionale Testfunktionen ein, die während der Weiterentwicklung angepasst werden können.</string>
     <string name="payment_contact_title">Freiwillige Unterstützung</string>
-    <string name="payment_contact_body">Die Unterstützung ist vollständig freiwillig. Beta-Codes kannst du auch kostenlos über Discord (robinthor) oder per E-Mail anfragen. Eine Spende ist nicht erforderlich und garantiert keinen Beta-Zugang.</string>
+    <string name="payment_contact_body">Deine Unterstützung hilft bei Entwicklungszeit, Testgeräten und laufender Pflege. Danke, dass du einen Beitrag in Betracht ziehst.</string>
     <string name="payment_continue">PayPal öffnen</string>
     <string name="contact_me">✉️ Kontakt</string>
     <string name="contact_title">Kontakt &amp; Hilfe</string>

@@ -31,8 +31,8 @@ object DungeonFrameAnalyzer {
             val offset = y * plane.rowStride + x * plane.pixelStride
             return Color.rgb(buffer.get(offset).toInt() and 255, buffer.get(offset + 1).toInt() and 255, buffer.get(offset + 2).toInt() and 255)
         }
-        val detection = DungeonScreenDetector.detect(width, height, ::pixel)
         val now = SystemClock.elapsedRealtime()
+        val detection = DungeonScreenDetector.detect(width, height, ::pixel)
         val hash = frameHash(width, height, ::pixel)
         if (lastHash == 0L || java.lang.Long.bitCount(lastHash xor hash) >= HASH_CHANGE_MIN) lastActivity = now
         lastHash = hash
@@ -94,6 +94,23 @@ object DungeonFrameAnalyzer {
         var hash = 0L
         values.forEachIndexed { index, value -> if (value >= average) hash = hash or (1L shl index) }
         return hash
+    }
+
+    fun isSessionActive() = sessionActive
+
+    /**
+     * The global failure-dialog detector owns the frame while it dismisses the dialog. The
+     * challenge menu shown afterwards may be visually identical to the menu that started the
+     * previous run, so clear the per-screen tap budget and treat it as a fresh screen.
+     */
+    fun onFailureDialogHandled() {
+        sessionActive = AutomationState.autoDungeonEnabled
+        pending = false
+        lastScreen = DungeonScreen.NONE
+        tapsOnScreen = 0
+        lastActivity = SystemClock.elapsedRealtime()
+        lastHash = 0L
+        Log.i("DigiWorldDungeon", "failure dialog handled - challenge retry state reset")
     }
 
     fun reset() { sessionActive = false; pending = false; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0 }
