@@ -11,8 +11,7 @@ import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 object DungeonFrameAnalyzer {
-    private const val TAP_INTERVAL = 350L
-    private const val MENU_INACTIVITY_TIMEOUT = 15_000L
+    private const val TAP_INTERVAL = 1_200L
     private const val ACTIVE_RUN_TIMEOUT = 120_000L
     private const val HASH_CHANGE_MIN = 5
     private var sessionActive = false
@@ -23,6 +22,7 @@ object DungeonFrameAnalyzer {
     private var lastHash = 0L
     private var lastScreen = DungeonScreen.NONE
     private var tapsOnScreen = 0
+    private var stableDetections = 0
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val plane = image.planes.firstOrNull() ?: return false
@@ -47,14 +47,20 @@ object DungeonFrameAnalyzer {
                 return true
             }
             sessionActive = true
-            if (detection.screen != lastScreen) { lastScreen = detection.screen; tapsOnScreen = 0; lastActivity = now }
-            if (now - lastActivity >= MENU_INACTIVITY_TIMEOUT) {
-                stopForTimeout("challenge menu", MENU_INACTIVITY_TIMEOUT)
-                return true
+            if (detection.screen != lastScreen) {
+                lastScreen = detection.screen
+                tapsOnScreen = 0
+                stableDetections = 1
+                lastActivity = now
+            } else {
+                stableDetections = (stableDetections + 1).coerceAtMost(3)
             }
             val service = DigiWorldAccessibilityService.instance
             service?.showStatusOnly(service.getString(if (AutomationState.autoDungeonEnabled) R.string.overlay_auto_dungeon else R.string.overlay_dungeon_disabled))
-            if (!pending && AutomationState.enabled && AutomationState.autoDungeonEnabled && tapsOnScreen < 2 && now - lastTap >= nextTapInterval) {
+            // Slow devices may expose the finished-looking menu before its button accepts input.
+            // Require a stable detection, then retry at a human-paced interval until the screen
+            // actually changes instead of spending a fixed two-tap budget during loading.
+            if (!pending && stableDetections >= 2 && AutomationState.enabled && AutomationState.autoDungeonEnabled && now - lastTap >= nextTapInterval) {
                 pending = true
                 lastTap = now
                 nextTapInterval = SafeTapRandomizer.delay(TAP_INTERVAL, 35L)
@@ -67,6 +73,7 @@ object DungeonFrameAnalyzer {
             return true
         }
 
+        stableDetections = 0
         if (!AutomationState.autoDungeonEnabled) sessionActive = false
         // A Tower battle and its loading transitions can take considerably longer than VS.
         // Keep the short guard for a stuck challenge menu, but do not disable the loop while
@@ -78,10 +85,9 @@ object DungeonFrameAnalyzer {
     }
 
     private fun stopForTimeout(context: String, timeout: Long) {
-        AutomationState.autoDungeonEnabled = false
         sessionActive = false
         DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_timeout)) }
-        Log.w("DigiWorldDungeon", "auto dungeon stopped in $context after ${timeout / 1_000} seconds without visual progress")
+        Log.w("DigiWorldDungeon", "auto dungeon session released in $context after ${timeout / 1_000} seconds without visual progress; feature switch remains enabled")
     }
 
     private fun frameHash(width: Int, height: Int, argbAt: (Int, Int) -> Int): Long {
@@ -112,10 +118,11 @@ object DungeonFrameAnalyzer {
         pending = false
         lastScreen = DungeonScreen.NONE
         tapsOnScreen = 0
+        stableDetections = 0
         lastActivity = SystemClock.elapsedRealtime()
         lastHash = 0L
         Log.i("DigiWorldDungeon", "failure dialog handled - challenge retry state reset")
     }
 
-    fun reset() { sessionActive = false; pending = false; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0 }
+    fun reset() { sessionActive = false; pending = false; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0; stableDetections = 0 }
 }
