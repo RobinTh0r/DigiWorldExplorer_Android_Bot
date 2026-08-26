@@ -38,6 +38,22 @@ Community reports are welcome. When reporting an issue, include your device, And
 
 The app runs directly on an Android device without a PC, BlueStacks, ADB, root, injection, or game-APK modification. It captures the screen locally through `MediaProjection`, detects the visible 5×5 grid, player, collectibles, obstacles and HUD counters, then sends user-authorized gestures through an `AccessibilityService`.
 
+### 🎮 Quick-Control Overlay
+
+Version 4.0 adds a movable, compact in-game controller. It can open the bot app, start or restart screen capture, stop automation and toggle Auto Summon, VS/Tower, Bond &amp; Friendship and Network Defense without repeatedly switching away from the game. The round overlay icon can be enabled or disabled from the main app.
+
+### 🌙 Modern Light &amp; Dark Interface
+
+The redesigned interface provides consistent Light and Dark themes, clearer active and inactive switches, compact setup cards and more readable status information. Standard actions use a consistent teal color while test features remain visually distinct.
+
+### 🤖 Guided Setup &amp; Troubleshooting
+
+The one-time setup verifies Accessibility control, display-over-other-apps permission and unrestricted background battery use. Its guided troubleshooting assistant groups help by feature, links directly to relevant Android settings and includes device-specific steps for blocked Accessibility, capture alignment and missing overlays.
+
+### ⚙️ Advanced DigiWorld Settings
+
+Advanced navigation controls allow supported users to test forced forward movement and attack behavior, dash-until-empty operation and energy-only collection. Stage Failed recovery remains enabled as a safety feature. The standard navigation profile stays available when no advanced option is selected.
+
 ### 🧭 Automatic DigiWorld Navigation
 
 The core feature automatically navigates the visible DigiWorld grid. It dynamically detects the 5×5 board, player position, collectibles, obstacles, preview cells and available HUD actions instead of relying on fixed pixel coordinates. The planner searches the full visible board for a safe route toward the right edge, gives all collectables equal value, prefers nearby items in the current/next forward columns, avoids visible dead-end corners and spends attack or dash only when a free detour is unavailable.
@@ -90,16 +106,16 @@ Network Defense ticket recognition uses the ticket badge layout rather than OCR 
    - Accessibility control
    - Display over other apps
    - Allow background battery use
-5. Open the supported game screen and press **START + SHARE** in the bot.
+5. Open the supported game screen and press **START** in the bot.
 6. Confirm Android's screen-sharing dialog; automation starts immediately.
 
-You can stop automation at any time from the app or Android notification.
+You can stop or restart automation at any time from the app, Android notification or optional Quick-Control Overlay.
 
 ## ✅ One-time setup and built-in help
 
-The compact **One-time setup** panel shows the real state of Accessibility, overlay permission and background battery access. Once all three are granted it turns green and can be collapsed.
+The compact **One-time setup** panel shows the real state of Accessibility, overlay permission and background battery access. Once all three are granted it shows a completed state and can be collapsed.
 
-Use **Troubleshooting** for a short guided checklist. It links directly to the relevant Android settings and covers blocked Accessibility on Samsung devices, the recommended restart and screen-sharing order, grid/player detection with the Botamon sprite, Legacy capture size and Network Ops loading issues.
+Use **Troubleshooting** for a short, categorized guided checklist. It links directly to the relevant Android settings and covers blocked Accessibility on Samsung devices, the recommended restart and screen-sharing order, grid/player detection, Legacy capture size, the Quick-Control Overlay and specialized automation modes.
 
 ## 🛡️ Safety and privacy
 
@@ -407,7 +423,7 @@ Release signing reads local values from `keystore.properties`. The password file
 | `capture/` | MediaProjection capture and frame analysis |
 | `detection/` | Grid, player, item, obstacle and HUD detection |
 | `strategy/` | Movement planning and automation state |
-| `dungeon/` | Strict VS. Dungeon challenge/reward recognition and safe auto-advance |
+| `dungeon/` | Strict VS / Tower challenge, result and retry recognition |
 | `accessibility/` | Gesture execution and optional live overlay |
 | `app/src/test/` | Offline unit and screenshot-regression tests |
 
