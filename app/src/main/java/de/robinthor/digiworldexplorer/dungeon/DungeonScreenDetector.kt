@@ -73,7 +73,10 @@ object DungeonScreenDetector {
         0x000F34, 0x1C4451, 0x044C51, 0x0A101F, 0x222340, 0x020825, 0x020925, 0x001B3E, 0x091020, 0x00183D, 0x084351, 0x000F34,
         0x00071F, 0x041C2E, 0x000B28, 0x000B28, 0x242825, 0x01102F, 0x01102F, 0x000C28, 0x000B28, 0x000B28, 0x031B2E, 0x00071F,
     )
-    private const val REWARD_TEMPLATE_MAX_DISTANCE = .11
+    // The reward animation and the number of revealed Crest tiles can change large parts of the
+    // frame. Real captures from compact and tall phones reach about 0.118 while retaining the
+    // same strong blue-overlay and navy-tile structure checked above.
+    private const val REWARD_TEMPLATE_MAX_DISTANCE = .125
     private const val TEMPLATE_COLS = 12
     private const val TEMPLATE_ROWS = 16
     private val rewardTemplate = intArrayOf(

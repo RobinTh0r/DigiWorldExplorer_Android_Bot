@@ -82,7 +82,10 @@ object DungeonFrameAnalyzer {
                 lastTap = now
                 nextTapInterval = SafeTapRandomizer.delay(TAP_INTERVAL, 35L)
                 tapsOnScreen++
-                val tapY = if (detection.screen == DungeonScreen.REWARD) height * .80f else detection.tapY
+                // Tap the language-independent close prompt below the reward panel. Keeping this
+                // at 82.5% works for compact 582x1280 phones as well as taller captures; if the
+                // first gesture is swallowed, the still-visible reward screen triggers a retry.
+                val tapY = if (detection.screen == DungeonScreen.REWARD) height * .825f else detection.tapY
                 service?.dispatchSafeRandomizedTap(detection.tapX, tapY) { ok ->
                     pending = false
                     pendingSince = 0L
