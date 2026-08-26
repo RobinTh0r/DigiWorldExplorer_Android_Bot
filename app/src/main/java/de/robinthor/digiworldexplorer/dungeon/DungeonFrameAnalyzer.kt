@@ -13,6 +13,7 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 object DungeonFrameAnalyzer {
     private const val TAP_INTERVAL = 1_200L
     private const val PENDING_TAP_TIMEOUT = 2_500L
+    private const val REWARD_CLOSE_DELAY = 6_000L
     private const val ACTIVE_RUN_TIMEOUT = 120_000L
     private const val HASH_CHANGE_MIN = 5
     private var sessionActive = false
@@ -25,6 +26,7 @@ object DungeonFrameAnalyzer {
     private var lastScreen = DungeonScreen.NONE
     private var tapsOnScreen = 0
     private var stableDetections = 0
+    private var rewardDetectedSince = 0L
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val plane = image.planes.firstOrNull() ?: return false
@@ -61,6 +63,7 @@ object DungeonFrameAnalyzer {
                 tapsOnScreen = 0
                 stableDetections = 1
                 lastActivity = now
+                rewardDetectedSince = if (detection.screen == DungeonScreen.REWARD) now else 0L
             } else {
                 stableDetections = (stableDetections + 1).coerceAtMost(3)
             }
@@ -69,13 +72,18 @@ object DungeonFrameAnalyzer {
             // Slow devices may expose the finished-looking menu before its button accepts input.
             // Require a stable detection, then retry at a human-paced interval until the screen
             // actually changes instead of spending a fixed two-tap budget during loading.
-            if (!pending && stableDetections >= 2 && AutomationState.enabled && AutomationState.autoDungeonEnabled && now - lastTap >= nextTapInterval) {
+            // Tower can reveal many Crest rewards one after another. The first reward frame is
+            // already visually recognisable, but tapping it closes the screen before the reveal
+            // sequence has finished. Wait, then close at the actual "Tap to close" area.
+            val rewardReady = detection.screen != DungeonScreen.REWARD || now - rewardDetectedSince >= REWARD_CLOSE_DELAY
+            if (!pending && stableDetections >= 2 && rewardReady && AutomationState.enabled && AutomationState.autoDungeonEnabled && now - lastTap >= nextTapInterval) {
                 pending = true
                 pendingSince = now
                 lastTap = now
                 nextTapInterval = SafeTapRandomizer.delay(TAP_INTERVAL, 35L)
                 tapsOnScreen++
-                service?.dispatchSafeRandomizedTap(detection.tapX, detection.tapY) { ok ->
+                val tapY = if (detection.screen == DungeonScreen.REWARD) height * .80f else detection.tapY
+                service?.dispatchSafeRandomizedTap(detection.tapX, tapY) { ok ->
                     pending = false
                     pendingSince = 0L
                     Log.i("DigiWorldDungeon", "${detection.screen} tap=$ok confidence=${detection.confidence}")
@@ -136,6 +144,7 @@ object DungeonFrameAnalyzer {
         pending = false
         pendingSince = 0L
         lastScreen = DungeonScreen.NONE
+        rewardDetectedSince = 0L
         tapsOnScreen = 0
         stableDetections = 0
         lastActivity = SystemClock.elapsedRealtime()
@@ -143,5 +152,5 @@ object DungeonFrameAnalyzer {
         Log.i("DigiWorldDungeon", "failure dialog handled - challenge retry state reset")
     }
 
-    fun reset() { sessionActive = false; pending = false; pendingSince = 0L; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0; stableDetections = 0 }
+    fun reset() { sessionActive = false; pending = false; pendingSince = 0L; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0; stableDetections = 0; rewardDetectedSince = 0L }
 }
