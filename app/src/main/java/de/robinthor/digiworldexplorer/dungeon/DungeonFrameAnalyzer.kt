@@ -81,7 +81,10 @@ object DungeonFrameAnalyzer {
         if (sessionActive && now - lastActivity >= ACTIVE_RUN_TIMEOUT) {
             stopForTimeout("active run", ACTIVE_RUN_TIMEOUT)
         }
-        return sessionActive
+        // Remember the VS/Tower run internally, but do not reserve unrelated frames while no
+        // VS/Tower screen is visible. Otherwise an old dungeon session starves Feed, Summon and
+        // DigiWorld detection until its timeout expires.
+        return false
     }
 
     private fun stopForTimeout(context: String, timeout: Long) {

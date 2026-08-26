@@ -31,6 +31,14 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".CaptureConsentActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:noHistory="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.DigiWorldExplorer.CaptureConsent" />
+
         <service
             android:name=".capture.ScreenCaptureService"
             android:exported="false"

@@ -4,15 +4,15 @@
 
 **Native, local grid-navigation automation for Android 9+**
 
-[![Version](https://img.shields.io/badge/version-3.2-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-4.0-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.2.0/DigiWorldExplorer-Bot-v3.2.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v4.0.0/DigiWorldExplorer-Bot-v4.0.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-_Version 3.2 is the current public release._
+_Version 4.0 is the current public release._
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
 
@@ -50,9 +50,9 @@ Movement priorities:
 3. 🔺 Prefer detours and preserve claws for real dead ends
 4. 💨 Use dash conservatively when escape conditions require it
 
-### ⚔️ VS. Dungeon Automation
+### ⚔️ VS / Tower Automation
 
-The optional **VS. Dungeon** mode automatically recognizes the multilingual challenge dialog, presses **Attempt / Herausfordern**, waits without touching the active battle, closes a detected victory reward screen and starts the next level. Both challenge and reward detection use strict, resolution-independent full-layout fingerprints instead of generic blue-screen matching.
+The optional **VS / Tower** mode automatically recognizes supported challenge dialogs, starts the battle, waits without touching the active fight, closes detected result screens and starts the next attempt. Detection uses strict, resolution-independent layout fingerprints instead of generic blue-screen matching.
 
 The mode stops after 15 seconds without visible progress. This provides a safe fallback for defeat screens or unexpected dialogs that have not yet been explicitly classified.
 
@@ -64,7 +64,7 @@ When enabled in the app, **Auto Summon** recognizes green and purple ticket scre
 
 ### 🍖 Bond & Friendship
 
-It detects the stable white food bubble on the main battle screen and taps it locally with safe position and timing variation, helping reach the Partner-icon reward faster. It is mutually exclusive with Network Defense Ops to prevent the two specialized analyzers from interfering with each other.
+It detects the stable white food bubble on the main battle screen and taps it locally with safe position and timing variation, helping reach the Partner-icon reward faster. It can remain enabled together with Network Defense Ops; each analyzer only acts on its positively recognized screen.
 
 
 ### 🛡️ Network Defense Ops Loop
@@ -83,7 +83,7 @@ The bot detects the multilingual **Stage Failed** growth-guide dialog globally, 
 Network Defense ticket recognition uses the ticket badge layout rather than OCR of its numeric value, so visible counters such as `1/2`, `2/2` and `10/2` are supported.
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.2.0/DigiWorldExplorer-Bot-v3.2.0.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v4.0.0/DigiWorldExplorer-Bot-v4.0.0.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the three setup checks. A check mark confirms each one:
@@ -174,6 +174,18 @@ When reporting another device, include its exact model, Android version, OEM bui
 If the app is useful to you, you can support continued development through **[PayPal.me/thor666](https://paypal.me/thor666)**. Contributions are optional and help cover development and testing time.
 
 ## 📝 Changelog
+
+### v4.0.0 — 26 August 2026
+
+- 🎮 Added a movable quick-control overlay for in-game controls
+- 🏰 Added the combined VS / Tower Loop with automatic retry handling
+- 🌙 Added Dark Mode, guided troubleshooting and advanced DigiWorld settings
+- 🔄 Improved switching between DigiWorld, Auto Summon, VS/Tower, Bond &amp; Friendship and Network Defense
+- 🛡️ Bond &amp; Friendship and Network Defense now remain enabled while other modes temporarily take priority
+- 🎯 Reduced false VS/Tower detections and improved compatibility across devices, resolutions and aspect ratios
+- 🖼️ Automatically releases stale or misaligned DigiWorld grids
+- 🎨 Reworked the light and dark UI, setup flow and status controls
+- 🛠️ Fixed several stuck automation states, capture hand-offs and analyzer timeouts
 
 ### v3.2.0 — 16 August 2026
 
@@ -411,6 +423,6 @@ No license has been selected yet. Until a license file is added, public source a
 
 **Explore smart. Stop safely. Collect efficiently.**
 
-[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v3.2.0/DigiWorldExplorer-Bot-v3.2.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
+[⬇️ Download APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v4.0.0/DigiWorldExplorer-Bot-v4.0.0.apk) · [📦 Releases](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases) · [💻 Windows version](https://github.com/RobinTh0r/DigiWorldExplorer_Bot)
 
 </div>

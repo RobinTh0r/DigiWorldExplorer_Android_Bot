@@ -14,13 +14,15 @@ import de.robinthor.digiworldexplorer.detection.Cell
 import de.robinthor.digiworldexplorer.detection.GridBounds
 import de.robinthor.digiworldexplorer.detection.HudCounters
 import de.robinthor.digiworldexplorer.strategy.AutomationState
+import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
 
 class DigiWorldAccessibilityService:AccessibilityService(){
  private var overlay:GridOverlayView?=null
- override fun onServiceConnected(){instance=this;showOverlay();setOverlayEnabled(AutomationState.overlayEnabled)}
+ private var quickControls:QuickControlOverlay?=null
+ override fun onServiceConnected(){instance=this;showOverlay();val prefs=getSharedPreferences("settings",MODE_PRIVATE);if(SupporterLicenseManager.load(this)!=null&&prefs.getBoolean("quick_overlay_enabled",false))setQuickControlsEnabled(true);setOverlayEnabled(AutomationState.overlayEnabled)}
  override fun onAccessibilityEvent(event:AccessibilityEvent?)=Unit
  override fun onInterrupt()=Unit
- override fun onDestroy(){removeOverlay();if(instance===this)instance=null;super.onDestroy()}
+ override fun onDestroy(){quickControls?.destroy();quickControls=null;removeOverlay();if(instance===this)instance=null;super.onDestroy()}
  fun dispatchValidatedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){if(x<0||y<0){onComplete(false);return};val p=Path().apply{moveTo(x,y)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,80)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?)=onComplete(true);override fun onCancelled(d:GestureDescription?)=onComplete(false)},null);if(!ok)onComplete(false)}
  fun dispatchSafeRandomizedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){
   // Ein dp Varianz ist auf allen Zielbuttons weit innerhalb des erkannten Mittelpunkts.
@@ -30,7 +32,11 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  }
  fun dispatchNormalizedTap(xRatio:Float,yRatio:Float,onComplete:(Boolean)->Unit){val wm=getSystemService(WindowManager::class.java);val bounds=if(android.os.Build.VERSION.SDK_INT>=30)wm.maximumWindowMetrics.bounds else{val metrics=android.util.DisplayMetrics();@Suppress("DEPRECATION") wm.defaultDisplay.getRealMetrics(metrics);Rect(0,0,metrics.widthPixels,metrics.heightPixels)};val x=bounds.left+xRatio.coerceIn(0f,1f)*bounds.width();val y=bounds.top+yRatio.coerceIn(0f,1f)*bounds.height();android.util.Log.i("DigiWorldTap","normalized $xRatio,$yRatio -> $x,$y display=${bounds.width()}x${bounds.height()}");dispatchSafeRandomizedTap(x,y,onComplete)}
  fun clearCalibrationOverlay(){overlay?.post{overlay?.bounds=null;overlay?.visibility=View.GONE;overlay?.invalidate()}}
- fun setOverlayEnabled(enabled:Boolean){overlay?.post{overlay?.visibility=if(enabled)View.VISIBLE else View.GONE}}
+ fun setOverlayEnabled(enabled:Boolean){overlay?.post{overlay?.visibility=if(enabled)View.VISIBLE else View.GONE};quickControls?.refresh()}
+ fun setQuickControlsEnabled(enabled:Boolean){
+  if(enabled&&SupporterLicenseManager.load(this)!=null){if(quickControls==null)quickControls=QuickControlOverlay(this).also{it.show()}}
+  else{quickControls?.destroy();quickControls=null}
+ }
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
  fun updateStatusKeepingGrid(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  fun showStatusOnly(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}

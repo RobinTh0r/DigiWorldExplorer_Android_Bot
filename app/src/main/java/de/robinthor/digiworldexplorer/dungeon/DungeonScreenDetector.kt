@@ -18,6 +18,10 @@ object DungeonScreenDetector {
         val challengeHeader = ratio(width, height, .10, .16, .90, .25, argbAt, ::cyan)
         val challengePanel = ratio(width, height, .08, .22, .92, .78, argbAt, ::navy)
         val challengeFrame = ratio(width, height, .07, .18, .93, .84, argbAt, ::cyan)
+        // The hologram settings dialog otherwise resembles the dungeon card closely, but it has
+        // a persistent yellow information/warning block in this band. Genuine EN/DE VS and Tower
+        // dialogs contain virtually no yellow pixels here.
+        val hologramWarning = ratio(width, height, .10, .58, .90, .74, argbAt, ::warningYellow)
         val challengeScore = challengeButton * 2.0 + challengeHeader * .8 + challengePanel * .7 + challengeFrame * .5
         val challengeDistance = challengeTemplateDistance(width, height, argbAt)
         // VS places the action button on the right, while Tower uses one centered button.
@@ -31,7 +35,7 @@ object DungeonScreenDetector {
         val rewardScore = 1.0 - rewardDistance
 
         return when {
-            challengeButton >= .08 && challengeHeader >= .08 && challengePanel >= .28 && challengeFrame >= .025 && challengeDistance <= CHALLENGE_TEMPLATE_MAX_DISTANCE ->
+            challengeButton >= .08 && challengeHeader >= .08 && challengePanel >= .28 && challengeFrame >= .025 && hologramWarning < .012 && challengeDistance <= CHALLENGE_TEMPLATE_MAX_DISTANCE ->
                 DungeonDetection(DungeonScreen.CHALLENGE, challengeTapX, height * .78f, challengeScore)
             rewardBlue >= .55 && rewardTiles >= .45 && rewardDistance <= REWARD_TEMPLATE_MAX_DISTANCE ->
                 DungeonDetection(DungeonScreen.REWARD, width * .50f, height * .66f, rewardScore)
@@ -42,11 +46,15 @@ object DungeonScreenDetector {
     private fun cyan(r: Int, g: Int, b: Int) = b > 145 && g > 95 && b > r * 1.35 && g > r * 1.15
     private fun navy(r: Int, g: Int, b: Int) = b > 45 && b > r * 1.20 && b > g * .75 && r < 70 && g < 115
     private fun blueOverlay(r: Int, g: Int, b: Int) = b > 95 && b > r * 1.20 && b > g * .85 && r < 125
+    private fun warningYellow(r: Int, g: Int, b: Int) = r > 160 && g > 110 && b < 100
 
     // The reference was captured from the VS layout. Tower uses the same dialog structure but a
     // different hero image and centered button, so allow that content variation while retaining
     // the structural colour checks above.
-    private const val CHALLENGE_TEMPLATE_MAX_DISTANCE = .17
+    // Real VS and Tower dialogs from multiple resolutions stay around 0.12. Generic blue game
+    // dialogs (idle rewards, hologram settings and chip selection) start around 0.138, so keep a
+    // deliberate gap instead of treating every large cyan/navy dialog as a dungeon menu.
+    private const val CHALLENGE_TEMPLATE_MAX_DISTANCE = .13
     private val challengeTemplate = intArrayOf(
         0x132C2C, 0x0E2221, 0x0F262D, 0x0F2831, 0x152D29, 0x0E252D, 0x0F272E, 0x0E262D, 0x102927, 0x061925, 0x122522, 0x071A26,
         0x10374B, 0x34323E, 0x365F6D, 0x0D2C4E, 0x1F414D, 0x1B333E, 0x041A2D, 0x194D38, 0x465963, 0x1B5E66, 0x06243A, 0x0D3648,

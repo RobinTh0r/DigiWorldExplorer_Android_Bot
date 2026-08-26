@@ -94,10 +94,15 @@ object NetworkDefenseFrameAnalyzer {
         }
         if (!sessionActive) return false
         if (now - sessionStarted >= SESSION_TIMEOUT) {
-            AutomationState.autoNetworkDefenseEnabled = false
+            // End only this stale run. The feature switch represents the user's persistent
+            // preference and must never be turned off by an analyzer timeout.
             sessionActive = false
+            finalBossArmed = false
+            lastBossSeen = 0L
+            lastScreen = NetworkDefenseScreen.NONE
+            startVisibleSince = 0L
             showStatus(R.string.overlay_network_timeout)
-            Log.w("DigiWorldNetwork", "Network Defense Ops stopped after session timeout")
+            Log.w("DigiWorldNetwork", "Network Defense Ops run reset after session timeout")
             return true
         }
 
