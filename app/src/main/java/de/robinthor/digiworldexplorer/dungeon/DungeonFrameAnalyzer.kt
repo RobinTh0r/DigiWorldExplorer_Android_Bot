@@ -12,10 +12,12 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 object DungeonFrameAnalyzer {
     private const val TAP_INTERVAL = 1_200L
+    private const val PENDING_TAP_TIMEOUT = 2_500L
     private const val ACTIVE_RUN_TIMEOUT = 120_000L
     private const val HASH_CHANGE_MIN = 5
     private var sessionActive = false
     private var pending = false
+    private var pendingSince = 0L
     private var lastTap = 0L
     private var nextTapInterval = TAP_INTERVAL
     private var lastActivity = 0L
@@ -33,6 +35,13 @@ object DungeonFrameAnalyzer {
             return Color.rgb(buffer.get(offset).toInt() and 255, buffer.get(offset + 1).toInt() and 255, buffer.get(offset + 2).toInt() and 255)
         }
         val now = SystemClock.elapsedRealtime()
+        // Android can drop a gesture callback while the game is being brought to the foreground.
+        // Never let that interrupted first tap block the VS/Tower loop until the user restarts it.
+        if (pending && now - pendingSince >= PENDING_TAP_TIMEOUT) {
+            pending = false
+            pendingSince = 0L
+            Log.w("DigiWorldDungeon", "stale pending challenge tap released for retry")
+        }
         val detection = DungeonScreenDetector.detect(width, height, ::pixel)
         val hash = frameHash(width, height, ::pixel)
         if (lastHash == 0L || java.lang.Long.bitCount(lastHash xor hash) >= HASH_CHANGE_MIN) lastActivity = now
@@ -62,12 +71,18 @@ object DungeonFrameAnalyzer {
             // actually changes instead of spending a fixed two-tap budget during loading.
             if (!pending && stableDetections >= 2 && AutomationState.enabled && AutomationState.autoDungeonEnabled && now - lastTap >= nextTapInterval) {
                 pending = true
+                pendingSince = now
                 lastTap = now
                 nextTapInterval = SafeTapRandomizer.delay(TAP_INTERVAL, 35L)
                 tapsOnScreen++
                 service?.dispatchSafeRandomizedTap(detection.tapX, detection.tapY) { ok ->
                     pending = false
+                    pendingSince = 0L
                     Log.i("DigiWorldDungeon", "${detection.screen} tap=$ok confidence=${detection.confidence}")
+                }
+                if (service == null) {
+                    pending = false
+                    pendingSince = 0L
                 }
             }
             return true
@@ -119,6 +134,7 @@ object DungeonFrameAnalyzer {
     fun onFailureDialogHandled() {
         sessionActive = AutomationState.autoDungeonEnabled
         pending = false
+        pendingSince = 0L
         lastScreen = DungeonScreen.NONE
         tapsOnScreen = 0
         stableDetections = 0
@@ -127,5 +143,5 @@ object DungeonFrameAnalyzer {
         Log.i("DigiWorldDungeon", "failure dialog handled - challenge retry state reset")
     }
 
-    fun reset() { sessionActive = false; pending = false; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0; stableDetections = 0 }
+    fun reset() { sessionActive = false; pending = false; pendingSince = 0L; lastTap = 0L; nextTapInterval = TAP_INTERVAL; lastActivity = 0L; lastHash = 0L; lastScreen = DungeonScreen.NONE; tapsOnScreen = 0; stableDetections = 0 }
 }
