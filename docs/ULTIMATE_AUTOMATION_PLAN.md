@@ -65,6 +65,11 @@ Reference implementation under analysis: `DigiautoTap/` (decompiled APK; never s
   starts a global 20-minute monotonic cooldown. Bond cannot start during that cooldown.
 - The compact overlay shows the live remaining time on its second line (`Bond mm:ss`). The timer
   begins only after the field has completed and Home is positively recognized, not after 15/15.
+- [ ] Autopilot extension: after each successful 15/15 tour, process the pending Meat Field visit,
+  return Home, open the Bond/Friendship reward entry, claim every currently available Bond reward,
+  dismiss all reward/result panels, and positively verify Home again. Only then start the global
+  20-minute cooldown. If no reward is available, verify that state and still finish at Home; never
+  click an unrecognized popup or begin another Bond tour while reward handling is incomplete.
 - Route classification no longer treats unsolicited field-like geometry as a Farm destination.
   Explore and known Partner/Dungeon pages are excluded before Farm detection; a field can enter
   the Expedition route only while its post-Bond visit is explicitly pending.
@@ -371,6 +376,9 @@ Acceptance: all six plots are handled without spending non-free resources and th
 - [ ] Start a tour only after a token collection or explicit manual request.
 - [ ] Iterate partners with verified Raise and home return after every selection.
 - [ ] Restore the original partner even after partial failures where safely possible.
+- [ ] In Autopilot, follow the post-tour Meat Field visit with a verified Bond-reward collection:
+      claim all available rewards, close their result panels, return to recognized Home, and only
+      then arm the next 20-minute cooldown.
 - [ ] Persist only safe resume information; never resume mid-confirmation after process death.
 - [ ] Add visited/collected/failed/restored summary.
 

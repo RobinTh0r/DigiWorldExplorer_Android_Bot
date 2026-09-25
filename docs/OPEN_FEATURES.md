@@ -58,6 +58,8 @@ Updated 2026-09-25 after the live Dungeon pass.
   Fever target and daily cap are incomplete.
 - Full Autopilot still needs one shared task scheduler connecting Bond, Farm, Dungeon, login/idle,
   Summon and World Search with verified Home returns.
+- Bond Autopilot still needs the post-tour reward leg: after Meat Field, return Home, claim every
+  available Bond/Friendship reward, dismiss the results, verify Home, then start the 20-minute wait.
 - Configurable task order, run-now actions for every task, persisted daily summaries and safe resume
   data remain open.
 - Flexible Digital World player sprites beyond the currently tested profile need calibration UI and
