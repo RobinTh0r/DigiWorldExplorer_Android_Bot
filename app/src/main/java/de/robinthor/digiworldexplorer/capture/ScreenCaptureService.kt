@@ -183,7 +183,14 @@ class ScreenCaptureService : Service() {
                 var recognized = false
                 val featureFrame = framesSeen % 3 == 0
                 val captureBlocked = featureFrame && updateCaptureQuality(image, width, height)
-                if (captureBlocked) {
+                val gameForeground = DigiWorldAccessibilityService.instance?.isGameForeground() == true
+                if (!gameForeground) {
+                    // Never classify or tap our own settings UI, the launcher, or another app.
+                    passiveScreen = ObservedScreen.UNKNOWN
+                    GameEntryAnalyzer.reset()
+                    publishDirector(ObservedScreen.UNKNOWN)
+                    recognized = false
+                } else if (captureBlocked) {
                     recognized = captureImageMissing
                     publishDirector(FrameOwner.CAPTURE_BLOCKED)
                 } else {

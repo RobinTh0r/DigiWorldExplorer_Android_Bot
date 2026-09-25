@@ -20,19 +20,6 @@ object GameEntryDetector {
                 IdleRewardScreen.NONE -> EntryScreen.UNKNOWN
             }, remaining)
         }
-        val bottomNavigation = ratio(frame, .05, .90, .95, .995) {
-            it.blue > 75 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
-        }
-        val rightActionRail = ratio(frame, .77, .07, .94, .32) {
-            it.blue > 80 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
-        }
-        val centerBlue = ratio(frame, .22, .30, .72, .72) {
-            it.blue > 80 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
-        }
-        if (HomeScreenDetector.detect(frame.width, frame.height, frame::argbAt) ||
-            (bottomNavigation > .18 && rightActionRail > .08 && centerBlue < .45))
-            return GameEntryReading(EntryScreen.HOME)
-
         val noticeHeader = ratio(frame, .20, .195, .82, .25) {
             it.blue > 145 && it.green > 90 && it.blue > it.red * 1.18
         }
@@ -57,11 +44,25 @@ object GameEntryDetector {
         val whiteLabel = ratio(frame, .34, .825, .66, .86) {
             it.red > 185 && it.green > 185 && it.blue > 185
         }
-        return when {
-            purple > .24 && cyanStart > .44 && whiteLabel > .025 -> GameEntryReading(EntryScreen.LOGIN_READY)
-            purple > .24 -> GameEntryReading(EntryScreen.LOGIN_LOADING)
-            else -> GameEntryReading(EntryScreen.UNKNOWN)
+        if (purple > .24 && cyanStart > .44 && whiteLabel > .025)
+            return GameEntryReading(EntryScreen.LOGIN_READY)
+        if (purple > .24) return GameEntryReading(EntryScreen.LOGIN_LOADING)
+
+        // Home is intentionally last: its broad, animation-tolerant detector also sees parts of
+        // the title artwork. Specific blocking entry screens must always win.
+        val bottomNavigation = ratio(frame, .05, .90, .95, .995) {
+            it.blue > 75 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
         }
+        val rightActionRail = ratio(frame, .77, .07, .94, .32) {
+            it.blue > 80 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
+        }
+        val centerBlue = ratio(frame, .22, .30, .72, .72) {
+            it.blue > 80 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
+        }
+        if (HomeScreenDetector.detect(frame.width, frame.height, frame::argbAt) ||
+            (bottomNavigation > .18 && rightActionRail > .08 && centerBlue < .45))
+            return GameEntryReading(EntryScreen.HOME)
+        return GameEntryReading(EntryScreen.UNKNOWN)
     }
 
     /** Red numerator means 0/2. A visibly enabled purple button means at least one remains. */

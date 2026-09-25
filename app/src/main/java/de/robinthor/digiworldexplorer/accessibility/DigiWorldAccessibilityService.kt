@@ -19,11 +19,13 @@ import de.robinthor.digiworldexplorer.automation.DirectorSnapshot
 import de.robinthor.digiworldexplorer.automation.ScreenDirector
 
 class DigiWorldAccessibilityService:AccessibilityService(){
+ @Volatile private var activePackage:String?=null
  private var overlay:GridOverlayView?=null
  private var quickControls:QuickControlOverlay?=null
  override fun onServiceConnected(){instance=this;showOverlay();val prefs=getSharedPreferences("settings",MODE_PRIVATE);if(SupporterLicenseManager.load(this)!=null&&prefs.getBoolean("quick_overlay_enabled",false))setQuickControlsEnabled(true);setOverlayEnabled(AutomationState.overlayEnabled)}
- override fun onAccessibilityEvent(event:AccessibilityEvent?)=Unit
+ override fun onAccessibilityEvent(event:AccessibilityEvent?){event?.packageName?.toString()?.let{activePackage=it}}
  override fun onInterrupt()=Unit
+ fun isGameForeground()=activePackage=="com.bandainamcoent.dgup_ww"
  override fun onDestroy(){quickControls?.destroy();quickControls=null;removeOverlay();if(instance===this)instance=null;super.onDestroy()}
  fun dispatchValidatedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){if(x<0||y<0){onComplete(false);return};val p=Path().apply{moveTo(x,y)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,80)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?)=onComplete(true);override fun onCancelled(d:GestureDescription?)=onComplete(false)},null);if(!ok)onComplete(false)}
  fun dispatchValidatedSwipe(x1:Float,y1:Float,x2:Float,y2:Float,onComplete:(Boolean)->Unit){val p=Path().apply{moveTo(x1,y1);lineTo(x2,y2)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,420)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?)=onComplete(true);override fun onCancelled(d:GestureDescription?)=onComplete(false)},null);if(!ok)onComplete(false)}
