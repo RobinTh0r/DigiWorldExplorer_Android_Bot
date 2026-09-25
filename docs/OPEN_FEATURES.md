@@ -50,8 +50,10 @@ Updated 2026-09-25 after the live Dungeon pass.
 
 ## Other open product work
 
-- Title/Touch-to-Start and idle-reward controllers exist as pure/tested logic but are not connected
-  to live capture and navigation yet.
+- Title/Touch-to-Start and idle rewards are connected to the live capture pipeline. The entry flow
+  waits through the blue/pink loading screens, requires two confirmed Touch-to-Start frames, claims
+  normal rewards, optionally uses the global Ad Skip Pass, and persists the completed ad check until
+  the next Europe/Berlin 08:00 game-day reset. Additional update-popup variants still need fixtures.
 - Gekkomon Run remains deliberately last: event navigation, obstacle tracking/timing, result/quit,
   Fever target and daily cap are incomplete.
 - Full Autopilot still needs one shared task scheduler connecting Bond, Farm, Dungeon, login/idle,

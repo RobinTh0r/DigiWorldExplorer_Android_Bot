@@ -33,6 +33,7 @@ import de.robinthor.digiworldexplorer.automation.AutomationEventLog
 import de.robinthor.digiworldexplorer.automation.ScreenDirector
 import de.robinthor.digiworldexplorer.automation.PassiveScreenClassifier
 import de.robinthor.digiworldexplorer.automation.ObservedScreen
+import de.robinthor.digiworldexplorer.automation.GameEntryAnalyzer
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
@@ -188,6 +189,10 @@ class ScreenCaptureService : Service() {
                 } else {
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
                     val owner = FrameOrchestrator.resolve(false, listOf(
+                        // Login and idle rewards are blocking entry screens and outrank feature tasks.
+                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame) {
+                            GameEntryAnalyzer.analyze(image, width, height)
+                        },
                         // Persistent failure dialogs outrank every task. Network Defense is excluded
                         // because its battle layout may contain similar red/gray regions.
                         FrameProbe(FrameOwner.STAGE_FAILED, enabled = !AutomationState.autoNetworkDefenseEnabled) {
@@ -367,6 +372,7 @@ class ScreenCaptureService : Service() {
         lastFrameOwner = FrameOwner.NONE
         passiveScreen = ObservedScreen.UNKNOWN
         RewardPurchaseFrameAnalyzer.reset()
+        GameEntryAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         GekkomonRunFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()

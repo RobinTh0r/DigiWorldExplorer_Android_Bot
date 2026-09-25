@@ -20,10 +20,9 @@ class GameEntryControllerTest {
         assertEquals(EntryAction.CLOSE_IDLE,c.tick(EntryScreen.IDLE_EMPTY,3))
         assertEquals(EntryAction.WAIT,c.tick(EntryScreen.HOME,4))
     }
-    @Test fun unrelatedResultsAndUnknownDialogsAreNotClosed() {
-        val c = GameEntryController()
-        assertEquals(EntryAction.WAIT,c.tick(EntryScreen.RESULT,0))
-        assertEquals(EntryAction.WAIT,c.tick(EntryScreen.UNKNOWN,1))
+    @Test fun idleResultCanResumeAfterCaptureRestartButUnknownIsNotClosed() {
+        assertEquals(EntryAction.CLOSE_RESULT,GameEntryController().tick(EntryScreen.RESULT,0))
+        assertEquals(EntryAction.WAIT,GameEntryController().tick(EntryScreen.UNKNOWN,1))
     }
     @Test fun adNeedsPassAndCountThenVerifiedDecrement() {
         assertEquals(EntryAction.CLAIM_IDLE,GameEntryController().tick(EntryScreen.IDLE_CLAIM,0,false,2))
@@ -40,5 +39,12 @@ class GameEntryControllerTest {
         c.tick(EntryScreen.IDLE_CLAIM,0,true,2)
         c.tick(EntryScreen.RESULT,1,true)
         assertEquals(EntryAction.PARK,c.tick(EntryScreen.IDLE_CLAIM,2,true,2))
+    }
+    @Test fun `notice after login is dismissed once and requires home proof`() {
+        val c = GameEntryController()
+        assertEquals(EntryAction.TOUCH_START, c.tick(EntryScreen.LOGIN_READY, 0))
+        assertEquals(EntryAction.CLOSE_NOTICE, c.tick(EntryScreen.NOTICE, 1))
+        assertEquals(EntryAction.WAIT, c.tick(EntryScreen.NOTICE, 2))
+        assertEquals(EntryAction.WAIT, c.tick(EntryScreen.HOME, 3))
     }
 }

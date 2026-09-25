@@ -3,6 +3,8 @@ package de.robinthor.digiworldexplorer.automation
 /** Stable, user-visible interpretation of the frame currently owned by the automation pipeline. */
 enum class ObservedScreen(val label: String) {
     CAPTURE_BLOCKED("Capture unavailable"),
+    LOGIN("Login / Title"),
+    IDLE_REWARDS("Idle rewards"),
     MESSAGE("Game message"),
     HOME("Home"),
     NETWORK_DEFENSE("Network Defense"),
@@ -119,6 +121,7 @@ object ScreenDirector {
 
     private fun FrameOwner.screen() = when (this) {
         FrameOwner.CAPTURE_BLOCKED -> ObservedScreen.CAPTURE_BLOCKED
+        FrameOwner.GAME_ENTRY -> GameEntryAnalyzer.observedScreen
         FrameOwner.STAGE_FAILED -> ObservedScreen.MESSAGE
         FrameOwner.NETWORK_DEFENSE -> ObservedScreen.NETWORK_DEFENSE
         FrameOwner.WORLD_SEARCH -> ObservedScreen.WORLD_SEARCH

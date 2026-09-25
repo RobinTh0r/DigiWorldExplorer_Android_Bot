@@ -28,12 +28,14 @@ object PassiveScreenClassifier {
         }
         val viewport = GameViewport.fit(w, h)
         val at: (Int, Int) -> Int = frame::argbAt
+        val entry = GameEntryDetector.detect(frame).screen
         val knownPage = KnownPageDetector.detect(frame, viewport)
         val explore = ExploreMenuDetector.detect(frame, viewport)
         val farm = if (knownPage == ObservedScreen.UNKNOWN && !explore.menu)
             FarmHarvestDetector.detect(frame, viewport) else de.robinthor.digiworldexplorer.farm.FarmHarvestDetection(false, emptyList())
         val farmDialog = if (!farm.field) FarmDialogDetector.detect(frame, farm.visiblePlots, viewport) else null
         return when {
+            entry == EntryScreen.HOME -> ObservedScreen.HOME
             HomeScreenDetector.detect(w, h, at) -> ObservedScreen.HOME
             DungeonScreenDetector.detect(w, h, at).screen != DungeonScreen.NONE -> ObservedScreen.DUNGEON
             RewardPurchaseDetector.detect(w, h, at).recognized -> ObservedScreen.SUMMON

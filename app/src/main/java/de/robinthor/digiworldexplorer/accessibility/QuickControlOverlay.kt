@@ -78,6 +78,8 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         }
         val eyes = BotEyeStatusView(service).apply {
             isClickable = false
+            // The source ImageView has elevation; keep animated eyes above that bitmap.
+            elevation = 12f * density
             layoutParams = FrameLayout.LayoutParams((52 * density).toInt(), (52 * density).toInt())
         }
         val iconStack = FrameLayout(service).apply {

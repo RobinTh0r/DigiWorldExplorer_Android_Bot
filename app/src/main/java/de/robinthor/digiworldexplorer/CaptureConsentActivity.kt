@@ -80,6 +80,7 @@ class CaptureConsentActivity : ComponentActivity() {
         )
         settings.edit().putBoolean("dws_blind_stage_tap", true).apply()
         RewardPurchaseFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.automation.GameEntryAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
         FeedFrameAnalyzer.reset()

@@ -49,14 +49,19 @@ class BotEyeStatusView(context: Context) : View(context) {
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val d = resources.displayMetrics.density
-        val cy = 27f * d
+        // The source mascot's pupils sit slightly above the geometric icon centre.
+        val cy = 24f * d
         val left = 20f * d
         val right = 32f * d
         paint.style = Paint.Style.FILL
 
         if (eyeState == BotEyeState.OFF) {
-            paint.color = Color.rgb(75, 82, 91)
-            paint.strokeWidth = 2.5f * d
+            // Cover the pupils baked into the icon so the OFF state is actually visible.
+            paint.color = Color.argb(245, 7, 16, 25)
+            canvas.drawOval(left-6f*d, cy-4.4f*d, left+6f*d, cy+4.4f*d, paint)
+            canvas.drawOval(right-6f*d, cy-4.4f*d, right+6f*d, cy+4.4f*d, paint)
+            paint.color = Color.rgb(135, 145, 158)
+            paint.strokeWidth = 3.2f * d
             paint.strokeCap = Paint.Cap.ROUND
             canvas.drawLine(left - 3f*d, cy, left + 3f*d, cy, paint)
             canvas.drawLine(right - 3f*d, cy, right + 3f*d, cy, paint)
@@ -65,11 +70,6 @@ class BotEyeStatusView(context: Context) : View(context) {
 
         val blink = eyeState == BotEyeState.ACTIVE && frame in 20..21
         val radiusY = when { blink -> .55f*d; eyeState == BotEyeState.UNKNOWN -> 2.7f*d; else -> 4.7f*d }
-        paint.color = Color.argb(220, 7, 16, 25)
-        canvas.drawOval(left-4.7f*d, cy-radiusY, left+4.7f*d, cy+radiusY, paint)
-        canvas.drawOval(right-4.7f*d, cy-radiusY, right+4.7f*d, cy+radiusY, paint)
-        if (blink) return
-
         val color = when (eyeState) {
             BotEyeState.ACTIVE -> Color.rgb(55, 224, 143)
             BotEyeState.SEARCHING -> Color.rgb(250, 190, 48)
@@ -77,12 +77,24 @@ class BotEyeStatusView(context: Context) : View(context) {
             BotEyeState.ERROR -> Color.rgb(239, 74, 82)
             BotEyeState.OFF -> Color.TRANSPARENT
         }
-        val xOffset = if (eyeState == BotEyeState.SEARCHING) ((frame % 3) - 1) * 1.9f*d else 0f
+        // Opaque sockets mask the original cyan icon eyes; the animated state is drawn on top.
+        paint.color = Color.argb(250, 5, 12, 22)
+        canvas.drawOval(left-6f*d, cy-radiusY, left+6f*d, cy+radiusY, paint)
+        canvas.drawOval(right-6f*d, cy-radiusY, right+6f*d, cy+radiusY, paint)
+        paint.style = Paint.Style.STROKE
+        paint.strokeWidth = 1.2f*d
+        paint.color = Color.argb(220, Color.red(color), Color.green(color), Color.blue(color))
+        canvas.drawOval(left-6f*d, cy-radiusY, left+6f*d, cy+radiusY, paint)
+        canvas.drawOval(right-6f*d, cy-radiusY, right+6f*d, cy+radiusY, paint)
+        paint.style = Paint.Style.FILL
+        if (blink) return
+
+        val xOffset = if (eyeState == BotEyeState.SEARCHING) ((frame % 3) - 1) * 3.5f*d else 0f
         val radius = when (eyeState) {
             BotEyeState.ERROR -> (2.25f + .55f * ((sin(frame*.8) + 1.0) / 2.0)).toFloat()
-            BotEyeState.ACTIVE -> 2.65f
-            BotEyeState.UNKNOWN -> 2.1f
-            BotEyeState.SEARCHING -> 2.7f
+            BotEyeState.ACTIVE -> 3.25f
+            BotEyeState.UNKNOWN -> 2.7f
+            BotEyeState.SEARCHING -> 3.25f
             BotEyeState.OFF -> 0f
         } * d
         paint.color = color

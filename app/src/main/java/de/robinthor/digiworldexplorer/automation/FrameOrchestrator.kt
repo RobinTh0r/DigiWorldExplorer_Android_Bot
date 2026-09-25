@@ -3,6 +3,7 @@ package de.robinthor.digiworldexplorer.automation
 /** The single subsystem allowed to own and act on a captured frame. */
 enum class FrameOwner {
     CAPTURE_BLOCKED,
+    GAME_ENTRY,
     STAGE_FAILED,
     NETWORK_DEFENSE,
     WORLD_SEARCH,

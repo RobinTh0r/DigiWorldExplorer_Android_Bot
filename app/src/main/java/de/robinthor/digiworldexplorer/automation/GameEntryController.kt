@@ -1,7 +1,7 @@
 package de.robinthor.digiworldexplorer.automation
 
-enum class EntryScreen { UNKNOWN, LOGIN_LOADING, LOGIN_READY, IDLE_CLAIM, IDLE_EMPTY, RESULT, HOME }
-enum class EntryAction { WAIT, TOUCH_START, CLAIM_IDLE, CLAIM_AD, CLOSE_RESULT, CLOSE_IDLE, PARK }
+enum class EntryScreen { UNKNOWN, LOGIN_LOADING, LOGIN_READY, IDLE_CLAIM, IDLE_EMPTY, RESULT, NOTICE, HOME }
+enum class EntryAction { WAIT, TOUCH_START, CLAIM_IDLE, CLAIM_AD, CLOSE_RESULT, CLOSE_IDLE, CLOSE_NOTICE, PARK }
 
 /** Single-dispatch entry flow. Unknown dialogs cannot authorize a close or a retry. */
 class GameEntryController {
@@ -17,10 +17,11 @@ class GameEntryController {
         if (parked) return EntryAction.PARK
         if (pending != null) {
             val done = when (pending) {
-                EntryAction.TOUCH_START -> screen in setOf(EntryScreen.HOME, EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY)
+                EntryAction.TOUCH_START -> screen in setOf(EntryScreen.HOME, EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY, EntryScreen.NOTICE)
                 EntryAction.CLAIM_IDLE, EntryAction.CLAIM_AD -> screen == EntryScreen.RESULT
                 EntryAction.CLOSE_RESULT -> screen in setOf(EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY, EntryScreen.HOME)
                 EntryAction.CLOSE_IDLE -> screen == EntryScreen.HOME
+                EntryAction.CLOSE_NOTICE -> screen in setOf(EntryScreen.HOME, EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY)
                 else -> false
             }
             if (!done) {
@@ -42,6 +43,10 @@ class GameEntryController {
         }
         return when (screen) {
             EntryScreen.LOGIN_READY -> issue(EntryAction.TOUCH_START, now)
+            EntryScreen.NOTICE -> issue(EntryAction.CLOSE_NOTICE, now)
+            // RESULT reaches this controller only through the specific idle-reward detector,
+            // so capture/service restarts may safely resume by closing it.
+            EntryScreen.RESULT -> issue(EntryAction.CLOSE_RESULT, now)
             EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY -> {
                 if (adSkip && adRemaining in 1..2 && adClaims < 2) {
                     adBefore = adRemaining; adClaims++
