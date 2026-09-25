@@ -25,8 +25,8 @@ android {
         applicationId = "de.robinthor.digiworldexplorer"
         minSdk = 28
         targetSdk = 36
-        versionCode = 66
-        versionName = "4.0.1-beta.3"
+        versionCode = 67
+        versionName = "5.0.0-beta.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -49,6 +49,11 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Test builds coexist with the differently signed installed release.
+            applicationIdSuffix = ".beta"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

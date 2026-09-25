@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="farm_harvest_title">Meat Field: Farmhelfer (Beta)</string>
+    <string name="farm_watering_title">Gießkannen verwenden</string>
+    <string name="farm_watering_hint">Zuerst lila Palmon, dann rotes Palmon, dann Mini-Palmon.</string>
+    <string name="ad_skip_pass_title">Ad Skip Pass vorhanden</string>
+    <string name="ad_skip_pass_hint">Erlaubt Werbe-Farmaktionen, ohne eine Werbung abzuspielen.</string>
+    <string name="farm_harvest_hint">Erntet reife Beete und nutzt verfügbare Samen: rechts, Mitte, links. Nach einer erfolgreichen 15er-Bond-Runde wird das Feld einmal geprüft, danach Home und 20 Minuten Pause.</string>
+    <string name="farm_harvest_status">Farm: Feld prüfen</string>
+    <string name="farm_parked">Farm pausiert: Aktion nicht sicher bestätigt. Zum erneuten Versuch stoppen und starten.</string>
+    <string name="support_export">Supportbericht exportieren</string>
+    <string name="support_preview">Supportbericht prüfen</string>
+    <string name="support_save">ZIP speichern</string>
+    <string name="support_saved">Supportbericht gespeichert.</string>
+    <string name="support_save_failed">Supportbericht konnte nicht gespeichert werden. Bitte einen anderen Speicherort wählen.</string>
+    <string name="automation_mode">Automationsmodus</string>
+    <string name="mode_semi_auto">Co-Pilot</string>
+    <string name="mode_full_autopilot">Expedition</string>
+    <string name="mode_semi_auto_hint">Arbeitet nur in einer Aktivität, die du selbst geöffnet hast. Keine automatische Menü-Navigation.</string>
+    <string name="mode_full_autopilot_hint">Bond durchläuft alle 15 Partner, stellt den Startpartner wieder her, prüft einmal das Fleischfeld und kehrt zu Home zurück. Danach läuft eine globale Pause von 20 Minuten.</string>
     <string name="app_name">DigiWorldExplorer Bot</string>
     <string name="app_title">DigiWorldExplorer Bot</string>
     <string name="accessibility_service_name">DigiWorldExplorer Bot-Steuerung</string>
@@ -78,7 +96,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">NEUE FUNKTIONEN\n• Verschiebbares Quick-Control-Overlay\n• Kombinierter VS-/Tower-Loop\n• Dark Mode und geführte Problembehandlung\n• Erweiterte DigiWorld-Einstellungen\n\nVERBESSERTE AUTOMATIK\n• Zuverlässigerer Moduswechsel\n• Dauerhafte Bond-&amp;-Friendship- und Network-Defense-Einstellungen\n• Bessere Geräte- und Bildschirmkompatibilität\n\nDESIGN &amp; FIXES\n• Überarbeitete helle und dunkle Darstellung\n• Klarere Einrichtung und Statussteuerung\n• Zahlreiche Erkennungs- und Stabilitätskorrekturen</string>
+    <string name="release_notes_body">AUTOMATION FUSION BETA\n• Vollständige tägliche Dungeon-Rotation mit Ad Skip\n• VS-Vernichten einmal pro Spieltag\n• Meat Field: Ernten, Pflanzen und Gießen\n• Bond-Rotation durch 15 Partner mit Pause\n• Verschiebbares Live-Status-Overlay\n\nVERBESSERUNGEN\n• Schnellere Fortsetzung nach Ad Skip\n• Sicherere Bildschirm- und Popup-Erkennung\n• Saubere Rückkehr zu Home nach Rotationen\n\nBETA-HINWEIS\nGekkomon Run und der vollständige Autopilot sind noch in Entwicklung.</string>
     <string name="community_intro_title">🎉 Neue Discord-Community</string>
     <string name="community_intro_body">Tritt unserer neuen Community bei, um auf dem aktuellen Stand zu bleiben, Fehler zu melden, neue Funktionen vorzuschlagen und dich mit anderen Nutzern auszutauschen.</string>
     <string name="community_intro_join">Discord beitreten</string>
@@ -131,7 +149,20 @@
     <string name="support_prompt_title">♥ Danke für deine Unterstützung</string>
     <string name="support_prompt_body">Die Entwicklung und das Testen dieser App benötigen viel Zeit und verursachen auch Kosten. Jeder Euro hilft dabei, Fehler zu beheben und neue Funktionen weiterzuentwickeln. Danke! ♥</string>
     <string name="support_prompt_continue">Weiter</string>
-    <string name="support_prompt_donate">Mit PayPal unterstützen</string>    <string name="auto_dungeon">VS / Tower Loop</string>
+    <string name="support_prompt_donate">Mit PayPal unterstützen</string>
+    <string name="auto_dungeon">VS / Tower Loop</string>
+    <string name="dungeon_rotation_title">Dungeon-Rotation &amp; VS-Loop</string>
+    <string name="dungeon_rotation_hint">Start über das Overlay. Aktivierte Karten werden vor Ausgaben geprüft und laufende Kämpfe an den VS-/Tower-Loop übergeben.</string>
+    <string name="dungeon_settings_show">Dungeons konfigurieren</string>
+    <string name="dungeon_settings_hide">Dungeon-Einstellungen schließen</string>
+    <string name="dungeon_attempts_title">Normale Versuche pro regulärem Dungeon</string>
+    <string name="dungeon_attempt_once">1 Versuch</string>
+    <string name="dungeon_attempt_twice">2 Versuche</string>
+    <string name="dungeon_ads_title">Bis zu 2 freie Werbeversuche nutzen</string>
+    <string name="dungeon_ads_hint">Nur mit global aktiviertem Ad-Skip-Pass und sicher erkanntem positivem Werbezähler.</string>
+    <string name="dungeon_cards_title">Einbezogene Karten</string>
+    <string name="dungeon_apocalymon_limit">Hartes Limit: ein Lauf pro Rotation.</string>
+    <string name="dungeon_vs_limit">Einmal öffnen; Vernichten nur bei positivem Ressourcenstand.</string>
     <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
     <string name="overlay_dungeon_failed">AUTO: VS / Tower fehlgeschlagen — Dialog wird geschlossen</string>
     <string name="overlay_dungeon_disabled">VS / Tower erkannt — Loop aus</string>
@@ -147,6 +178,10 @@
     <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>
     <string name="notification_idle_body">1 Minute lang wurde weder DigiWorld noch ein Beschwörungs- oder VS.-Dungeon-Bildschirm erkannt. Aufnahme und Automatik wurden zum Schutz des Geräts gestoppt.</string>
     <string name="auto_feed">Bond &amp; Freundschaft</string>
+    <string name="auto_runner">Gekkomon Run</string>
+    <string name="overlay_auto_runner">AUTO: Gekkomon Run</string>
+    <string name="runner_help_title">Gekkomon Run · Beta</string>
+    <string name="runner_help_body">Spielt einen bereits gestarteten Gekkomon Run. Rote und magentafarbene Hindernisse werden erkannt und mit Springen oder Rutschen beantwortet. Event und Lauf bitte manuell öffnen; der Bot verbraucht selbstständig keine Event-Versuche.</string>
     <string name="feed_help_title">Bond &amp; Freundschaft</string>
     <string name="feed_help_body">Erkennt die kleine weiße Futterblase auf dem Hauptbildschirm und tippt sie dreimal mit sicher zufälliger Position und variablem Timing an. So erreichst du schneller die Bond-/Freundschaftsstufe und die Belohnung am Partner-Icon. Die Funktion prüft sicherheitsbedingt in Abständen; nach dem Aktivieren kann es bis zu 30 Sekunden dauern, bis die erste Fütterung startet. Hauptbildschirm und Blase müssen über mehrere Bilder stabil erkannt werden. </string>
     <string name="overlay_auto_feed">AUTO: Bond &amp; Freundschaft</string>
@@ -155,7 +190,7 @@
     <string name="partner_rotation_preview">Partner-Rotation &amp; Fütter-Cycle</string>
     <string name="coming_soon_supporter">COMING SOON</string>
     <string name="partner_rotation_help_title">Partner-Rotation · Coming Soon</string>
-    <string name="partner_rotation_help_body">Geplant: Die App durchläuft die sichtbaren Partner nacheinander, startet deren Entwicklung, kehrt zur Hauptwelt zurück und füttert sie bei vorhandener Futterblase. Der ursprünglich ausgewählte Partner soll anschließend wiederhergestellt werden. Diese Funktion befindet sich noch in Entwicklung und ist derzeit bewusst deaktiviert.</string>
+    <string name="partner_rotation_help_body">Expedition und Bond aktivieren für die 15er-Runde. Der grüne Haken zeigt den Startpartner, der gelbe Rand die Auswahl. Jeder Wechsel wird bestätigt, danach sammelt der Bot die Blase auf Home ein. Am Ende wird der Startpartner wiederhergestellt, das Fleischfeld einmal geprüft und nach der Rückkehr zu Home 20 Minuten pausiert.</string>
     <string name="supporter_intro_title">Neue optionale Funktionen</string>
     <string name="supporter_intro_body">Diese Version führt optionale Testfunktionen ein, die während der Weiterentwicklung angepasst werden können.</string>
     <string name="payment_contact_title">Freiwillige Unterstützung</string>

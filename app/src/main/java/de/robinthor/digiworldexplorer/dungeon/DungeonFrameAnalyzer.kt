@@ -28,10 +28,16 @@ object DungeonFrameAnalyzer {
     private var stableDetections = 0
     private var rewardDetectedSince = 0L
 
-    fun analyze(image: Image, width: Int, height: Int): Boolean {
+    fun analyze(image: Image, width: Int, height: Int, resultsOnly: Boolean = false): Boolean {
+        if (!resultsOnly && DungeonRotationRequest.phase == DungeonRotationRequest.Phase.PARKED) return true
         val plane = image.planes.firstOrNull() ?: return false
         if (plane.pixelStride < 3) return false
         val buffer = plane.buffer
+        val w = minOf(width, image.width)
+        val h = minOf(height, image.height)
+        if (w <= 0 || h <= 0 || (h - 1L) * plane.rowStride + (w - 1L) * plane.pixelStride + 2 >= buffer.limit()) {
+            return false
+        }
         fun pixel(x: Int, y: Int): Int {
             val offset = y * plane.rowStride + x * plane.pixelStride
             return Color.rgb(buffer.get(offset).toInt() and 255, buffer.get(offset + 1).toInt() and 255, buffer.get(offset + 2).toInt() and 255)
@@ -44,17 +50,19 @@ object DungeonFrameAnalyzer {
             pendingSince = 0L
             Log.w("DigiWorldDungeon", "stale pending challenge tap released for retry")
         }
-        val detection = DungeonScreenDetector.detect(width, height, ::pixel)
-        val hash = frameHash(width, height, ::pixel)
+        val detection = DungeonScreenDetector.detect(w, h, ::pixel)
+        if (resultsOnly && detection.screen != DungeonScreen.REWARD) return false
+        val hash = frameHash(w, h, ::pixel)
         if (lastHash == 0L || java.lang.Long.bitCount(lastHash xor hash) >= HASH_CHANGE_MIN) lastActivity = now
         lastHash = hash
 
         if (detection.screen != DungeonScreen.NONE) {
+            if (detection.screen == DungeonScreen.REWARD) DungeonRotationAnalyzer.onReward()
             AutoMoveController.pauseForPurchaseScreen()
             if (!AutomationState.autoDungeonEnabled) {
                 sessionActive = false
                 lastScreen = DungeonScreen.NONE
-                DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_disabled)) }
+                DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_disabled), sourceScreen = de.robinthor.digiworldexplorer.automation.ObservedScreen.DUNGEON) }
                 return true
             }
             sessionActive = true
@@ -68,7 +76,7 @@ object DungeonFrameAnalyzer {
                 stableDetections = (stableDetections + 1).coerceAtMost(3)
             }
             val service = DigiWorldAccessibilityService.instance
-            service?.showStatusOnly(service.getString(if (AutomationState.autoDungeonEnabled) R.string.overlay_auto_dungeon else R.string.overlay_dungeon_disabled))
+            service?.showStatusOnly(service.getString(if (AutomationState.autoDungeonEnabled) R.string.overlay_auto_dungeon else R.string.overlay_dungeon_disabled), sourceScreen = de.robinthor.digiworldexplorer.automation.ObservedScreen.DUNGEON)
             // Slow devices may expose the finished-looking menu before its button accepts input.
             // Require a stable detection, then retry at a human-paced interval until the screen
             // actually changes instead of spending a fixed two-tap budget during loading.
@@ -115,7 +123,7 @@ object DungeonFrameAnalyzer {
 
     private fun stopForTimeout(context: String, timeout: Long) {
         sessionActive = false
-        DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_timeout)) }
+        DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_timeout), sourceScreen = de.robinthor.digiworldexplorer.automation.ObservedScreen.DUNGEON) }
         Log.w("DigiWorldDungeon", "auto dungeon session released in $context after ${timeout / 1_000} seconds without visual progress; feature switch remains enabled")
     }
 
@@ -143,6 +151,7 @@ object DungeonFrameAnalyzer {
      * previous run, so clear the per-screen tap budget and treat it as a fresh screen.
      */
     fun onFailureDialogHandled() {
+        DungeonRotationAnalyzer.onLoss()
         sessionActive = AutomationState.autoDungeonEnabled
         pending = false
         pendingSince = 0L

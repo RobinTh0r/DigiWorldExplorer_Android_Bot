@@ -38,6 +38,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.shape.CircleShape
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
+import de.robinthor.digiworldexplorer.automation.AutomationMode
 import de.robinthor.digiworldexplorer.capture.CaptureSessionState
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
@@ -71,6 +72,8 @@ class MainActivity : ComponentActivity() {
     private var autoDungeon by mutableStateOf(true)
     private var autoNetworkDefense by mutableStateOf(false)
     private var autoFeed by mutableStateOf(false)
+    private var autoRunner by mutableStateOf(false)
+    private var automationMode by mutableStateOf(AutomationMode.SEMI_AUTO)
     private var dwsNeverLeft by mutableStateOf(false)
     private var dwsForceForwardAttack by mutableStateOf(false)
     private var dwsDashSpam by mutableStateOf(false)
@@ -144,6 +147,9 @@ class MainActivity : ComponentActivity() {
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
         autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
         autoFeed = settings.getBoolean("auto_feed", false)
+        autoRunner = false
+        settings.edit().putBoolean("auto_runner", false).apply()
+        automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
         dwsNeverLeft = supporterLicense != null && settings.getBoolean("dws_never_left", false)
         dwsForceForwardAttack = dwsNeverLeft
         dwsDashSpam = supporterLicense != null && settings.getBoolean("dws_dash_spam", false)
@@ -156,6 +162,11 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoDungeonEnabled = autoDungeon
         AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
         AutomationState.autoFeedEnabled = autoFeed
+        AutomationState.autoRunnerEnabled = false
+        AutomationState.mode = automationMode
+        AutomationState.autoFarmEnabled = settings.getBoolean("auto_farm_harvest", false)
+        AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
+        AutomationState.adSkipPassEnabled = settings.getBoolean("ad_skip_pass", false)
         AutomationState.dwsNavigationSettings = DwsNavigationSettings(allowLeft = !dwsNeverLeft, forceForwardAttack = dwsForceForwardAttack, dashSpamUntilZero = dwsDashSpam, collectOnlyEnergy = dwsOnlyEnergy, betterEnergyCollect = dwsBetterCollect, blindStageFailedTap = dwsBlindStageTap)
         AutomationState.forceLegacyCaptureMetrics = legacyCapture
         AutomationState.summonTouchCorrection = summonTouchCorrection
@@ -209,7 +220,7 @@ class MainActivity : ComponentActivity() {
             )
             MaterialTheme(colorScheme = colors) { Surface(Modifier.fillMaxSize(), color = colors.background) {
             ControlScreen(
-                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, darkMode, quickOverlayEnabled, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, autoRunner, automationMode, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, darkMode, quickOverlayEnabled, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
                 onBattery = ::requestBatteryOptimizationExemption,
@@ -238,6 +249,16 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     settings.edit().putBoolean("auto_feed", enabled).apply()
+                },
+                onAutoRunner = { enabled ->
+                    autoRunner = enabled
+                    AutomationState.autoRunnerEnabled = enabled
+                    getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_runner", enabled).apply()
+                },
+                onAutomationMode = { selected ->
+                    automationMode = selected
+                    AutomationState.mode = selected
+                    settings.edit().putString("automation_mode", selected.name).apply()
                 },
                 onDwsSettings = { neverLeft, _, dashSpam, onlyEnergy, betterCollect, _ ->
                     val allowed = supporterLicense != null
@@ -365,7 +386,16 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoDungeonEnabled = autoDungeon
         AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
         AutomationState.autoFeedEnabled = autoFeed
+        AutomationState.autoRunnerEnabled = autoRunner
+        AutomationState.autoFarmEnabled = getSharedPreferences("settings", MODE_PRIVATE)
+            .getBoolean("auto_farm_harvest", false)
+        AutomationState.farmWateringEnabled = getSharedPreferences("settings", MODE_PRIVATE)
+            .getBoolean("farm_watering", true)
+        AutomationState.adSkipPassEnabled = getSharedPreferences("settings", MODE_PRIVATE)
+            .getBoolean("ad_skip_pass", false)
+        AutomationState.mode = automationMode
         DungeonFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
         ScreenCaptureService.setAutomation(this, true)
         auto = true
         status = UiStatus.AUTOMATIC
@@ -447,6 +477,11 @@ class MainActivity : ComponentActivity() {
         autoPurchase = settings.getBoolean("auto_purchase", true)
         autoDungeon = settings.getBoolean("auto_dungeon", true)
         autoFeed = settings.getBoolean("auto_feed", false)
+        autoRunner = false
+        settings.edit().putBoolean("auto_runner", false).apply()
+        automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
+        AutomationState.autoRunnerEnabled = false
+        AutomationState.mode = automationMode
         supporterLicense = SupporterLicenseManager.load(this)
         autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
@@ -455,7 +490,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, darkMode: Boolean, quickOverlayEnabled: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onDarkMode: (Boolean) -> Unit, onQuickOverlay: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, autoRunner: Boolean, automationMode: AutomationMode, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, darkMode: Boolean, quickOverlayEnabled: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onAutoRunner: (Boolean) -> Unit, onAutomationMode: (AutomationMode) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onDarkMode: (Boolean) -> Unit, onQuickOverlay: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     var setupExpanded by remember { mutableStateOf(!(access && overlay && batteryExempt)) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
@@ -597,14 +632,37 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
             Text("›", style = MaterialTheme.typography.titleLarge)
         }
         FeatureInfoRow(R.string.digiworld_help_title, grid = grid, gridEnabled = overlay, onGrid = onGrid, onAdvanced = { showDwsSettings = true }, onHelp = { featureHelp = 2 })
+        Text(stringResource(R.string.automation_mode), style = MaterialTheme.typography.titleSmall)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            FilterChip(
+                selected = automationMode == AutomationMode.SEMI_AUTO,
+                onClick = { onAutomationMode(AutomationMode.SEMI_AUTO) },
+                label = { Text(stringResource(R.string.mode_semi_auto)) },
+                modifier = Modifier.weight(1f),
+            )
+            FilterChip(
+                selected = automationMode == AutomationMode.FULL_AUTOPILOT,
+                onClick = { onAutomationMode(AutomationMode.FULL_AUTOPILOT) },
+                label = { Text(stringResource(R.string.mode_full_autopilot)) },
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Text(
+            stringResource(if (automationMode == AutomationMode.SEMI_AUTO) R.string.mode_semi_auto_hint else R.string.mode_full_autopilot_hint),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
-        FeatureSwitch(R.string.auto_dungeon, autoDungeon, onAutoDungeon, onHelp = { featureHelp = 1 })
+        de.robinthor.digiworldexplorer.dungeon.DungeonSettings(autoDungeon, onAutoDungeon)
         FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { featureHelp = 4 })
+        de.robinthor.digiworldexplorer.farm.FarmSettings()
+        // Gekkomon Run is deliberately postponed until the final automation milestone.
         FeatureSwitch(R.string.auto_network_defense, autoNetworkDefense, onAutoNetworkDefense, onHelp = { featureHelp = 3 }, enabled = supporterLicense != null, supporterStyle = true)
         ComingSoonFeatureRow(onHelp = { featureHelp = 5 })
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
         Text(stringResource(R.string.safety_note), style = MaterialTheme.typography.labelSmall)
+        de.robinthor.digiworldexplorer.support.SupportExportButton()
         if (supporterLicense == null) {
             OutlinedButton(
                 onClick = onDonate,
@@ -917,7 +975,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         Row(Modifier.fillMaxWidth().heightIn(min = 44.dp).padding(start = 10.dp, end = 2.dp), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.partner_rotation_preview), color = MaterialTheme.colorScheme.onSurface.copy(alpha = .58f))
-                Text(stringResource(R.string.coming_soon_supporter), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f))
+                Text(stringResource(R.string.mode_full_autopilot_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = .72f))
             }
             IconButton(onClick = onHelp, modifier = Modifier.size(36.dp)) { Text("?", color = MaterialTheme.colorScheme.onSurface.copy(alpha = .62f), fontWeight = FontWeight.Bold) }
         }
@@ -939,8 +997,8 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
 }
 
 @Composable private fun FeatureHelpDialog(kind: Int, onClose: () -> Unit) {
-    val title = when (kind) { 0 -> R.string.summon_help_title; 1 -> R.string.dungeon_help_title; 2 -> R.string.digiworld_help_title; 3 -> R.string.network_help_title; 5 -> R.string.partner_rotation_help_title; else -> R.string.feed_help_title }
-    val body = when (kind) { 0 -> R.string.summon_help_body; 1 -> R.string.dungeon_help_body; 2 -> R.string.digiworld_help_body; 3 -> R.string.network_help_body; 5 -> R.string.partner_rotation_help_body; else -> R.string.feed_help_body }
+    val title = when (kind) { 0 -> R.string.summon_help_title; 1 -> R.string.dungeon_help_title; 2 -> R.string.digiworld_help_title; 3 -> R.string.network_help_title; 5 -> R.string.partner_rotation_help_title; 6 -> R.string.runner_help_title; else -> R.string.feed_help_title }
+    val body = when (kind) { 0 -> R.string.summon_help_body; 1 -> R.string.dungeon_help_body; 2 -> R.string.digiworld_help_body; 3 -> R.string.network_help_body; 5 -> R.string.partner_rotation_help_body; 6 -> R.string.runner_help_body; else -> R.string.feed_help_body }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(title)) },

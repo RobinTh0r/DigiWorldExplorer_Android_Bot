@@ -10,6 +10,7 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 /** Conservative detector for the small white food bubble on the main battle screen. */
 object FeedFrameAnalyzer {
+    fun isBusy(): Boolean = tapsLeft > 0
     private var stableFrames = 0
     private var mainScreenFrames = 0
     private var lastX = 0f
@@ -23,8 +24,8 @@ object FeedFrameAnalyzer {
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!AutomationState.autoFeedEnabled) { reset(); return false }
+        if (!AutomationState.enabled) { reset(); return false }
         val now=SystemClock.elapsedRealtime()
-        if (progressSequence(now)) return true
         val plane = image.planes.firstOrNull() ?: return false
         val buffer = plane.buffer
         fun rgb(x: Int, y: Int): Int {
@@ -49,28 +50,22 @@ object FeedFrameAnalyzer {
         val headerCyan = sampleRatio(.18f, .13f, .82f, .18f, 8) { c ->
             Color.blue(c) > 145 && Color.green(c) > 105 && Color.red(c) < 85
         }
-        if (bottomDark < .30 || headerCyan > .32) { stableFrames = 0; mainScreenFrames = 0; return false }
+        if (bottomDark < .30 || headerCyan > .32 ||
+            !de.robinthor.digiworldexplorer.automation.HomeScreenDetector.detect(width, height, ::rgb)) {
+            stableFrames = 0; mainScreenFrames = 0; return false
+        }
         mainScreenFrames++
 
-        var white = 0
-        var sx = 0L
-        var sy = 0L
-        val x0 = (width * .45f).toInt(); val x1 = (width * .60f).toInt()
-        val y0 = (height * .29f).toInt(); val y1 = (height * .40f).toInt()
-        val step = (width / 180).coerceAtLeast(3)
-        for (y in y0 until y1 step step) for (x in x0 until x1 step step) {
-            val c = rgb(x, y); val r = Color.red(c); val g = Color.green(c); val b = Color.blue(c)
-            if (r > 205 && g > 205 && b > 205 && maxOf(r,g,b)-minOf(r,g,b) < 28) { white++; sx += x; sy += y }
-        }
-        val bubblePresent = white in 25..180
-        // At 720x1280 the antialiased food bubble contributes about 488 samples.
-        // Main-screen recognition and the two-frame position lock remain the safety gates.
-        if (!bubblePresent) { stableFrames = 0; return true }
-        val cx = sx.toFloat() / white; val cy = sy.toFloat() / white
+        val frame = de.robinthor.digiworldexplorer.vision.PixelFrame(width, height) { x,y -> rgb(x,y) }
+        val bubble = BondBubbleDetector.detect(frame)
+        if (bubble == null) { stableFrames = 0; tapsLeft = 0; return true }
+        val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(bubble)
+        val cx = px.toFloat(); val cy = py.toFloat()
         if (kotlin.math.abs(cx-lastX) < width*.04f && kotlin.math.abs(cy-lastY) < height*.035f) stableFrames++ else stableFrames=1
-        lastX=(cx+width*.015f).coerceAtMost(width*.61f); lastY=(cy+height*.010f).coerceIn(height*.28f,height*.41f)
+        lastX=cx; lastY=cy
+        if (progressSequence(now)) return true
         if (stableFrames >= 4 && mainScreenFrames >= 4 && tapsLeft == 0 && now >= cooldownUntil) {
-            tapsLeft = 3; tappingUntil = now + 3_000L; nextTapAt = now
+            tapsLeft = 1; tappingUntil = now + 3_000L; nextTapAt = now
         }
         return true
     }
@@ -96,6 +91,7 @@ object FeedFrameAnalyzer {
                 nextTapAt=now+SafeTapRandomizer.delay(520L,230L)
                 DigiWorldAccessibilityService.instance?.apply {
                     updateStatusKeepingGrid(getString(R.string.overlay_auto_feed),true)
+                    android.util.Log.i("DigiWorldBond", "collect bubble=$lastX,$lastY")
                     dispatchSafeRandomizedTap(lastX,lastY) { }
                 }
                 if (tapsLeft==0) cooldownUntil=now+60_000L

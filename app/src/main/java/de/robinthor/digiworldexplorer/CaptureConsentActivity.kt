@@ -63,6 +63,10 @@ class CaptureConsentActivity : ComponentActivity() {
         AutomationState.autoDungeonEnabled = settings.getBoolean("auto_dungeon", true)
         AutomationState.autoNetworkDefenseEnabled = supporter && settings.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = settings.getBoolean("auto_feed", false)
+        AutomationState.autoFarmEnabled = settings.getBoolean("auto_farm_harvest", false)
+        AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
+        AutomationState.adSkipPassEnabled = settings.getBoolean("ad_skip_pass", false)
+        AutomationState.autoRunnerEnabled = false
         AutomationState.forceLegacyCaptureMetrics = settings.getBoolean("legacy_capture", true)
         AutomationState.summonTouchCorrection = settings.getBoolean("summon_touch_correction", false)
         AutomationState.dwsNavigationSettings = DwsNavigationSettings(
@@ -78,6 +82,7 @@ class CaptureConsentActivity : ComponentActivity() {
         DungeonFrameAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
         FeedFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
         StageFailedFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         AutoMoveController.reset()

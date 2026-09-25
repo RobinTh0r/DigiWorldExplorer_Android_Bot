@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="farm_harvest_title">Meat Field: farm helper (beta)</string>
+    <string name="farm_watering_title">Use watering cans</string>
+    <string name="farm_watering_hint">Purple Palmon first, then red Palmon, then Mini Palmon.</string>
+    <string name="ad_skip_pass_title">Ad Skip Pass available</string>
+    <string name="ad_skip_pass_hint">Allows ad-labelled farm actions without playing an advertisement.</string>
+    <string name="farm_harvest_hint">Harvests ripe plots and uses available seeds: right, middle, left. After a successful 15-partner Bond tour it checks the field once, returns Home, then pauses for 20 minutes.</string>
+    <string name="farm_harvest_status">Farm: checking field</string>
+    <string name="farm_parked">Farm paused: action was not safely verified. Stop and restart to retry.</string>
+    <string name="support_export">Export support report</string>
+    <string name="support_preview">Review support report</string>
+    <string name="support_save">Save ZIP</string>
+    <string name="support_saved">Support report saved.</string>
+    <string name="support_save_failed">Could not save the support report. Please choose another destination.</string>
+    <string name="automation_mode">Automation mode</string>
+    <string name="mode_semi_auto">Co-Pilot</string>
+    <string name="mode_full_autopilot">Expedition</string>
+    <string name="mode_semi_auto_hint">Works only in an activity you opened manually. No automatic menu navigation.</string>
+    <string name="mode_full_autopilot_hint">Bond visits all 15 partners, restores the starting partner, checks Meat Field once and returns Home. A global 20-minute pause then begins.</string>
     <string name="app_name">DigiWorldExplorer Bot</string>
     <string name="app_title">DigiWorldExplorer Bot</string>
     <string name="accessibility_service_name">DigiWorldExplorer Bot controls</string>
@@ -78,7 +96,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">NEW FEATURES\n• Movable quick-control overlay\n• Combined VS / Tower Loop\n• Dark mode and guided troubleshooting\n• Advanced DigiWorld settings\n\nIMPROVED AUTOMATION\n• More reliable mode switching\n• Persistent Bond &amp; Friendship and Network Defense settings\n• Better device and screen compatibility\n\nDESIGN &amp; FIXES\n• Reworked light and dark themes\n• Clearer setup and status controls\n• Numerous detection and stability fixes</string>
+    <string name="release_notes_body">AUTOMATION FUSION BETA\n• Full daily dungeon rotation with Ad Skip\n• VS Destroy is claimed once per game day\n• Meat Field harvesting, planting and watering\n• 15-partner Bond rotation with cooldown\n• Movable live status overlay\n\nIMPROVEMENTS\n• Faster continuation after Ad Skip\n• Safer screen and popup recognition\n• Clean return to Home after rotations\n\nBETA NOTE\nGekkomon Run and the complete Autopilot are still under development.</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>
@@ -131,7 +149,20 @@
     <string name="support_prompt_title">♥ Thank you for your support</string>
     <string name="support_prompt_body">Developing and testing this app takes a lot of time and also costs money. Every euro helps fix bugs and keep new features coming. Thank you! ♥</string>
     <string name="support_prompt_continue">Continue</string>
-    <string name="support_prompt_donate">Support via PayPal</string>    <string name="auto_dungeon">VS / Tower Loop</string>
+    <string name="support_prompt_donate">Support via PayPal</string>
+    <string name="auto_dungeon">VS / Tower Loop</string>
+    <string name="dungeon_rotation_title">Dungeon rotation &amp; VS loop</string>
+    <string name="dungeon_rotation_hint">Start it from the overlay. Enabled cards are checked before spending and active battles are handed to the VS/Tower loop.</string>
+    <string name="dungeon_settings_show">Configure dungeons</string>
+    <string name="dungeon_settings_hide">Hide dungeon settings</string>
+    <string name="dungeon_attempts_title">Normal attempts per regular dungeon</string>
+    <string name="dungeon_attempt_once">1 attempt</string>
+    <string name="dungeon_attempt_twice">2 attempts</string>
+    <string name="dungeon_ads_title">Use up to 2 free ad attempts</string>
+    <string name="dungeon_ads_hint">Only with the global Ad Skip Pass enabled and a verified positive ad count.</string>
+    <string name="dungeon_cards_title">Included cards</string>
+    <string name="dungeon_apocalymon_limit">Hard limit: one run per rotation.</string>
+    <string name="dungeon_vs_limit">Open once; Destroy only with a positive resource count.</string>
     <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
     <string name="overlay_dungeon_failed">AUTO: VS / Tower failed — closing dialog</string>
     <string name="overlay_dungeon_disabled">VS / Tower detected — loop off</string>
@@ -147,6 +178,10 @@
     <string name="notification_idle_title">Capture stopped: no game detected</string>
     <string name="notification_idle_body">No DigiWorld, summon or VS. Dungeon screen was detected for 1 minute. Capture and automation were stopped to protect the device.</string>
     <string name="auto_feed">Bond &amp; Friendship</string>
+    <string name="auto_runner">Gekkomon Run</string>
+    <string name="overlay_auto_runner">AUTO: Gekkomon Run</string>
+    <string name="runner_help_title">Gekkomon Run · Beta</string>
+    <string name="runner_help_body">Plays an already started Gekkomon Run. It recognizes red and magenta obstacles and presses Jump or Slide. Open and start the event manually; the bot never opens or spends event entries by itself.</string>
     <string name="feed_help_title">Bond &amp; Friendship</string>
     <string name="feed_help_body">Detects the small white food bubble on the main battle screen and taps it three times with safe randomized positions and timing. This helps you reach Bond/Friendship levels and the Partner-icon reward faster. For safety, detection runs at intervals; after enabling it may take up to 30 seconds before the first feeding starts. The main-screen layout and bubble must remain stable across multiple frames. </string>
     <string name="overlay_auto_feed">AUTO: Bond &amp; Friendship</string>
@@ -155,7 +190,7 @@
     <string name="partner_rotation_preview">Partner rotation &amp; feeding cycle</string>
     <string name="coming_soon_supporter">COMING SOON</string>
     <string name="partner_rotation_help_title">Partner rotation · Coming Soon</string>
-    <string name="partner_rotation_help_body">Planned: The app cycles through the visible partners, starts their growth, returns to the main world and feeds them when a food bubble is available. The originally selected partner should be restored afterwards. This feature is still in development and is intentionally disabled for now.</string>
+    <string name="partner_rotation_help_body">Enable Expedition and Bond for the 15-partner tour. The green check identifies the original partner; the yellow frame marks the selection. Each switch is verified before returning Home to collect its bubble. At the end it restores the original partner, checks Meat Field once, returns Home and pauses for 20 minutes.</string>
     <string name="supporter_intro_title">New optional features</string>
     <string name="supporter_intro_body">This version introduces optional test features that may change while they are refined.</string>
     <string name="payment_contact_title">Optional support</string>

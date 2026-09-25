@@ -15,6 +15,8 @@ import de.robinthor.digiworldexplorer.detection.GridBounds
 import de.robinthor.digiworldexplorer.detection.HudCounters
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
+import de.robinthor.digiworldexplorer.automation.DirectorSnapshot
+import de.robinthor.digiworldexplorer.automation.ScreenDirector
 
 class DigiWorldAccessibilityService:AccessibilityService(){
  private var overlay:GridOverlayView?=null
@@ -24,6 +26,8 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  override fun onInterrupt()=Unit
  override fun onDestroy(){quickControls?.destroy();quickControls=null;removeOverlay();if(instance===this)instance=null;super.onDestroy()}
  fun dispatchValidatedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){if(x<0||y<0){onComplete(false);return};val p=Path().apply{moveTo(x,y)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,80)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?)=onComplete(true);override fun onCancelled(d:GestureDescription?)=onComplete(false)},null);if(!ok)onComplete(false)}
+ fun dispatchValidatedSwipe(x1:Float,y1:Float,x2:Float,y2:Float,onComplete:(Boolean)->Unit){val p=Path().apply{moveTo(x1,y1);lineTo(x2,y2)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,420)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?)=onComplete(true);override fun onCancelled(d:GestureDescription?)=onComplete(false)},null);if(!ok)onComplete(false)}
+ fun dispatchBack(onComplete:(Boolean)->Unit={}){onComplete(performGlobalAction(GLOBAL_ACTION_BACK))}
  fun dispatchSafeRandomizedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){
   // Ein dp Varianz ist auf allen Zielbuttons weit innerhalb des erkannten Mittelpunkts.
   val radius=resources.displayMetrics.density.coerceAtLeast(1f)
@@ -38,8 +42,9 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   else{quickControls?.destroy();quickControls=null}
  }
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
- fun updateStatusKeepingGrid(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
- fun showStatusOnly(status:String,visible:Boolean=true){overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
+ fun updateStatusKeepingGrid(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{this.status=status;director=snapshot;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
+ fun showStatusOnly(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;director=snapshot;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
+ fun updateDirector(snapshot:DirectorSnapshot){quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{director=snapshot;captureMode=false;if(AutomationState.overlayEnabled)visibility=View.VISIBLE;invalidate()}}}
  fun updateOverlay(bounds:GridBounds?,player:Cell?,items:Set<Cell>,obstacles:Set<Cell>,target:Cell?,status:String,visible:Boolean,hud:HudCounters=HudCounters(),dashButton:Pair<Float,Float>?=null){overlay?.post{overlay?.apply{this.bounds=bounds;this.player=player;this.items=items;this.obstacles=obstacles;this.target=target;this.status=status;this.hud=hud;this.dashButton=dashButton;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  // FLAG_LAYOUT_NO_LIMITS und LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS sind noetig, damit das Overlay im
  // selben Koordinatensystem liegt wie der Vollbild-Capture. Ohne beides ist das Fenster um die
@@ -48,14 +53,14 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  // FLAG_SECURE ist hier bewusst NICHT gesetzt: es schwaerzt auf Android 15 die gesamte MediaProjection.
  private fun showOverlay(){if(overlay!=null)return;android.util.Log.i("DigiWorldOverlay","create canDrawOverlays=${Settings.canDrawOverlays(this)}");overlay=GridOverlayView().also{getSystemService(WindowManager::class.java).addView(it,WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT,if(Settings.canDrawOverlays(this)) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT).apply{gravity=Gravity.TOP or Gravity.START;layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS})}}
  private fun removeOverlay(){overlay?.let{runCatching{getSystemService(WindowManager::class.java).removeView(it)}};overlay=null}
- inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status=getString(R.string.overlay_bot_ready);var hud:HudCounters=HudCounters();var dashButton:Pair<Float,Float>?=null;var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
+ inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status=getString(R.string.overlay_bot_ready);var director=ScreenDirector.snapshot();var hud:HudCounters=HudCounters();var dashButton:Pair<Float,Float>?=null;var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
   init{background=ColorDrawable(Color.TRANSPARENT)}
   // Alle Maße sind relativ zur Zellgröße, damit nichts in die Abtastfenster der Klassifizierung ragt:
   // CellClassifier und PreviewClassifier lassen an jeder Zellkante 7% Rand aus. Linien liegen auf den
   // Zellgrenzen, Boxen bei 3,5% Einrückung, jeweils inklusive halber Strichstärke unter 6%. Dadurch
   // darf das Overlay dauerhaft sichtbar bleiben und muss für die Analyse nicht mehr ausgeblendet werden.
-  override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;val b=bounds
-   if(b==null){val ts=(width/30f).coerceIn(24f,48f);val x=width*.025f;val y=height*.075f;p.textSize=ts;p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,x,y,p);p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,x,y,p);return}
+  override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;if(quickControls==null)drawDirectorCard(c);val b=bounds
+   if(b==null)return
    val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;val unit=minOf(cw,ch)
    p.pathEffect=null;p.style=Paint.Style.STROKE;p.color=Color.GREEN;p.strokeWidth=unit*.025f;for(i in 0..5){c.drawLine(b.left+i*cw,b.top.toFloat(),b.left+i*cw,b.bottom.toFloat(),p);c.drawLine(b.left.toFloat(),b.top+i*ch,b.right.toFloat(),b.top+i*ch,p)}
    p.pathEffect=DashPathEffect(floatArrayOf(unit*.07f,unit*.05f),0f);c.drawRect(b.right.toFloat(),b.top.toFloat(),b.right+cw,b.bottom.toFloat(),p);for(i in 1..4)c.drawLine(b.right.toFloat(),b.top+i*ch,b.right+cw,b.top+i*ch,p);p.pathEffect=null
@@ -74,6 +79,25 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,b.left.toFloat(),ty,p)
    p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,b.left.toFloat(),ty,p)
 }
+  private fun drawDirectorCard(c:Canvas){
+   val density=resources.displayMetrics.density;val left=10f*density
+   // Farm counters occupy the normal top-left card area. Once the Director proves the field,
+   // move below the HUD so capture-based seed reading remains unobstructed.
+   val farmScreen=director.screen==de.robinthor.digiworldexplorer.automation.ObservedScreen.MEAT_FIELD||director.screen==de.robinthor.digiworldexplorer.automation.ObservedScreen.MEAT_FIELD_DIALOG
+   val top=(if(farmScreen)110f else 48f)*density
+   val cardWidth=minOf(width-left*2,250f*density);val cardHeight=66f*density
+   p.pathEffect=null;p.style=Paint.Style.FILL;p.color=Color.argb(224,16,24,38)
+   c.drawRoundRect(left,top,left+cardWidth,top+cardHeight,12f*density,12f*density,p)
+   p.style=Paint.Style.STROKE;p.strokeWidth=1.5f*density;p.color=when(director.state){"Active"->Color.rgb(46,204,146);"Paused"->Color.rgb(244,173,66);else->Color.rgb(67,190,198)}
+   c.drawRoundRect(left,top,left+cardWidth,top+cardHeight,12f*density,12f*density,p)
+   val dotX=left+14f*density;val dotY=top+16f*density;p.style=Paint.Style.FILL;c.drawCircle(dotX,dotY,4f*density,p)
+   p.typeface=Typeface.create(Typeface.DEFAULT,Typeface.BOLD);p.textSize=12f*density;p.color=Color.WHITE
+   c.drawText(director.state,left+24f*density,top+18f*density,p)
+   p.typeface=Typeface.create(Typeface.DEFAULT,Typeface.NORMAL);p.textSize=11f*density;p.color=Color.rgb(190,204,219)
+   c.drawText("Screen: ${director.screen.label}",left+12f*density,top+37f*density,p)
+   val action=director.action.ifBlank{"No action"}.let{if(it.length>32)it.take(31)+"…" else it}
+   p.textSize=10f*density;p.color=Color.rgb(150,229,224);c.drawText("Action: $action",left+12f*density,top+54f*density,p)
+  }
  }
  companion object{@Volatile var instance:DigiWorldAccessibilityService?=null;private set}
 }

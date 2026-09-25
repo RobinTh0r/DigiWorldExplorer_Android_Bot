@@ -14,6 +14,7 @@ import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.Switch
@@ -25,6 +26,7 @@ import de.robinthor.digiworldexplorer.capture.CaptureFrameAnalyzer
 import de.robinthor.digiworldexplorer.capture.CaptureSessionState
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.dungeon.DungeonFrameAnalyzer
+import de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
@@ -32,6 +34,7 @@ import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import de.robinthor.digiworldexplorer.strategy.AutomationState
+import de.robinthor.digiworldexplorer.automation.DirectorSnapshot
 import kotlin.math.abs
 
 /** Small user-controlled overlay. The full-screen grid remains non-touchable. */
@@ -41,6 +44,11 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     private var root: LinearLayout? = null
     private var panel: LinearLayout? = null
     private var bubble: View? = null
+    private var directorTitle: TextView? = null
+    private var directorAction: TextView? = null
+    private var directorCard: View? = null
+    private var directorTail: View? = null
+    private var eyeStatus: BotEyeStatusView? = null
     private var params: WindowManager.LayoutParams? = null
     private var expanded = false
     private var syncingFeatureSwitches = false
@@ -66,13 +74,51 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             outlineProvider = ViewOutlineProvider.BACKGROUND
             setPadding((3 * density).toInt(), (3 * density).toInt(), (3 * density).toInt(), (3 * density).toInt())
             elevation = 8f * density
+            layoutParams = FrameLayout.LayoutParams((52 * density).toInt(), (52 * density).toInt())
+        }
+        val eyes = BotEyeStatusView(service).apply {
+            isClickable = false
+            layoutParams = FrameLayout.LayoutParams((52 * density).toInt(), (52 * density).toInt())
+        }
+        val iconStack = FrameLayout(service).apply {
+            addView(icon); addView(eyes)
             layoutParams = LinearLayout.LayoutParams((52 * density).toInt(), (52 * density).toInt())
+        }
+        val title = TextView(service).apply {
+            textSize = 11f; setTextColor(Color.WHITE); maxLines = 1
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        val action = TextView(service).apply {
+            textSize = 10f; setTextColor(Color.rgb(150, 229, 224)); maxLines = 1
+        }
+        val statusCard = LinearLayout(service).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding((10 * density).toInt(), 0, (10 * density).toInt(), 0)
+            background = rounded(Color.argb(232, 16, 24, 38), 11 * density)
+            addView(title, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(action, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, 0, 1f))
+            layoutParams = LinearLayout.LayoutParams((198 * density).toInt(), (52 * density).toInt())
+        }
+        val tail = View(service).apply {
+            background = GradientDrawable().apply { setColor(Color.argb(232, 16, 24, 38)); cornerRadius = 2f * density }
+            rotation = 45f
+            layoutParams = LinearLayout.LayoutParams((11 * density).toInt(), (11 * density).toInt()).apply {
+                marginStart = (-5 * density).toInt(); marginEnd = (-6 * density).toInt()
+            }
+        }
+        val header = LinearLayout(service).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            addView(iconStack)
+            addView(tail)
+            addView(statusCard)
         }
         val menu = buildPanel(density).apply {
             visibility = View.GONE
             layoutParams = LinearLayout.LayoutParams((268 * density).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
         }
-        container.addView(icon)
+        container.addView(header)
         container.addView(menu)
 
         val layoutParams = WindowManager.LayoutParams(
@@ -88,13 +134,29 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             x = preferences.getInt("quick_overlay_x", (8 * density).toInt())
             y = preferences.getInt("quick_overlay_y", (260 * density).toInt())
         }
-        installDragAndClick(icon, layoutParams)
+        val cardVisible = preferences.getBoolean("director_card_visible", true)
+        statusCard.visibility = if (cardVisible) View.VISIBLE else View.GONE
+        tail.visibility = statusCard.visibility
+        installDragAndClick(iconStack, layoutParams) {
+            val visible = statusCard.visibility != View.VISIBLE
+            statusCard.visibility = if (visible) View.VISIBLE else View.GONE
+            tail.visibility = statusCard.visibility
+            preferences.edit().putBoolean("director_card_visible", visible).apply()
+            root?.requestLayout()
+        }
+        installDragAndClick(statusCard, layoutParams) { togglePanel(layoutParams) }
         root = container
         panel = menu
-        bubble = icon
+        bubble = iconStack
+        directorTitle = title
+        directorAction = action
+        directorCard = statusCard
+        directorTail = tail
+        eyeStatus = eyes
         params = layoutParams
         runCatching { windowManager.addView(container, layoutParams) }
         refresh()
+        updateDirector(de.robinthor.digiworldexplorer.automation.ScreenDirector.snapshot())
     }
 
     fun destroy() {
@@ -102,12 +164,28 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         root = null
         panel = null
         bubble = null
+        directorTitle = null
+        directorAction = null
+        directorCard = null
+        directorTail = null
+        eyeStatus = null
         params = null
     }
 
     fun refresh() {
         root?.post {
             bubble?.alpha = if (AutomationState.enabled) 1f else .78f
+        }
+    }
+
+    fun updateDirector(snapshot: DirectorSnapshot) {
+        root?.post {
+            directorTitle?.text = "${snapshot.state} · Screen: ${snapshot.screen.label}"
+            val value = snapshot.action.ifBlank { "No action" }
+            val seconds = (snapshot.bondCooldownMillis + 999) / 1000
+            val timer = if (seconds > 0) " · Bond %02d:%02d".format(seconds / 60, seconds % 60) else ""
+            directorAction?.text = "Action: ${if (value.length > 20) value.take(19) + "…" else value}$timer"
+            eyeStatus?.update(snapshot)
         }
     }
 
@@ -119,6 +197,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         addView(featureToggle("Auto Summon", "auto_purchase", AutomationState.autoPurchaseEnabled, density))
         addView(featureToggle("VS / Tower Loop", "auto_dungeon", AutomationState.autoDungeonEnabled, density))
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
+        addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
         val topRow = LinearLayout(service).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -133,6 +212,16 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             collapse()
         }, LinearLayout.LayoutParams(0, (48 * density).toInt(), 1f).apply { marginStart = (4 * density).toInt() })
         addView(topRow)
+        addView(actionButton("Start Dungeon Rotation") {
+            if (!AutomationState.enabled) {
+                service.showStatusOnly("Start the bot first")
+            } else {
+                DungeonRotationRequest.start(service)
+                val apoc = if (de.robinthor.digiworldexplorer.dungeon.DungeonKey.APOCALYMON_WALL in DungeonRotationRequest.completedToday) "; Apocalymon done" else ""
+                service.showStatusOnly("Dungeon rotation: waiting for Home$apoc")
+            }
+            collapse()
+        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
         addView(actionButton("Start / Restart Bot") {
             if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
             collapse()
@@ -186,6 +275,10 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 AutomationState.autoFeedEnabled = enabled
                 FeedFrameAnalyzer.reset()
             }
+            "auto_farm_harvest" -> {
+                AutomationState.autoFarmEnabled = enabled
+                de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
+            }
             "auto_network_defense" -> {
                 val allowed = enabled && SupporterLicenseManager.load(service) != null
                 AutomationState.autoNetworkDefenseEnabled = allowed
@@ -202,6 +295,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         featureSwitches["auto_purchase"]?.isChecked = preferences.getBoolean("auto_purchase", true)
         featureSwitches["auto_dungeon"]?.isChecked = preferences.getBoolean("auto_dungeon", true)
         featureSwitches["auto_feed"]?.isChecked = preferences.getBoolean("auto_feed", false)
+        featureSwitches["auto_farm_harvest"]?.isChecked = preferences.getBoolean("auto_farm_harvest", false)
         featureSwitches["auto_network_defense"]?.isChecked =
             SupporterLicenseManager.load(service) != null && preferences.getBoolean("auto_network_defense", false)
         syncingFeatureSwitches = false
@@ -223,11 +317,13 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         AutomationState.autoDungeonEnabled = preferences.getBoolean("auto_dungeon", true)
         AutomationState.autoNetworkDefenseEnabled = supporter && preferences.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = preferences.getBoolean("auto_feed", false)
+        AutomationState.autoFarmEnabled = preferences.getBoolean("auto_farm_harvest", false)
         AutomationState.dwsNavigationSettings = AutomationState.dwsNavigationSettings.copy(blindStageFailedTap = true)
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
         FeedFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
         StageFailedFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         AutoMoveController.reset()
@@ -257,7 +353,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         panel?.visibility = View.GONE
     }
 
-    private fun installDragAndClick(view: View, layoutParams: WindowManager.LayoutParams) {
+    private fun installDragAndClick(view: View, layoutParams: WindowManager.LayoutParams, onClick: () -> Unit) {
         var startX = 0
         var startY = 0
         var downX = 0f
@@ -279,13 +375,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                     val moved = abs(event.rawX - downX) + abs(event.rawY - downY)
                     val clickTolerance = 32f * service.resources.displayMetrics.density
                     if (moved < clickTolerance && SystemClock.elapsedRealtime() - downAt < 1_200L) {
-                        expanded = !expanded
-                        if (expanded) refreshFeatureSwitches()
-                        panel?.visibility = if (expanded) View.VISIBLE else View.GONE
-                        root?.requestLayout()
-                        root?.let { runCatching { windowManager.updateViewLayout(it, layoutParams) } }
-                        if (expanded) keepExpandedMenuOnScreen(layoutParams)
-                        refresh()
+                        onClick()
                     }
                     preferences.edit().putInt("quick_overlay_x", layoutParams.x).putInt("quick_overlay_y", layoutParams.y).apply()
                     true
@@ -293,6 +383,16 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 else -> false
             }
         }
+    }
+
+    private fun togglePanel(layoutParams: WindowManager.LayoutParams) {
+        expanded = !expanded
+        if (expanded) refreshFeatureSwitches()
+        panel?.visibility = if (expanded) View.VISIBLE else View.GONE
+        root?.requestLayout()
+        root?.let { runCatching { windowManager.updateViewLayout(it, layoutParams) } }
+        if (expanded) keepExpandedMenuOnScreen(layoutParams)
+        refresh()
     }
 
     private fun keepExpandedMenuOnScreen(layoutParams: WindowManager.LayoutParams) {

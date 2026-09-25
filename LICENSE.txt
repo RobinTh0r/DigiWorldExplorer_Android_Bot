@@ -1,0 +1,28 @@
+DigiWorldExplorer Proprietary License
+
+Copyright (c) 2026 DigiWorldExplorer Project Authors. All rights reserved.
+
+No license is granted to copy, modify, merge, publish, distribute,
+sublicense, sell, reverse engineer, or create derivative works from this
+software or its source code, in whole or in substantial part, without prior
+written permission from the copyright holder.
+
+Possession of a copy of the source code or an application build does not
+grant permission to redistribute it, publish it, or use it as the basis of
+another product. Private evaluation is permitted only when the copyright
+holder has provided the copy for that purpose.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
+FROM, OUT OF, OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+This license applies only to original DigiWorldExplorer code and assets.
+Third-party components remain subject to their respective licenses. Digimon,
+Digimon UP, related names, characters, trademarks, and game images belong to
+their respective owners and are not licensed by this document.
+
+DigiWorldExplorer is an unofficial fan project and is not affiliated with,
+endorsed by, or connected to Bandai Namco, Bandai, Toei Animation, or the
+publisher of Digimon UP.

@@ -18,3 +18,4 @@ android-main/
 .local/
 .gradle-codex-build/
 .kotlin/
+artifacts/*.apk

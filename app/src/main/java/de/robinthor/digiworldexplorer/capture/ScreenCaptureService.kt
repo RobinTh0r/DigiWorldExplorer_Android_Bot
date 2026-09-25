@@ -25,11 +25,20 @@ import androidx.core.app.NotificationCompat
 import androidx.core.content.ContextCompat
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
+import de.robinthor.digiworldexplorer.automation.FrameOrchestrator
+import de.robinthor.digiworldexplorer.automation.FrameOwner
+import de.robinthor.digiworldexplorer.automation.FrameProbe
+import de.robinthor.digiworldexplorer.automation.AutomationEventKind
+import de.robinthor.digiworldexplorer.automation.AutomationEventLog
+import de.robinthor.digiworldexplorer.automation.ScreenDirector
+import de.robinthor.digiworldexplorer.automation.PassiveScreenClassifier
+import de.robinthor.digiworldexplorer.automation.ObservedScreen
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
 import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.dungeon.DungeonFrameAnalyzer
+import de.robinthor.digiworldexplorer.runner.GekkomonRunFrameAnalyzer
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 class ScreenCaptureService : Service() {
@@ -45,6 +54,9 @@ class ScreenCaptureService : Service() {
     private var healthyCaptureSince = 0L
     private var captureImageMissing = false
     private var lastGridRecognized = 0L
+    private var lastFrameOwner = FrameOwner.NONE
+    private var lastDirectorSnapshot = ScreenDirector.snapshot()
+    private var passiveScreen = ObservedScreen.UNKNOWN
     @Volatile private var shuttingDown = false
 
     private val projectionCallback = object : MediaProjection.Callback() {
@@ -130,6 +142,12 @@ class ScreenCaptureService : Service() {
         missingStatusShown = false
         idleStopRequested = false
         lastGridRecognized = 0L
+        lastFrameOwner = FrameOwner.NONE
+        ScreenDirector.reset()
+        lastDirectorSnapshot = ScreenDirector.snapshot()
+        passiveScreen = ObservedScreen.UNKNOWN
+        AutomationEventLog.clear()
+        AutomationEventLog.record(AutomationEventKind.CAPTURE_STARTED, "CAPTURE_STARTED")
         val manager = getSystemService(MediaProjectionManager::class.java)
         val mediaProjection = manager.getMediaProjection(resultCode, resultData)
         if (mediaProjection == null) {
@@ -166,60 +184,81 @@ class ScreenCaptureService : Service() {
                 val captureBlocked = featureFrame && updateCaptureQuality(image, width, height)
                 if (captureBlocked) {
                     recognized = captureImageMissing
+                    publishDirector(FrameOwner.CAPTURE_BLOCKED)
                 } else {
-                    // Persistent failure dialogs are checked centrally at a low cadence before
-                    // individual modes can claim the frame. Network Defense is excluded because
-                    // its battle layout can contain similar red/gray regions but never this dialog.
-                    val stageFailedScreen = !AutomationState.autoNetworkDefenseEnabled &&
-                        StageFailedFrameAnalyzer.analyze(image, width, height)
-                    if (stageFailedScreen) {
-                        if (AutomationState.autoDungeonEnabled) {
-                            DungeonFrameAnalyzer.onFailureDialogHandled()
-                        }
-                        recognized = true
-                        markContentRecognized()
-                        return@use
-                    }
-                    // Network Defense has priority because FeedFrameAnalyzer intentionally owns a
-                    // confirmed main-screen frame even when no food bubble is currently visible.
-                    // Active runs inspect every frame because the final-boss banner is brief.
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
-                    val networkScreen = networkFrame && NetworkDefenseFrameAnalyzer.analyze(image, width, height)
-                    // Once a grid has been calibrated, let navigation inspect the frame before
-                    // Feed. This pauses the Feed scanner (and pending feed taps) while the
-                    // DigiWorld grid is visible, then resumes it automatically after leaving.
-                    var gridScreen = !networkScreen && featureFrame &&
-                        CaptureFrameAnalyzer.isCalibrated &&
-                        CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
-                    val now = SystemClock.elapsedRealtime()
-                    if (gridScreen) {
-                        lastGridRecognized = now
-                    } else if (
-                        CaptureFrameAnalyzer.isCalibrated &&
-                        lastGridRecognized > 0L &&
-                        now - lastGridRecognized >= GRID_RELEASE_TIMEOUT
-                    ) {
-                        android.util.Log.i("DigiWorldCapture", "grid absent for ${now - lastGridRecognized} ms - releasing DigiWorld mode")
-                        CaptureFrameAnalyzer.resetCalibration()
-                        DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
-                        lastGridRecognized = 0L
-                        gridScreen = false
+                    val owner = FrameOrchestrator.resolve(false, listOf(
+                        // Persistent failure dialogs outrank every task. Network Defense is excluded
+                        // because its battle layout may contain similar red/gray regions.
+                        FrameProbe(FrameOwner.STAGE_FAILED, enabled = !AutomationState.autoNetworkDefenseEnabled) {
+                            val found = StageFailedFrameAnalyzer.analyze(image, width, height)
+                            if (found && AutomationState.autoDungeonEnabled) DungeonFrameAnalyzer.onFailureDialogHandled()
+                            found
+                        },
+                        // Active Network runs inspect every frame because the boss banner is brief.
+                        FrameProbe(FrameOwner.NETWORK_DEFENSE, enabled = networkFrame) {
+                            NetworkDefenseFrameAnalyzer.analyze(image, width, height)
+                        },
+                        // A calibrated World Search grid keeps priority over all menu tasks.
+                        FrameProbe(FrameOwner.WORLD_SEARCH, enabled = featureFrame && CaptureFrameAnalyzer.isCalibrated) {
+                            val gridFound = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                            val now = SystemClock.elapsedRealtime()
+                            if (gridFound) {
+                                lastGridRecognized = now
+                                if (AutomationState.autoFeedEnabled) FeedFrameAnalyzer.pauseForDigiWorld()
+                            } else if (lastGridRecognized > 0L && now - lastGridRecognized >= GRID_RELEASE_TIMEOUT) {
+                                android.util.Log.i("DigiWorldCapture", "grid absent for ${now - lastGridRecognized} ms - releasing DigiWorld mode")
+                                CaptureFrameAnalyzer.resetCalibration()
+                                DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
+                                lastGridRecognized = 0L
+                            }
+                            gridFound
+                        },
+                        FrameProbe(FrameOwner.GEKKOMON_RUN, enabled = AutomationState.autoRunnerEnabled) {
+                            GekkomonRunFrameAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
+                            de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame && de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active()) {
+                            de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame) {
+                            DungeonFrameAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
+                            de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
+                            de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
+                            FeedFrameAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.SUMMON, enabled = featureFrame) {
+                            RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                        },
+                        // Initial calibration runs only after no specialized task claimed the frame.
+                        FrameProbe(FrameOwner.WORLD_SEARCH, enabled = !CaptureFrameAnalyzer.isCalibrated && framesSeen % 10 == 0) {
+                            val found = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
+                            if (found) lastGridRecognized = SystemClock.elapsedRealtime()
+                            found
+                        },
+                    ))
+                    if (owner != lastFrameOwner) {
+                        AutomationEventLog.record(AutomationEventKind.OWNER_CHANGED, "${lastFrameOwner.name}:${owner.name}")
+                        lastFrameOwner = owner
                     }
-                    if (gridScreen && AutomationState.autoFeedEnabled) FeedFrameAnalyzer.pauseForDigiWorld()
-                    // Keep the established VS/Tower cadence. The loss dialog remains visible,
-                    // so the next feature frame can close it without adding a costly full-frame scan.
-                    val dungeonScreen = !networkScreen && !gridScreen && featureFrame && DungeonFrameAnalyzer.analyze(image, width, height)
-                    val feedScreen = !stageFailedScreen && !networkScreen && !gridScreen && !dungeonScreen && featureFrame && FeedFrameAnalyzer.analyze(image, width, height)
-                    val rewardScreen = !stageFailedScreen && !feedScreen && !networkScreen && !gridScreen && !dungeonScreen && featureFrame && RewardPurchaseFrameAnalyzer.analyze(image, width, height)
-                    if (stageFailedScreen || networkScreen || gridScreen || dungeonScreen || rewardScreen || feedScreen) {
-                        recognized = true // The feature analyzer owns this frame; never run movement here.
-                    } else if (!CaptureFrameAnalyzer.isCalibrated) {
-                        if (framesSeen % 10 == 4) DigiWorldAccessibilityService.instance?.hideForCapture()
-                        if (framesSeen % 10 == 0) {
-                            recognized = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
-                            if (recognized) lastGridRecognized = SystemClock.elapsedRealtime()
-                        }
+                    if (owner == FrameOwner.NONE && framesSeen % 10 == 5) {
+                        passiveScreen = PassiveScreenClassifier.detect(image, width, height)
+                    } else if (owner != FrameOwner.NONE) passiveScreen = ObservedScreen.UNKNOWN
+                    if (featureFrame || owner != FrameOwner.NONE) {
+                    if (owner == FrameOwner.FARM && de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.screen in
+                        setOf(ObservedScreen.HOME, ObservedScreen.EXPLORE_MENU)) {
+                        publishDirector(de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.screen)
+                    } else if (owner == FrameOwner.NONE) publishDirector(passiveScreen) else publishDirector(owner)
                     }
+                    recognized = owner != FrameOwner.NONE || passiveScreen != ObservedScreen.UNKNOWN
                 }
                 if (recognized) markContentRecognized() else checkRecognitionTimeouts()
             }
@@ -276,12 +315,29 @@ class ScreenCaptureService : Service() {
         missingStatusShown = false
     }
 
+    private fun publishDirector(owner: FrameOwner) {
+        val snapshot = ScreenDirector.observe(owner, AutomationState.enabled)
+        if (snapshot != lastDirectorSnapshot) {
+            lastDirectorSnapshot = snapshot
+            DigiWorldAccessibilityService.instance?.updateDirector(snapshot)
+        }
+    }
+
+    private fun publishDirector(screen: ObservedScreen) {
+        val snapshot = ScreenDirector.observeScreen(screen, AutomationState.enabled)
+        if (snapshot != lastDirectorSnapshot) {
+            lastDirectorSnapshot = snapshot
+            DigiWorldAccessibilityService.instance?.updateDirector(snapshot)
+        }
+    }
+
     private fun checkRecognitionTimeouts() {
         if (idleStopRequested || lastRecognizedContent == 0L) return
         val missingFor = SystemClock.elapsedRealtime() - lastRecognizedContent
         if (missingFor >= GRID_HIDE_TIMEOUT && !missingStatusShown) {
             missingStatusShown = true
-            DigiWorldAccessibilityService.instance?.showStatusOnly("", false)
+            // Unknown is useful Director information, not a reason to make the status UI vanish.
+            DigiWorldAccessibilityService.instance?.updateDirector(ScreenDirector.snapshot())
         }
         if (missingFor >= IDLE_STOP_TIMEOUT) {
             idleStopRequested = true
@@ -295,6 +351,7 @@ class ScreenCaptureService : Service() {
 
     private fun releaseCapture() {
         shuttingDown = true
+        AutomationEventLog.record(AutomationEventKind.CAPTURE_STOPPED, "CAPTURE_STOPPED")
         CaptureSessionState.markCaptureStopped()
         virtualDisplay?.release()
         virtualDisplay = null
@@ -307,11 +364,19 @@ class ScreenCaptureService : Service() {
         healthyCaptureSince = 0L
         captureImageMissing = false
         lastGridRecognized = 0L
+        lastFrameOwner = FrameOwner.NONE
+        passiveScreen = ObservedScreen.UNKNOWN
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
+        GekkomonRunFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
+        de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
         FeedFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
         StageFailedFrameAnalyzer.reset()
+        ScreenDirector.reset()
+        lastDirectorSnapshot = ScreenDirector.snapshot()
         CaptureFrameAnalyzer.resetCalibration()
         val activeProjection = projection
         projection = null
