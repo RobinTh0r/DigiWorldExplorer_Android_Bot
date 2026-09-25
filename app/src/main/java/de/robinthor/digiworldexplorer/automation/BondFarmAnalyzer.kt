@@ -29,7 +29,7 @@ object BondFarmAnalyzer {
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active()) return false
         if (!AutomationState.enabled || !AutomationState.autoFarmEnabled ||
-            !AutomationState.autoFeedEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT) {
+            !AutomationState.autoBondRotationEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT) {
             reset(); return false
         }
         val now = SystemClock.elapsedRealtime()

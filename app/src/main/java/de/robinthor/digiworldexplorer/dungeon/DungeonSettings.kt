@@ -13,10 +13,10 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 data class DungeonRotationSettings(
     val enabledCards: Set<DungeonKey> = DungeonKey.entries.toSet(),
-    val normalAttempts: Int = 2,
+    val normalAttempts: Int = 3,
     val useAdAttempts: Boolean = true,
 ) {
-    init { require(normalAttempts in 1..2) }
+    init { require(normalAttempts in 1..3) }
     fun budget(key: DungeonKey, adSkipPass: Boolean, completedToday: Set<DungeonKey> = emptySet()): DungeonBudget = when {
         key in completedToday -> DungeonBudget()
         else -> when (key) {
@@ -39,7 +39,7 @@ object DungeonSettingsStore {
         val p = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         return DungeonRotationSettings(
             enabledCards = DungeonKey.entries.filterTo(mutableSetOf()) { p.getBoolean(cardKey(it), true) },
-            normalAttempts = p.getInt(NORMAL_ATTEMPTS, 2).coerceIn(1, 2),
+            normalAttempts = p.getInt(NORMAL_ATTEMPTS, 3).coerceIn(1, 3),
             useAdAttempts = p.getBoolean(USE_ADS, true),
         )
     }
@@ -51,12 +51,12 @@ object DungeonSettingsStore {
     }
 }
 
-@Composable fun DungeonSettings(enabled: Boolean, onEnabled: (Boolean) -> Unit) {
+@Composable fun DungeonSettings(enabled: Boolean, onEnabled: (Boolean) -> Unit, showEnabled: Boolean = true) {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf(DungeonSettingsStore.load(context)) }
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth()) {
+        if (showEnabled) Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.dungeon_rotation_title), style = MaterialTheme.typography.titleSmall)
                 Text(stringResource(R.string.dungeon_rotation_hint), style = MaterialTheme.typography.bodySmall)
@@ -72,10 +72,10 @@ object DungeonSettingsStore {
         if (expanded) {
             Text(stringResource(R.string.dungeon_attempts_title), style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                listOf(1, 2).forEach { count -> FilterChip(
+                listOf(1, 2, 3).forEach { count -> FilterChip(
                     selected = settings.normalAttempts == count,
                     onClick = { settings = settings.copy(normalAttempts = count); DungeonSettingsStore.save(context, settings) },
-                    label = { Text(stringResource(if (count == 1) R.string.dungeon_attempt_once else R.string.dungeon_attempt_twice)) },
+                    label = { Text(stringResource(when (count) { 1 -> R.string.dungeon_attempt_once; 2 -> R.string.dungeon_attempt_twice; else -> R.string.dungeon_attempt_three })) },
                 ) }
             }
             DungeonSettingSwitch(stringResource(R.string.dungeon_ads_title), stringResource(R.string.dungeon_ads_hint), settings.useAdAttempts) {

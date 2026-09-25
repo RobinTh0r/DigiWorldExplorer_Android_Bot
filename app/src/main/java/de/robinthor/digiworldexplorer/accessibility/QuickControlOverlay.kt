@@ -197,6 +197,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         addView(featureToggle("Auto Summon", "auto_purchase", AutomationState.autoPurchaseEnabled, density))
         addView(featureToggle("VS / Tower Loop", "auto_dungeon", AutomationState.autoDungeonEnabled, density))
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
+        addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density))
         addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
         val topRow = LinearLayout(service).apply {
@@ -213,7 +214,9 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         }, LinearLayout.LayoutParams(0, (48 * density).toInt(), 1f).apply { marginStart = (4 * density).toInt() })
         addView(topRow)
         addView(actionButton("Start Dungeon Rotation") {
-            if (!AutomationState.enabled) {
+            if (SupporterLicenseManager.load(service) == null) {
+                service.showStatusOnly("Beta code required")
+            } else if (!AutomationState.enabled) {
                 service.showStatusOnly("Start the bot first")
             } else {
                 DungeonRotationRequest.start(service)
@@ -268,24 +271,34 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 RewardPurchaseFrameAnalyzer.reset()
             }
             "auto_dungeon" -> {
-                AutomationState.autoDungeonEnabled = enabled
+                val allowed = enabled && SupporterLicenseManager.load(service) != null
+                AutomationState.autoDungeonEnabled = allowed
+                if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
                 DungeonFrameAnalyzer.reset()
+                featureSwitches[preferenceKey]?.isChecked = allowed
             }
             "auto_feed" -> {
                 AutomationState.autoFeedEnabled = enabled
                 FeedFrameAnalyzer.reset()
             }
             "auto_farm_harvest" -> {
-                AutomationState.autoFarmEnabled = enabled
+                val allowed = enabled && SupporterLicenseManager.load(service) != null
+                AutomationState.autoFarmEnabled = allowed
+                if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
                 de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
+                featureSwitches[preferenceKey]?.isChecked = allowed
+            }
+            "auto_bond_rotation" -> {
+                val allowed = enabled && SupporterLicenseManager.load(service) != null
+                AutomationState.autoBondRotationEnabled = allowed
+                if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
+                de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
+                featureSwitches[preferenceKey]?.isChecked = allowed
             }
             "auto_network_defense" -> {
-                val allowed = enabled && SupporterLicenseManager.load(service) != null
-                AutomationState.autoNetworkDefenseEnabled = allowed
-                if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
+                AutomationState.autoNetworkDefenseEnabled = enabled
                 NetworkDefenseFrameAnalyzer.reset()
                 StageFailedFrameAnalyzer.reset()
-                featureSwitches[preferenceKey]?.isChecked = allowed
             }
         }
     }
@@ -293,11 +306,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     private fun refreshFeatureSwitches() {
         syncingFeatureSwitches = true
         featureSwitches["auto_purchase"]?.isChecked = preferences.getBoolean("auto_purchase", true)
-        featureSwitches["auto_dungeon"]?.isChecked = preferences.getBoolean("auto_dungeon", true)
+        val supporter = SupporterLicenseManager.load(service) != null
+        featureSwitches["auto_dungeon"]?.isChecked = supporter && preferences.getBoolean("auto_dungeon", true)
         featureSwitches["auto_feed"]?.isChecked = preferences.getBoolean("auto_feed", false)
-        featureSwitches["auto_farm_harvest"]?.isChecked = preferences.getBoolean("auto_farm_harvest", false)
-        featureSwitches["auto_network_defense"]?.isChecked =
-            SupporterLicenseManager.load(service) != null && preferences.getBoolean("auto_network_defense", false)
+        featureSwitches["auto_bond_rotation"]?.isChecked = supporter && preferences.getBoolean("auto_bond_rotation", false)
+        featureSwitches["auto_farm_harvest"]?.isChecked = supporter && preferences.getBoolean("auto_farm_harvest", false)
+        featureSwitches["auto_network_defense"]?.isChecked = preferences.getBoolean("auto_network_defense", false)
         syncingFeatureSwitches = false
     }
 
@@ -314,10 +328,11 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         val supporter = SupporterLicenseManager.load(service) != null
         AutomationState.overlayEnabled = preferences.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = preferences.getBoolean("auto_purchase", true)
-        AutomationState.autoDungeonEnabled = preferences.getBoolean("auto_dungeon", true)
-        AutomationState.autoNetworkDefenseEnabled = supporter && preferences.getBoolean("auto_network_defense", false)
+        AutomationState.autoDungeonEnabled = supporter && preferences.getBoolean("auto_dungeon", true)
+        AutomationState.autoNetworkDefenseEnabled = preferences.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = preferences.getBoolean("auto_feed", false)
-        AutomationState.autoFarmEnabled = preferences.getBoolean("auto_farm_harvest", false)
+        AutomationState.autoBondRotationEnabled = supporter && preferences.getBoolean("auto_bond_rotation", false)
+        AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", false)
         AutomationState.dwsNavigationSettings = AutomationState.dwsNavigationSettings.copy(blindStageFailedTap = true)
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()

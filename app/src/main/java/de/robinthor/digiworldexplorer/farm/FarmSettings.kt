@@ -11,26 +11,28 @@ import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 @Composable
-fun FarmSettings() {
+fun FarmSettings(showEnabled: Boolean = true, showDetails: Boolean = true, betaUnlocked: Boolean = true, onUnlock: () -> Unit = {}) {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
-    var enabled by remember { mutableStateOf(preferences.getBoolean("auto_farm_harvest", false)) }
+    var enabled by remember(betaUnlocked) { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_farm_harvest", false)) }
     var watering by remember { mutableStateOf(preferences.getBoolean("farm_watering", true)) }
     var adSkipPass by remember { mutableStateOf(preferences.getBoolean("ad_skip_pass", false)) }
     Column(Modifier.fillMaxWidth()) {
-        Row(Modifier.fillMaxWidth()) {
+        if (showEnabled) Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.farm_harvest_title), style = MaterialTheme.typography.titleSmall)
-                Text(stringResource(R.string.farm_harvest_hint), style = MaterialTheme.typography.bodySmall)
+                if (showDetails) Text(stringResource(R.string.farm_harvest_hint), style = MaterialTheme.typography.bodySmall)
             }
-            Switch(checked = enabled, onCheckedChange = {
-                enabled = it
-                AutomationState.autoFarmEnabled = it
-                FarmHarvestAnalyzer.reset()
-                preferences.edit().putBoolean("auto_farm_harvest", it).apply()
+            Switch(checked = enabled, enabled = betaUnlocked, onCheckedChange = {
+                if (!betaUnlocked) onUnlock() else {
+                    enabled = it
+                    AutomationState.autoFarmEnabled = it
+                    FarmHarvestAnalyzer.reset()
+                    preferences.edit().putBoolean("auto_farm_harvest", it).apply()
+                }
             })
         }
-        Row(Modifier.fillMaxWidth()) {
+        if (showDetails) Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.farm_watering_title), style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.farm_watering_hint), style = MaterialTheme.typography.labelSmall)
@@ -41,7 +43,7 @@ fun FarmSettings() {
                 preferences.edit().putBoolean("farm_watering", it).apply()
             })
         }
-        Row(Modifier.fillMaxWidth()) {
+        if (showDetails) Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
                 Text(stringResource(R.string.ad_skip_pass_title), style = MaterialTheme.typography.bodyMedium)
                 Text(stringResource(R.string.ad_skip_pass_hint), style = MaterialTheme.typography.labelSmall)

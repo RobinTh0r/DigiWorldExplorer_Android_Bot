@@ -138,15 +138,16 @@ class MainActivity : ComponentActivity() {
         showCommunityIntro = !showReleaseNotes && !settings.getBoolean(communityIntroKey, false)
         grid = settings.getBoolean("grid_enabled", !isHuaweiOrHonor())
         autoPurchase = settings.getBoolean("auto_purchase", true)
-        autoDungeon = getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_dungeon", true)
+        autoDungeon = false
         autoNetworkDefense = false
         legacyCapture = settings.getBoolean("legacy_capture", true)
         summonTouchCorrection = settings.getBoolean("summon_touch_correction", false)
         preReleaseUpdates = settings.getBoolean("pre_release_updates", false)
         darkMode = settings.getBoolean("dark_mode", false)
         supporterLicense = SupporterLicenseManager.load(this)
+        autoDungeon = supporterLicense != null && settings.getBoolean("auto_dungeon", true)
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
-        autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
+        autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
         autoFeed = settings.getBoolean("auto_feed", false)
         autoRunner = false
         settings.edit().putBoolean("auto_runner", false).apply()
@@ -163,9 +164,11 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoDungeonEnabled = autoDungeon
         AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
         AutomationState.autoFeedEnabled = autoFeed
+        AutomationState.autoBondRotationEnabled = supporterLicense != null && getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_bond_rotation", false)
+        AutomationState.autoBondRotationEnabled = supporterLicense != null && settings.getBoolean("auto_bond_rotation", false)
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
-        AutomationState.autoFarmEnabled = settings.getBoolean("auto_farm_harvest", false)
+        AutomationState.autoFarmEnabled = supporterLicense != null && settings.getBoolean("auto_farm_harvest", false)
         AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
         AutomationState.adSkipPassEnabled = settings.getBoolean("ad_skip_pass", false)
         AutomationState.dwsNavigationSettings = DwsNavigationSettings(allowLeft = !dwsNeverLeft, forceForwardAttack = dwsForceForwardAttack, dashSpamUntilZero = dwsDashSpam, collectOnlyEnergy = dwsOnlyEnergy, betterEnergyCollect = dwsBetterCollect, blindStageFailedTap = dwsBlindStageTap)
@@ -227,17 +230,21 @@ class MainActivity : ComponentActivity() {
                 onBattery = ::requestBatteryOptimizationExemption,
                 onGrid = { grid = !grid; AutomationState.overlayEnabled = grid; DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid); settings.edit().putBoolean("grid_enabled", grid).apply() },
                 onAutoPurchase = { enabled -> autoPurchase = enabled; AutomationState.autoPurchaseEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_purchase", enabled).apply() },
-                onAutoDungeon = { enabled -> autoDungeon = enabled; AutomationState.autoDungeonEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", enabled).apply() },
-                onAutoNetworkDefense = { enabled ->
+                onAutoDungeon = { enabled ->
                     val allowed = enabled && supporterLicense != null
+                    autoDungeon = allowed
+                    AutomationState.autoDungeonEnabled = allowed
+                    getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", allowed).apply()
+                    if (enabled && !allowed) showLicenseDialog = true
+                },
+                onAutoNetworkDefense = { enabled ->
                     NetworkDefenseFrameAnalyzer.reset()
-                    autoNetworkDefense = allowed
-                    AutomationState.autoNetworkDefenseEnabled = allowed
-                    if (allowed) {
+                    autoNetworkDefense = enabled
+                    AutomationState.autoNetworkDefenseEnabled = enabled
+                    if (enabled) {
                         StageFailedFrameAnalyzer.reset()
                     }
-                    settings.edit().putBoolean("auto_network_defense", allowed).apply()
-                    if (enabled && !allowed) showLicenseDialog = true
+                    settings.edit().putBoolean("auto_network_defense", enabled).apply()
                 },
                 onAutoFeed = { enabled ->
                     FeedFrameAnalyzer.reset()
@@ -388,7 +395,7 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
         AutomationState.autoFeedEnabled = autoFeed
         AutomationState.autoRunnerEnabled = autoRunner
-        AutomationState.autoFarmEnabled = getSharedPreferences("settings", MODE_PRIVATE)
+        AutomationState.autoFarmEnabled = supporterLicense != null && getSharedPreferences("settings", MODE_PRIVATE)
             .getBoolean("auto_farm_harvest", false)
         AutomationState.farmWateringEnabled = getSharedPreferences("settings", MODE_PRIVATE)
             .getBoolean("farm_watering", true)
@@ -476,7 +483,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
         autoPurchase = settings.getBoolean("auto_purchase", true)
-        autoDungeon = settings.getBoolean("auto_dungeon", true)
+        autoDungeon = supporterLicense != null && settings.getBoolean("auto_dungeon", true)
         autoFeed = settings.getBoolean("auto_feed", false)
         autoRunner = false
         settings.edit().putBoolean("auto_runner", false).apply()
@@ -484,7 +491,7 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
         supporterLicense = SupporterLicenseManager.load(this)
-        autoNetworkDefense = supporterLicense != null && settings.getBoolean("auto_network_defense", false)
+        autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
         refreshPermissions()
         window.decorView.postDelayed({ if (!isFinishing) refreshPermissions() }, 500L)
@@ -671,6 +678,20 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        FeatureInfoRow(R.string.digiworld_help_title, grid = grid, gridEnabled = overlay, onGrid = onGrid, onAdvanced = { showGlobalSettings = true }, onHelp = { featureHelp = 2 })
+        FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
+        FeatureSwitch(
+            R.string.dungeon_rotation_title,
+            autoDungeon,
+            onAutoDungeon,
+            onHelp = { featureHelp = 1 },
+            enabled = supporterLicense != null,
+            supporterStyle = true,
+        )
+        FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { featureHelp = 4 })
+        BondRotationMainSwitch(betaUnlocked = supporterLicense != null, onUnlock = onLicense)
+        de.robinthor.digiworldexplorer.farm.FarmSettings(showDetails = false, betaUnlocked = supporterLicense != null, onUnlock = onLicense)
+        FeatureSwitch(R.string.auto_network_defense, autoNetworkDefense, onAutoNetworkDefense, onHelp = { featureHelp = 3 })
         OutlinedButton(
             onClick = { showGlobalSettings = true },
             modifier = Modifier.fillMaxWidth(),
@@ -682,7 +703,6 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 Text(stringResource(R.string.global_settings), fontWeight = FontWeight.Bold)
                 Text(stringResource(R.string.global_settings_hint), style = MaterialTheme.typography.labelSmall)
             }
-            BetaChip()
         }
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
@@ -731,6 +751,30 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     }
 }
 
+@Composable private fun BondRotationMainSwitch(betaUnlocked: Boolean, onUnlock: () -> Unit) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val preferences = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+    var checked by remember { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_bond_rotation", false)) }
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable { if (!betaUnlocked) onUnlock() },
+        color = betaContainerColor(),
+        shape = RoundedCornerShape(10.dp),
+        border = BorderStroke(1.dp, betaBorderColor()),
+    ) {
+        Row(Modifier.padding(horizontal = 12.dp, vertical = 7.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.auto_bond_rotation), modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+            BetaChip()
+            Spacer(Modifier.width(6.dp))
+            Switch(checked = checked, enabled = betaUnlocked, onCheckedChange = {
+                checked = it
+                AutomationState.autoBondRotationEnabled = it
+                preferences.edit().putBoolean("auto_bond_rotation", it).apply()
+                de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
+            }, colors = appSwitchColors())
+        }
+    }
+}
+
 @Composable private fun GlobalSettingsDialog(
     grid: Boolean,
     overlay: Boolean,
@@ -754,7 +798,6 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         title = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(stringResource(R.string.global_settings), modifier = Modifier.weight(1f))
-                BetaChip()
             }
         },
         text = {
@@ -762,23 +805,12 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 Modifier.fillMaxWidth().heightIn(max = 610.dp).verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(5.dp),
             ) {
-                SettingsSection(stringResource(R.string.settings_general), initiallyExpanded = true) {
-                    FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { onHelp(0) })
-                    FeatureSwitch(
-                        R.string.auto_network_defense,
-                        autoNetworkDefense,
-                        onAutoNetworkDefense,
-                        onHelp = { onHelp(3) },
-                        enabled = supporterUnlocked,
-                        supporterStyle = true,
-                    )
-                }
-                SettingsSection(stringResource(R.string.settings_dws)) {
+                SettingsSection(stringResource(R.string.settings_dws), initiallyExpanded = true) {
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(R.string.digiworld_help_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                             Text(
-                                if (!overlay) stringResource(R.string.permission_overlay) else stringResource(R.string.global_settings_hint),
+                                if (!overlay) stringResource(R.string.permission_overlay) else stringResource(R.string.dws_settings_hint),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -791,13 +823,9 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 }
                 SettingsSection(stringResource(R.string.settings_beta_modules), initiallyExpanded = true, beta = true) {
                     Text(stringResource(R.string.settings_beta_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    de.robinthor.digiworldexplorer.dungeon.DungeonSettings(autoDungeon, onAutoDungeon)
+                    de.robinthor.digiworldexplorer.dungeon.DungeonSettings(autoDungeon, onAutoDungeon, showEnabled = false)
                     HorizontalDivider()
-                    FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { onHelp(4) })
-                    HorizontalDivider()
-                    de.robinthor.digiworldexplorer.farm.FarmSettings()
-                    HorizontalDivider()
-                    ComingSoonFeatureRow(onHelp = { onHelp(5) })
+                    de.robinthor.digiworldexplorer.farm.FarmSettings(showEnabled = false, betaUnlocked = supporterUnlocked)
                 }
                 OutlinedButton(onClick = onExperimental, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 5.dp)) {
                     Text(stringResource(R.string.experimental_settings), style = MaterialTheme.typography.labelLarge)

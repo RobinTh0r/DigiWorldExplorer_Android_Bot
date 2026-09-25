@@ -16,7 +16,7 @@ object BondRotationAnalyzer {
     fun reset() { rotation = BondRotation(); scanAt = 0; signature = ""; matches = 0; owns = false }
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
-        if (!AutomationState.enabled || !AutomationState.autoFeedEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT) {
+        if (!AutomationState.enabled || !AutomationState.autoBondRotationEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT) {
             reset(); return false
         }
         val now = SystemClock.elapsedRealtime()

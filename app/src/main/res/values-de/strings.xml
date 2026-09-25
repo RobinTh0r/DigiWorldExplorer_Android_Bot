@@ -22,6 +22,7 @@
     <string name="global_settings_hint">Alle Module und Detailoptionen</string>
     <string name="settings_general">Allgemein</string>
     <string name="settings_dws">Digital World Search</string>
+    <string name="dws_settings_hint">Bewegungs- und Sammelverhalten</string>
     <string name="settings_beta_modules">Automatisierungsmodule</string>
     <string name="settings_beta_hint">Dungeon-Rotation, Bond-Rotation und Meat Field sind Beta-Funktionen.</string>
     <string name="app_name">DigiWorldExplorer Bot</string>
@@ -164,6 +165,8 @@
     <string name="dungeon_attempts_title">Normale Versuche pro regulärem Dungeon</string>
     <string name="dungeon_attempt_once">1 Versuch</string>
     <string name="dungeon_attempt_twice">2 Versuche</string>
+    <string name="dungeon_attempt_three">3 Versuche</string>
+    <string name="auto_bond_rotation">Bond-Rotation</string>
     <string name="dungeon_ads_title">Bis zu 2 freie Werbeversuche nutzen</string>
     <string name="dungeon_ads_hint">Nur mit global aktiviertem Ad-Skip-Pass und sicher erkanntem positivem Werbezähler.</string>
     <string name="dungeon_cards_title">Einbezogene Karten</string>

@@ -9,6 +9,7 @@ object AutomationState {
  @Volatile var autoDungeonEnabled=true
  @Volatile var autoNetworkDefenseEnabled=false
  @Volatile var autoFeedEnabled=false
+ @Volatile var autoBondRotationEnabled=false
  @Volatile var autoRunnerEnabled=false
  @Volatile var autoFarmEnabled=false
  @Volatile var farmWateringEnabled=true
