@@ -18,6 +18,14 @@ class ScreenDirectorTest {
         assertEquals(ObservedScreen.UNKNOWN, ScreenDirector.observe(FrameOwner.NONE, true).screen)
     }
 
+    @Test fun `unknown transition searches before settling gray`() {
+        val searching = ScreenDirector.observe(FrameOwner.NONE, true)
+        assertEquals("Watching", searching.state)
+        org.junit.Assert.assertTrue(searching.confidence > 0)
+        repeat(5) { ScreenDirector.observe(FrameOwner.NONE, true) }
+        assertEquals(0, ScreenDirector.snapshot().confidence)
+    }
+
     @Test fun reportsActionAndSafeState() {
         ScreenDirector.noteAction("  Waiting   for result ")
         val snapshot = ScreenDirector.observe(FrameOwner.NONE, false)

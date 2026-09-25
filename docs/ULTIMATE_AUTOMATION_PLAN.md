@@ -691,6 +691,10 @@ prove a signature mismatch, and the reachable device reported API 30 rather than
 - The live Director overlay now remains visible on Unknown, recognizes the changing Home stage and
   Explore menu, and no longer mistakes ordinary HUD bars for Gekkomon Run. Gekkomon is hidden from
   settings and removed from passive classification; it is deliberately the final task milestone.
+- The mascot eyes are now the compact safety indicator requested for the overlay: closed gray eyes
+  mean automation off, animated yellow glances mean a screen is being searched, green eyes with a
+  short natural blink mean a screen is recognized and active, half-open gray eyes mean persistent
+  Unknown, and pulsing red eyes with warning brows mean a paused, blocked or unsafe/error state.
 
 ## 12. Definition of done
 

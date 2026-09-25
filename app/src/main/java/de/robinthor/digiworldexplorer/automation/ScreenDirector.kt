@@ -96,6 +96,10 @@ object ScreenDirector {
         confidence = when {
             current == ObservedScreen.UNKNOWN && candidate != ObservedScreen.UNKNOWN ->
                 (candidateFrames.coerceAtMost(REQUIRED_MATCHES) * 100 / REQUIRED_MATCHES)
+            // Brief unknown transitions are an active search (yellow moving eyes). Once the
+            // grace window expires, a persistent unknown becomes the distinct gray state.
+            current == ObservedScreen.UNKNOWN && unknownFrames in 1 until UNKNOWN_GRACE_FRAMES ->
+                ((UNKNOWN_GRACE_FRAMES - unknownFrames) * 100 / UNKNOWN_GRACE_FRAMES).coerceAtLeast(1)
             current == ObservedScreen.UNKNOWN -> 0
             current == candidate -> (candidateFrames.coerceAtMost(REQUIRED_MATCHES) * 100 / REQUIRED_MATCHES)
             else -> 50
