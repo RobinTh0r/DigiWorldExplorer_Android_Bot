@@ -18,5 +18,5 @@ object AutomationState {
  @Volatile var forceLegacyCaptureMetrics=false
  @Volatile var summonTouchCorrection=false
  @Volatile var dwsNavigationSettings=DwsNavigationSettings()
- fun stop(){enabled=false;AutoMoveController.reset();de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset();de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.cancel();de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.reset()}
+ fun stop(){enabled=false;AutoMoveController.reset();de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset();de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.cancel();de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.reset();de.robinthor.digiworldexplorer.feed.BondRotationRequest.cancel()}
 }

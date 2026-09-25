@@ -16,7 +16,9 @@ object BondRotationAnalyzer {
     fun reset() { rotation = BondRotation(); scanAt = 0; signature = ""; matches = 0; owns = false }
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
-        if (!AutomationState.enabled || !AutomationState.autoBondRotationEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT) {
+        val forced = BondRotationRequest.active()
+        val scheduled = AutomationState.autoBondRotationEnabled && AutomationState.mode == AutomationMode.FULL_AUTOPILOT
+        if (!AutomationState.enabled || (!forced && !scheduled)) {
             reset(); return false
         }
         val now = SystemClock.elapsedRealtime()
@@ -32,7 +34,8 @@ object BondRotationAnalyzer {
             (255 shl 24) or ((bytes.get(offset).toInt() and 255) shl 16) or
                 ((bytes.get(offset + 1).toInt() and 255) shl 8) or (bytes.get(offset + 2).toInt() and 255)
         }
-        val home = HomeScreenDetector.detect(w, h, frame::argbAt)
+        // Use the same animation-tolerant Home decision as the Director/entry flow.
+        val home = GameEntryDetector.detect(frame).screen == EntryScreen.HOME
         val grid = PartnerGridDetector.detect(frame)
         val key = "$home|${grid.page}|${grid.expanded}|${grid.raised}|${grid.selected}|${grid.canRaise}|${grid.confirmation}"
         if (key == signature) matches++ else { signature = key; matches = 1 }
@@ -40,16 +43,18 @@ object BondRotationAnalyzer {
         val previous = rotation.step
         val bubble = home && BondBubbleDetector.detect(frame) != null
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
-            BondCycleTimer.canStartBond(now))
+            forced || BondCycleTimer.canStartBond(now))
         owns = rotation.ownsFrame()
         if (previous != BondStep.COLLECT && rotation.step == BondStep.COLLECT) FeedFrameAnalyzer.allowImmediateScan()
         if (previous != BondStep.REST && rotation.step == BondStep.REST) {
+            BondRotationRequest.complete()
             BondCycleTimer.bondCompleted()
             if (AutomationState.autoFarmEnabled) BondFarmAnalyzer.requestVisit()
             android.util.Log.i("DigiWorldBond", "complete visited=${rotation.visited} restored=${rotation.original}; waiting for next bubble after farm")
         }
         val service = DigiWorldAccessibilityService.instance ?: return owns
         if (rotation.step == BondStep.PARK) {
+            BondRotationRequest.park("Partner screen not confirmed")
             service.showStatusOnly("Bond rotation paused: partner not confirmed")
             return true
         }

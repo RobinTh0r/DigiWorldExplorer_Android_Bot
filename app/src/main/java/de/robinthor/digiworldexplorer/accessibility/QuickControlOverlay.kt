@@ -227,6 +227,17 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             }
             collapse()
         }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
+        addView(actionButton("Force Start Bond Rotation") {
+            if (SupporterLicenseManager.load(service) == null) {
+                service.showStatusOnly("Beta code required")
+            } else if (!AutomationState.enabled) {
+                service.showStatusOnly("Start the bot first")
+            } else {
+                de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
+                service.showStatusOnly("Bond rotation: waiting for verified Home")
+            }
+            collapse()
+        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
         addView(actionButton("Start / Restart Bot") {
             if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
             collapse()

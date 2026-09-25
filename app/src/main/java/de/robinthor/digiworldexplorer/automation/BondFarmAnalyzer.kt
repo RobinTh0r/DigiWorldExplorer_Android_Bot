@@ -28,8 +28,9 @@ object BondFarmAnalyzer {
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active()) return false
+        val forcedHandoff = BondCycleTimer.awaitingFarm()
         if (!AutomationState.enabled || !AutomationState.autoFarmEnabled ||
-            !AutomationState.autoBondRotationEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT) {
+            (!forcedHandoff && (!AutomationState.autoBondRotationEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT))) {
             reset(); return false
         }
         val now = SystemClock.elapsedRealtime()
