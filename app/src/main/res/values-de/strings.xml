@@ -102,7 +102,7 @@
     <string name="update_check">Prüfen</string>
     <string name="update_download">Release öffnen</string>
     <string name="release_notes_title">Neu in dieser Version</string>
-    <string name="release_notes_body">AUTOMATION FUSION BETA\n• Vollständige tägliche Dungeon-Rotation mit Ad Skip\n• VS-Vernichten einmal pro Spieltag\n• Meat Field: Ernten, Pflanzen und Gießen\n• Bond-Rotation durch 15 Partner mit Pause\n• Verschiebbares Live-Status-Overlay\n\nVERBESSERUNGEN\n• Schnellere Fortsetzung nach Ad Skip\n• Sicherere Bildschirm- und Popup-Erkennung\n• Saubere Rückkehr zu Home nach Rotationen\n\nBETA-HINWEIS\nGekkomon Run und der vollständige Autopilot sind noch in Entwicklung.</string>
+    <string name="release_notes_body">DREI NEUE BETA-FUNKTIONEN\n\nDUNGEON-ROTATION\n• Tägliche Dungeon-Runde mit normalen und Ad-Skip-Versuchen\n• VS-Vernichten einmal pro Spieltag\n• Automatische Rückkehr zu Home\n\nBOND-ROTATION\n• Besucht bis zu 15 Partner\n• Stellt den Startpartner wieder her und pausiert 20 Minuten\n\nMEAT FIELD\n• Erntet, pflanzt und gießt automatisch\n• Priorisiert vorhandene Samen und Gießkannen\n\nEBENFALLS NEU\n• Verschiebbares Live-Status-Overlay\n• Globale Einstellungen mit getrennten Modulbereichen\n• Manual- und Co-Pilot-Modus</string>
     <string name="community_intro_title">🎉 Neue Discord-Community</string>
     <string name="community_intro_body">Tritt unserer neuen Community bei, um auf dem aktuellen Stand zu bleiben, Fehler zu melden, neue Funktionen vorzuschlagen und dich mit anderen Nutzern auszutauschen.</string>
     <string name="community_intro_join">Discord beitreten</string>

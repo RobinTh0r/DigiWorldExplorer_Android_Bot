@@ -1,21 +1,42 @@
 # DigiWorldExplorer 5.0.0 Beta 1 – Automation Fusion
 
-This beta introduces the new screen-aware automation foundation and the first complete daily-task rotations.
+This beta introduces a new screen-aware automation foundation and three major automation features.
 
-## Highlights
+## New: Dungeon Rotation
 
-- Daily dungeon rotation with normal and Ad Skip attempts
-- Network Defense matching, team exit, Metal Sea and automatic return handling
-- VS Destroy once per game day, including reward confirmation
-- Meat Field harvesting, seed prioritization, planting and watering
-- Bond rotation through up to 15 partners with a 20-minute cooldown
-- Movable live overlay showing the detected screen and current action
-- Faster continuation after Ad Skip and safer screen/popup recognition
-- Daily dungeon state resets at 08:00 Europe/Berlin time
+- Runs the configured daily dungeon route.
+- Uses normal attempts and optional Ad Skip attempts.
+- Handles Network Defense matching and leaving the team.
+- Supports Metal Sea and the other configured dungeon cards.
+- Executes VS Destroy once per game day and confirms its reward.
+- Returns to Home after the rotation.
+- Resets its daily state at 08:00 Europe/Berlin time.
+
+## New: Bond Rotation
+
+- Visits up to 15 partners.
+- Collects the available Bond bubble for each partner.
+- Restores the partner that was selected when the rotation started.
+- Checks Meat Field after a completed tour.
+- Starts a global 20-minute cooldown before the next tour.
+
+## New: Meat Field
+
+- Harvests ready plots.
+- Plants available seeds using the configured priority.
+- Uses watering cans in Palmon priority order.
+- Supports eligible actions through the Ad Skip Pass setting.
+
+## Interface and recognition
+
+- Adds Manual and Co-Pilot automation modes.
+- Adds a compact Global Settings page with separate module sections.
+- Marks Dungeon Rotation, Bond Rotation and Meat Field clearly as beta modules.
+- Adds a movable live overlay showing the detected screen and current action.
+- Improves screen, popup and post-Ad-Skip recognition.
 
 ## Beta notes
 
-- Gekkomon Run and the complete cross-module Autopilot are still under development.
 - Recognition is currently calibrated primarily for the tested BlueStacks 720x1280 layout.
 - On an unknown or contradictory screen, automation stops instead of tapping blindly.
 - Screen capture and accessibility access may need to be enabled again after installation.

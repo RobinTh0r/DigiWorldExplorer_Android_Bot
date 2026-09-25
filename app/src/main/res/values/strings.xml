@@ -102,7 +102,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">AUTOMATION FUSION BETA\n• Full daily dungeon rotation with Ad Skip\n• VS Destroy is claimed once per game day\n• Meat Field harvesting, planting and watering\n• 15-partner Bond rotation with cooldown\n• Movable live status overlay\n\nIMPROVEMENTS\n• Faster continuation after Ad Skip\n• Safer screen and popup recognition\n• Clean return to Home after rotations\n\nBETA NOTE\nGekkomon Run and the complete Autopilot are still under development.</string>
+    <string name="release_notes_body">THREE NEW BETA FEATURES\n\nDUNGEON ROTATION\n• Daily dungeon route with normal and Ad Skip attempts\n• VS Destroy once per game day\n• Automatic return to Home\n\nBOND ROTATION\n• Visits up to 15 partners\n• Restores the starting partner and uses a 20-minute cooldown\n\nMEAT FIELD\n• Harvests, plants and waters automatically\n• Prioritizes available seeds and watering cans\n\nALSO NEW\n• Movable live status overlay\n• Global Settings with separate module sections\n• Manual and Co-Pilot modes</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>
