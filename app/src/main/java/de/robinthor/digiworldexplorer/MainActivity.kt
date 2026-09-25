@@ -17,6 +17,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -498,6 +499,7 @@ class MainActivity : ComponentActivity() {
     val clipboard = LocalClipboardManager.current
     var showExperimental by remember { mutableStateOf(false) }
     var showDwsSettings by remember { mutableStateOf(false) }
+    var showGlobalSettings by remember { mutableStateOf(false) }
     val statusText = when (status) { UiStatus.READY -> R.string.status_ready; UiStatus.CAPTURING -> R.string.status_capture; UiStatus.AUTOMATIC -> R.string.status_auto; UiStatus.CAPTURE_DENIED -> R.string.status_capture_denied; UiStatus.STOPPED -> R.string.status_stopped }
 if (showAccessHelp) TroubleshootingAssistantDialog(
         access = access,
@@ -518,6 +520,24 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     featureHelp?.let { FeatureHelpDialog(it, onClose = { featureHelp = null }) }
     if (showDwsSettings) DwsSettingsDialog(dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, supporterLicense != null, onDwsSettings, onUnlock = onLicense, onClose = { showDwsSettings = false })
     if (showExperimental) ExperimentalSettingsDialog(legacyCapture, summonTouchCorrection, preReleaseUpdates, onLegacyCapture, onSummonTouchCorrection, onPreReleaseUpdates, onClose = { showExperimental = false })
+    if (showGlobalSettings) GlobalSettingsDialog(
+        grid = grid,
+        overlay = overlay,
+        autoPurchase = autoPurchase,
+        autoDungeon = autoDungeon,
+        autoNetworkDefense = autoNetworkDefense,
+        autoFeed = autoFeed,
+        supporterUnlocked = supporterLicense != null,
+        onGrid = onGrid,
+        onAutoPurchase = onAutoPurchase,
+        onAutoDungeon = onAutoDungeon,
+        onAutoNetworkDefense = onAutoNetworkDefense,
+        onAutoFeed = onAutoFeed,
+        onDws = { showGlobalSettings = false; showDwsSettings = true },
+        onExperimental = { showGlobalSettings = false; showExperimental = true },
+        onHelp = { featureHelp = it },
+        onClose = { showGlobalSettings = false },
+    )
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(start = 12.dp, end = 12.dp, top = 29.dp, bottom = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
         Surface(
             modifier = Modifier.fillMaxWidth(),
@@ -631,7 +651,6 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
             }
             Text("›", style = MaterialTheme.typography.titleLarge)
         }
-        FeatureInfoRow(R.string.digiworld_help_title, grid = grid, gridEnabled = overlay, onGrid = onGrid, onAdvanced = { showDwsSettings = true }, onHelp = { featureHelp = 2 })
         Text(stringResource(R.string.automation_mode), style = MaterialTheme.typography.titleSmall)
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
@@ -652,13 +671,19 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
-        de.robinthor.digiworldexplorer.dungeon.DungeonSettings(autoDungeon, onAutoDungeon)
-        FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { featureHelp = 4 })
-        de.robinthor.digiworldexplorer.farm.FarmSettings()
-        // Gekkomon Run is deliberately postponed until the final automation milestone.
-        FeatureSwitch(R.string.auto_network_defense, autoNetworkDefense, onAutoNetworkDefense, onHelp = { featureHelp = 3 }, enabled = supporterLicense != null, supporterStyle = true)
-        ComingSoonFeatureRow(onHelp = { featureHelp = 5 })
+        OutlinedButton(
+            onClick = { showGlobalSettings = true },
+            modifier = Modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Text("⚙", fontSize = 18.sp)
+            Spacer(Modifier.width(8.dp))
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.global_settings), fontWeight = FontWeight.Bold)
+                Text(stringResource(R.string.global_settings_hint), style = MaterialTheme.typography.labelSmall)
+            }
+            BetaChip()
+        }
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
         Text(stringResource(R.string.safety_note), style = MaterialTheme.typography.labelSmall)
@@ -676,7 +701,6 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
             Spacer(Modifier.width(7.dp))
             BetaChip()
         }
-        OutlinedButton(onClick = { showExperimental = true }, Modifier.fillMaxWidth()) { Text(stringResource(R.string.experimental_settings)) }
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             OutlinedButton(onClick = onRepo, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 5.dp, vertical = 4.dp)) { Text(stringResource(R.string.source_code_short), style = MaterialTheme.typography.labelSmall, maxLines = 1) }
             OutlinedButton(onClick = { showContactDialog = true }, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 5.dp, vertical = 4.dp)) { Text(stringResource(R.string.contact_me), style = MaterialTheme.typography.labelSmall, maxLines = 1) }
@@ -703,6 +727,111 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 confirmButton = { Button(onClick = { clipboard.setText(AnnotatedString("support@robinthor.de")); showContactDialog = false }) { Text(stringResource(R.string.contact_copy)) } },
                 dismissButton = { TextButton(onClick = { showContactDialog = false }) { Text(stringResource(R.string.close)) } }
             )
+        }
+    }
+}
+
+@Composable private fun GlobalSettingsDialog(
+    grid: Boolean,
+    overlay: Boolean,
+    autoPurchase: Boolean,
+    autoDungeon: Boolean,
+    autoNetworkDefense: Boolean,
+    autoFeed: Boolean,
+    supporterUnlocked: Boolean,
+    onGrid: () -> Unit,
+    onAutoPurchase: (Boolean) -> Unit,
+    onAutoDungeon: (Boolean) -> Unit,
+    onAutoNetworkDefense: (Boolean) -> Unit,
+    onAutoFeed: (Boolean) -> Unit,
+    onDws: () -> Unit,
+    onExperimental: () -> Unit,
+    onHelp: (Int) -> Unit,
+    onClose: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onClose,
+        title = {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(stringResource(R.string.global_settings), modifier = Modifier.weight(1f))
+                BetaChip()
+            }
+        },
+        text = {
+            Column(
+                Modifier.fillMaxWidth().heightIn(max = 610.dp).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                SettingsSection(stringResource(R.string.settings_general), initiallyExpanded = true) {
+                    FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { onHelp(0) })
+                    FeatureSwitch(
+                        R.string.auto_network_defense,
+                        autoNetworkDefense,
+                        onAutoNetworkDefense,
+                        onHelp = { onHelp(3) },
+                        enabled = supporterUnlocked,
+                        supporterStyle = true,
+                    )
+                }
+                SettingsSection(stringResource(R.string.settings_dws)) {
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(R.string.digiworld_help_title), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                            Text(
+                                if (!overlay) stringResource(R.string.permission_overlay) else stringResource(R.string.global_settings_hint),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = grid, enabled = overlay, onCheckedChange = { onGrid() }, colors = appSwitchColors())
+                    }
+                    OutlinedButton(onClick = onDws, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 5.dp)) {
+                        Text(stringResource(R.string.dws_settings_button), style = MaterialTheme.typography.labelLarge)
+                    }
+                }
+                SettingsSection(stringResource(R.string.settings_beta_modules), initiallyExpanded = true, beta = true) {
+                    Text(stringResource(R.string.settings_beta_hint), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    de.robinthor.digiworldexplorer.dungeon.DungeonSettings(autoDungeon, onAutoDungeon)
+                    HorizontalDivider()
+                    FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { onHelp(4) })
+                    HorizontalDivider()
+                    de.robinthor.digiworldexplorer.farm.FarmSettings()
+                    HorizontalDivider()
+                    ComingSoonFeatureRow(onHelp = { onHelp(5) })
+                }
+                OutlinedButton(onClick = onExperimental, modifier = Modifier.fillMaxWidth(), contentPadding = PaddingValues(vertical = 5.dp)) {
+                    Text(stringResource(R.string.experimental_settings), style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onClose) { Text(stringResource(R.string.close)) } },
+    )
+}
+
+@Composable private fun SettingsSection(
+    title: String,
+    initiallyExpanded: Boolean = false,
+    beta: Boolean = false,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    var expanded by remember { mutableStateOf(initiallyExpanded) }
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = .55f),
+        border = BorderStroke(1.dp, if (beta) betaBorderColor() else MaterialTheme.colorScheme.outline.copy(alpha = .65f)),
+    ) {
+        Column(Modifier.padding(horizontal = 9.dp, vertical = 4.dp)) {
+            Row(
+                Modifier.fillMaxWidth().clickable { expanded = !expanded }.padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(title, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
+                if (beta) BetaChip()
+                Spacer(Modifier.width(6.dp))
+                Text(if (expanded) "⌃" else "⌄", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            if (expanded) Column(verticalArrangement = Arrangement.spacedBy(3.dp), content = content)
         }
     }
 }
