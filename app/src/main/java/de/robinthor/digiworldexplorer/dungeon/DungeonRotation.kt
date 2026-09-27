@@ -2,6 +2,7 @@ package de.robinthor.digiworldexplorer.dungeon
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
 
 /** User-started dungeon pass. It is deliberately separate from the already-open VS/Tower loop. */
 object DungeonRotationRequest {
@@ -14,6 +15,8 @@ object DungeonRotationRequest {
     @Volatile var requestedAt = 0L
         private set
     @Volatile var completedToday: Set<DungeonKey> = emptySet()
+        private set
+    @Volatile var apocalymonStatus = "Apocalymon disabled"
         private set
     private var suspendedNetworkDefense = false
 
@@ -33,10 +36,17 @@ object DungeonRotationRequest {
         de.robinthor.digiworldexplorer.strategy.AutomationState.adSkipPassEnabled =
             context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("ad_skip_pass", false)
         completedToday = DungeonPassPolicy.locked(DungeonDailyStore.snapshot(context))
+        val apocalymonEnabled = DungeonKey.APOCALYMON_WALL in DungeonSettingsStore.load(context).enabledCards
+        apocalymonStatus = when {
+            !apocalymonEnabled -> "Apocalymon disabled"
+            DungeonKey.APOCALYMON_WALL in completedToday -> "Apocalymon already attempted today"
+            else -> "Apocalymon queued"
+        }
         phase = Phase.REQUESTED
         reason = if (DungeonKey.APOCALYMON_WALL in completedToday)
             "Waiting for Home; Apocalymon already complete today" else "Waiting for verified Home"
         requestedAt = SystemClock.elapsedRealtime()
+        Log.i("DigiWorldDungeonRotation", "START enabled=${DungeonSettingsStore.load(context).enabledCards} locked=$completedToday apocalymon=$apocalymonStatus")
     }
 
     @Synchronized fun openingList() {
@@ -59,7 +69,7 @@ object DungeonRotationRequest {
         restoreNetworkDefense()
     }
     @Synchronized fun cancel() {
-        phase = Phase.IDLE; reason = ""; requestedAt = 0L; completedToday = emptySet()
+        phase = Phase.IDLE; reason = ""; requestedAt = 0L; completedToday = emptySet(); apocalymonStatus = "Apocalymon disabled"
         restoreNetworkDefense()
     }
     private fun restoreNetworkDefense() {

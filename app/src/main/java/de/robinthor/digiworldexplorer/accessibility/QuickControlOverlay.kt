@@ -17,6 +17,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.Switch
 import android.widget.TextView
 import de.robinthor.digiworldexplorer.MainActivity
@@ -52,6 +53,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         override fun run() {
             if (root == null) return
             updateTimer()
+            updateAutomationControls()
             timerHandler.postDelayed(this, 1_000L)
         }
     }
@@ -72,6 +74,10 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     private var expanded = false
     private var syncingFeatureSwitches = false
     private val featureSwitches = mutableMapOf<String, Switch>()
+    private var dungeonControl: Button? = null
+    private var dungeonSpinner: ProgressBar? = null
+    private var copilotControl: Button? = null
+    private var copilotSpinner: ProgressBar? = null
 
     fun show() {
         if (root != null) return
@@ -147,7 +153,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         }
         val menu = buildPanel(density).apply {
             visibility = View.GONE
-            layoutParams = LinearLayout.LayoutParams((268 * density).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
+            layoutParams = LinearLayout.LayoutParams((250 * density).toInt(), WindowManager.LayoutParams.WRAP_CONTENT)
         }
         container.addView(header)
         container.addView(menu)
@@ -206,6 +212,10 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         directorCard = null
         directorTail = null
         eyeStatus = null
+        dungeonControl = null
+        dungeonSpinner = null
+        copilotControl = null
+        copilotSpinner = null
         params = null
     }
 
@@ -233,51 +243,52 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     private fun buildPanel(density: Float): LinearLayout = LinearLayout(service).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding((12 * density).toInt(), (9 * density).toInt(), (12 * density).toInt(), (9 * density).toInt())
+        setPadding((8 * density).toInt(), (6 * density).toInt(), (8 * density).toInt(), (6 * density).toInt())
         background = rounded(Color.argb(248, 27, 30, 36), 16 * density)
         elevation = 10f * density
         addView(featureToggle("Auto Summon", "auto_purchase", AutomationState.autoPurchaseEnabled, density))
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
+        addView(featureToggle("VS / Tower Loop", "auto_dungeon", AutomationState.autoDungeonEnabled, density))
         addView(actionButton("Statusanzeige ein / aus") { toggleDirectorCard(); collapse() },
-            LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (42 * density).toInt()).apply { bottomMargin = (6 * density).toInt() })
+            LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (36 * density).toInt()).apply { bottomMargin = (4 * density).toInt() })
         val topRow = LinearLayout(service).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        topRow.addView(actionButton("Open Bot App") { openMainApp(); collapse() }, LinearLayout.LayoutParams(0, (48 * density).toInt(), 1f).apply { marginEnd = (4 * density).toInt() })
+        topRow.addView(actionButton("Bot App") { openMainApp(); collapse() }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginEnd = (3 * density).toInt() })
         topRow.addView(actionButton("Stop", danger = true) {
             AutomationState.stop()
             ScreenCaptureService.stop(service)
             service.showStatusOnly("", false)
             refresh()
             collapse()
-        }, LinearLayout.LayoutParams(0, (48 * density).toInt(), 1f).apply { marginStart = (4 * density).toInt() })
+        }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginStart = (3 * density).toInt() })
         addView(topRow)
-        addView(actionButton(if (DungeonRotationRequest.active()) "Dungeon Co-Pilot stoppen" else "Dungeon Co-Pilot starten", beta = true) {
+        addView(statefulAutomationButton("dungeon", density) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
             } else if (!AutomationState.enabled) {
                 requestCaptureAndStart(CaptureConsentActivity.START_DUNGEON)
-            } else if (DungeonRotationRequest.active()) {
+            } else if (DungeonRotationRequest.ownsFrames()) {
                 DungeonRotationRequest.cancel()
                 service.showStatusOnly("Dungeon Co-Pilot stopped")
             } else {
                 DungeonRotationRequest.start(service)
-                val apoc = if (de.robinthor.digiworldexplorer.dungeon.DungeonKey.APOCALYMON_WALL in DungeonRotationRequest.completedToday) "; Apocalymon done" else ""
-                service.showStatusOnly("Dungeon rotation: waiting for Home$apoc")
+                service.showStatusOnly("Dungeon: ${DungeonRotationRequest.apocalymonStatus}")
             }
+            updateAutomationControls()
             collapse()
-        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
+        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (40 * density).toInt()).apply { topMargin = (4 * density).toInt() })
         addView(buildDigiCopilotSection(density), LinearLayout.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
-        ).apply { topMargin = (7 * density).toInt() })
+        ).apply { topMargin = (4 * density).toInt() })
         val startRow = LinearLayout(service).apply { orientation = LinearLayout.HORIZONTAL }
         startRow.addView(actionButton("Start / Restart Bot") {
             if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
             collapse()
-        }, LinearLayout.LayoutParams(0, (50 * density).toInt(), 1f).apply { marginEnd = (4 * density).toInt() })
+        }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginEnd = (3 * density).toInt() })
         startRow.addView(actionButton("Bond Reset", beta = true) {
             de.robinthor.digiworldexplorer.automation.BondCycleTimer.resetCooldown()
             if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() &&
@@ -287,20 +298,20 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             service.showStatusOnly("Bond timer reset — ready")
             updateTimer()
             collapse()
-        }, LinearLayout.LayoutParams((88 * density).toInt(), (50 * density).toInt()).apply { marginStart = (4 * density).toInt() })
-        addView(startRow, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT).apply { topMargin = (7 * density).toInt() })
+        }, LinearLayout.LayoutParams((78 * density).toInt(), (40 * density).toInt()).apply { marginStart = (3 * density).toInt() })
+        addView(startRow, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT).apply { topMargin = (4 * density).toInt() })
     }
 
     private fun buildDigiCopilotSection(density: Float): LinearLayout = LinearLayout(service).apply {
         orientation = LinearLayout.VERTICAL
-        setPadding((7 * density).toInt(), (7 * density).toInt(), (7 * density).toInt(), (5 * density).toInt())
+        setPadding((5 * density).toInt(), (5 * density).toInt(), (5 * density).toInt(), (3 * density).toInt())
         background = GradientDrawable().apply {
             shape = GradientDrawable.RECTANGLE
             setColor(Color.argb(72, 176, 112, 0))
             cornerRadius = 12 * density
             setStroke((2 * density).toInt().coerceAtLeast(2), Color.rgb(255, 190, 45))
         }
-        addView(actionButton(if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()) "Digi Co-Pilot stoppen" else "Digi Co-Pilot starten", beta = true) {
+        addView(statefulAutomationButton("copilot", density) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
             } else if (!AutomationState.enabled) {
@@ -328,16 +339,17 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                         de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("No modules selected")
                         service.showStatusOnly("Digi Co-Pilot: select at least one module")
                         collapse()
-                        return@actionButton
+                        return@statefulAutomationButton
                     }
                     service.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
                 }
             }
+            updateAutomationControls()
             collapse()
-        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()))
+        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (40 * density).toInt()))
         addView(TextView(service).apply {
             text = "Digi Co-Pilot Module"
-            textSize = 11f
+            textSize = 10f
             setTextColor(Color.rgb(255, 213, 110))
             setPadding((4 * density).toInt(), (4 * density).toInt(), 0, 0)
         })
@@ -371,11 +383,11 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             setPadding((4 * density).toInt(), 0, 0, 0)
             addView(TextView(service).apply {
                 text = if (beta) "$label  · BETA" else label
-                textSize = 13f
+                textSize = 11f
                 setTextColor(if (beta) Color.rgb(255, 202, 74) else Color.rgb(244, 245, 246))
                 maxLines = 1
-            }, LinearLayout.LayoutParams(0, (42 * density).toInt(), 1f).apply { gravity = Gravity.CENTER_VERTICAL })
-            addView(toggle, LinearLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, (42 * density).toInt()))
+            }, LinearLayout.LayoutParams(0, (34 * density).toInt(), 1f).apply { gravity = Gravity.CENTER_VERTICAL })
+            addView(toggle, LinearLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, (34 * density).toInt()))
         }
     }
 
@@ -447,13 +459,50 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     private fun actionButton(label: String, danger: Boolean = false, beta: Boolean = false, action: () -> Unit): Button = Button(service).apply {
         text = if (beta) "$label  · BETA" else label
-        textSize = 12f
+        textSize = 10.5f
         isAllCaps = false
         setTextColor(Color.WHITE)
         backgroundTintList = android.content.res.ColorStateList.valueOf(
             if (danger) Color.rgb(230, 92, 97) else if (beta) Color.rgb(176, 112, 0) else Color.rgb(20, 127, 130)
         )
         setOnClickListener { action() }
+    }
+
+    private fun statefulAutomationButton(kind: String, density: Float, action: () -> Unit): FrameLayout {
+        val button = actionButton("", beta = true, action = action).apply {
+            setPadding((8 * density).toInt(), 0, (32 * density).toInt(), 0)
+        }
+        val spinner = ProgressBar(service).apply {
+            isIndeterminate = true
+            indeterminateTintList = android.content.res.ColorStateList.valueOf(Color.WHITE)
+            visibility = View.GONE
+        }
+        if (kind == "dungeon") { dungeonControl = button; dungeonSpinner = spinner }
+        else { copilotControl = button; copilotSpinner = spinner }
+        return FrameLayout(service).apply {
+            addView(button, FrameLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT))
+            addView(spinner, FrameLayout.LayoutParams((22 * density).toInt(), (22 * density).toInt(), Gravity.END or Gravity.CENTER_VERTICAL).apply {
+                marginEnd = (8 * density).toInt()
+            })
+            post { updateAutomationControls() }
+        }
+    }
+
+    private fun updateAutomationControls() {
+        val dungeonRunning = DungeonRotationRequest.ownsFrames()
+        dungeonControl?.apply {
+            text = if (dungeonRunning) "Dungeon stoppen  · BETA" else "Dungeon starten  · BETA"
+            backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (dungeonRunning) Color.rgb(190, 55, 76) else Color.rgb(176, 112, 0))
+        }
+        dungeonSpinner?.visibility = if (dungeonRunning) View.VISIBLE else View.GONE
+        val copilotRunning = de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()
+        copilotControl?.apply {
+            text = if (copilotRunning) "Digi Co-Pilot stoppen  · BETA" else "Digi Co-Pilot starten  · BETA"
+            backgroundTintList = android.content.res.ColorStateList.valueOf(
+                if (copilotRunning) Color.rgb(104, 67, 180) else Color.rgb(176, 112, 0))
+        }
+        copilotSpinner?.visibility = if (copilotRunning) View.VISIBLE else View.GONE
     }
 
     private fun reloadAutomation() {

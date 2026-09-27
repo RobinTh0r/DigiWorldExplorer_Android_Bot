@@ -25,9 +25,10 @@ class DungeonRotationController(
         if (reading.position != required) return DungeonRotationDecision(if (required == DungeonListPosition.TOP) DungeonRotationCommand.SWIPE_TOP else DungeonRotationCommand.SWIPE_BOTTOM)
         val card = reading.cards.firstOrNull { it.key == next }
             ?: return DungeonRotationDecision(DungeonRotationCommand.PARK, reason = "$next not visible at proved ${reading.position}")
-        // VS Battles uses the daily "Destroy" action rather than a consumable ticket.
-        // Its card may legitimately display zero and still has to be opened once per day.
-        if (next != DungeonKey.DAILY && card.tickets == CounterAvailability.ZERO && !adsAllowed(next)) {
+        // The list counters for both daily actions are not authoritative: VS uses Destroy and
+        // Apocalymon's stylised counter is frequently classified as zero. Open either card once
+        // and let its verified modal decide whether an action is available.
+        if (next !in DungeonPassPolicy.dailyLimited && card.tickets == CounterAvailability.ZERO && !adsAllowed(next)) {
             done += next
             return onList(reading, adsAllowed)
         }

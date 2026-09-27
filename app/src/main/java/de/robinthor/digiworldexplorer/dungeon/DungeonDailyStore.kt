@@ -57,9 +57,23 @@ object DungeonDailyStore {
             DungeonKey.entries.forEach { edit.remove(progressKey(it, "ads")) }
             edit.commit()
         }
+        if (p.getInt("executor_schema", 0) < 5) {
+            // Schema 4 could mark Apocalymon complete merely because a Start attempt had been
+            // reserved, even when the tap was rejected and no battle happened. Reopen it once on
+            // upgrade and discard only its unreliable counters. The new executor persists the
+            // daily completion only after a visually confirmed battle result.
+            val apoc = DungeonKey.APOCALYMON_WALL
+            val apocBit = 1 shl apoc.ordinal
+            val edit = p.edit()
+                .putInt("executor_schema", 5)
+                .putInt(COMPLETED, p.getInt(COMPLETED, 0) and apocBit.inv())
+            listOf("attempts", "wins", "losses", "ads", "skips", "unknown")
+                .forEach { edit.remove(progressKey(apoc, it)) }
+            edit.commit()
+        }
         val sameDay = p.getString(DAY, null) == gameDay.toString()
         val mask = if (sameDay) p.getInt(COMPLETED, 0) else {
-            p.edit().clear().putInt("executor_schema", 4).putString(DAY, gameDay.toString()).putInt(COMPLETED, 0).apply(); 0
+            p.edit().clear().putInt("executor_schema", 5).putString(DAY, gameDay.toString()).putInt(COMPLETED, 0).apply(); 0
         }
         val progress = if (!sameDay) emptyMap() else DungeonKey.entries.associateWith { key -> DungeonDailyProgress(
             attempts = p.getInt(progressKey(key, "attempts"), 0), wins = p.getInt(progressKey(key, "wins"), 0),

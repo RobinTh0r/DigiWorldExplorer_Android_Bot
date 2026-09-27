@@ -59,6 +59,16 @@ object DungeonRotationAnalyzer {
             tap(service, v, NormalizedPoint(.5, .84), now, "Closing dungeon loss")
             return true
         }
+        if (key == DungeonKey.APOCALYMON_WALL && apocalymonResultVisible(frame, v)) {
+            // Apocalymon has its own tall "Ergebnis" sheet which does not match the generic
+            // dungeon reward template. Its panel can also resemble the challenge dialog, so this
+            // check must run before returned-panel recovery.
+            if (!DungeonDailyStore.snapshot(service).isComplete(key)) confirmBattle(service, key, won = true)
+            waiting=""; waitingSawTransition=false; startRetries=0; retryAt=0; unknownAt=0
+            controller?.finishCurrent(); returning=true
+            tap(service,v,NormalizedPoint(.50,.793),now,"Apocalymon result: closing and locking until 08:00")
+            return true
+        }
         if(key == null) {
             val orphanPanel = DungeonKey.entries.firstNotNullOfOrNull { DungeonPanelDetector.detect(frame,it,v) }
             if(orphanPanel != null) {
@@ -92,7 +102,7 @@ object DungeonRotationAnalyzer {
             if(returnedToPanel && now-waitingAt > returnDelay && (waiting != "ad" || waitingSawTransition)) {
                 val completed = waiting
                 waiting=""; startRetries=0; retryAt=0; unknownAt=0; waitingSawTransition=false
-                if(completed=="battle") DungeonDailyStore.record(service,key!!) { it.copy(wins=it.wins+1) }
+                if(completed=="battle") confirmBattle(service, key!!, won = true)
                 if(completed=="ad") {
                     passUsage.reserveAd(key!!)
                     DungeonDailyStore.record(service,key) { it.copy(ads=it.ads+1) }
@@ -145,10 +155,9 @@ object DungeonRotationAnalyzer {
                 "destroy" -> {
                     // VS Battles is a once-daily destruction/claim action. The displayed ticket
                     // counter can be zero, so it must not be treated like a normal challenge.
-                    if(used.attempts >= 1) { finishCard(service,v,now); return true }
+                    if(passUsage.attempts(key!!) >= 1) { finishCard(service,v,now); return true }
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
-                    DungeonDailyStore.record(service,key!!) { it.copy(attempts=it.attempts+1) }
                     passUsage.reserveAttempt(key)
                     tap(service,v,panel.target,now,"${key.name}: daily Destroy")
                 }
@@ -156,13 +165,21 @@ object DungeonRotationAnalyzer {
                     val configuredLimit = attemptLimit(key!!, cfg.normalAttempts)
                     val limit = if (key in setOf(DungeonKey.DEMIDEVIMON, DungeonKey.BAKEMON))
                         configuredLimit else passUsage.limit(key!!, configuredLimit)
-                    val spent = if (key in DungeonPassPolicy.dailyLimited) used.attempts else passUsage.attempts(key)
-                    if(panel.remaining == 0 || spent >= limit) { finishCard(service,v,now); return true }
+                    val spent = passUsage.attempts(key)
+                    // Apocalymon's decorative/list-style counter is consistently misread as zero
+                    // on the live dialog. It is a once-daily action, so its verified Challenge
+                    // button is authoritative; the normal ticket counter remains authoritative
+                    // for every repeatable dungeon.
+                    val noTickets = panel.remaining == 0 && key != DungeonKey.APOCALYMON_WALL
+                    if(noTickets || spent >= limit) { finishCard(service,v,now); return true }
                     if(panel.remaining == null) { park(service,"Ticket counter unreadable: ${key!!.name}"); return true }
                     val target = if(key==DungeonKey.NETWORK_DEFENSE) NormalizedPoint(.5,.79) else panel.target
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
-                    DungeonDailyStore.record(service,key!!) { it.copy(attempts=it.attempts+1) }
+                    // Daily actions are persisted only after visual proof of a battle/result. This
+                    // keeps an unaccepted Start tap from suppressing Apocalymon for the entire day.
+                    if (key !in DungeonPassPolicy.dailyLimited)
+                        DungeonDailyStore.record(service,key) { it.copy(attempts=it.attempts+1) }
                     passUsage.reserveAttempt(key)
                     tap(service,v,target,now,"${key.name}: starting battle / Matching")
                 }
@@ -252,8 +269,7 @@ object DungeonRotationAnalyzer {
     }
     private fun finishCard(service: DigiWorldAccessibilityService,v: GameViewport,now: Long) {
         val key=activeKey ?: return
-        val used = DungeonDailyStore.snapshot(service).progress[key]
-        if (key !in DungeonPassPolicy.dailyLimited || (used?.attempts ?: 0) > 0)
+        if (key !in DungeonPassPolicy.dailyLimited)
             DungeonDailyStore.markComplete(service,key)
         controller?.finishCurrent()
         returning=true
@@ -269,18 +285,38 @@ object DungeonRotationAnalyzer {
             return
         }
         Log.i("DigiWorldDungeonRotation","RESULT $key $waiting")
-        if(waiting=="battle") DigiWorldAccessibilityService.instance?.let { service -> DungeonDailyStore.record(service,key) { it.copy(wins=it.wins+1) } }
+        if(waiting=="battle") DigiWorldAccessibilityService.instance?.let { service -> confirmBattle(service, key, won = true) }
         waiting=""
     }
     fun onLoss() {
         val key=activeKey ?: return
         if(waiting!="battle") return
-        DigiWorldAccessibilityService.instance?.let { service -> DungeonDailyStore.record(service,key) { it.copy(losses=it.losses+1) } }
+        DigiWorldAccessibilityService.instance?.let { service -> confirmBattle(service, key, won = false) }
         waiting=""
+    }
+    private fun confirmBattle(service: DigiWorldAccessibilityService, key: DungeonKey, won: Boolean) {
+        DungeonDailyStore.record(service,key) {
+            it.copy(
+                attempts = if (key in DungeonPassPolicy.dailyLimited) it.attempts + 1 else it.attempts,
+                wins = it.wins + if (won) 1 else 0,
+                losses = it.losses + if (won) 0 else 1
+            )
+        }
+        if (key in DungeonPassPolicy.dailyLimited) DungeonDailyStore.markComplete(service,key)
     }
     internal fun panelKind(frame: PixelFrame,viewport: GameViewport,key: DungeonKey) = DungeonPanelDetector.detect(frame,key,viewport)?.kind ?: ""
     internal fun attemptLimit(key: DungeonKey, configured: Int) =
         if (key in setOf(DungeonKey.DEMIDEVIMON, DungeonKey.BAKEMON)) 15 else configured
+    private fun apocalymonResultVisible(frame: PixelFrame, viewport: GameViewport): Boolean {
+        fun blue(rgb: Rgb): Boolean {
+            val hsv = rgb.hsv()
+            return hsv.hue in 88..112 && hsv.saturation >= 90 && hsv.value >= 75
+        }
+        val title = frame.ratioInViewportPatch(viewport, NormalizedPoint(.50,.16), .25,.035, predicate=::blue)
+        val body = frame.ratioInViewportPatch(viewport, NormalizedPoint(.50,.48), .30,.20, predicate=::blue)
+        val close = frame.ratioInViewportPatch(viewport, NormalizedPoint(.50,.793), .13,.025, predicate=::blue)
+        return title >= .30 && body >= .55 && close >= .45
+    }
     fun reset() {
         controller=null; settings=null; activeKey=null; waiting=""; waitingAt=0; settleUntil=0
         candidate=""; matches=0; returning=false; returningHome=false; unknownAt=0

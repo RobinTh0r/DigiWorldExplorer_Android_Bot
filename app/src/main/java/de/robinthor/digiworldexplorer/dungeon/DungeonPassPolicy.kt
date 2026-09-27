@@ -4,7 +4,10 @@ package de.robinthor.digiworldexplorer.dungeon
 object DungeonPassPolicy {
     val dailyLimited = setOf(DungeonKey.APOCALYMON_WALL, DungeonKey.DAILY)
     fun locked(snapshot: DungeonDailySnapshot): Set<DungeonKey> = dailyLimited.filterTo(mutableSetOf()) {
-        it in snapshot.completed || (snapshot.progress[it]?.attempts ?: 0) > 0
+        // An attempt counter used to be written before the Start tap was accepted. Consequently a
+        // cancelled or failed tap could lock Apocalymon for the whole day. Only a confirmed result
+        // may enter the persistent completed set and act as a daily lock.
+        it in snapshot.completed
     }
 }
 

@@ -21,11 +21,11 @@ class DungeonPassPolicyTest {
         assertEquals(DungeonKey.DEMIDEVIMON, scheduler.onList(DungeonListReading(DungeonListPosition.TOP, listOf(card))) { true }.card?.key)
     }
 
-    @Test fun `reserved daily action stays locked after interrupted result`() {
+    @Test fun `unconfirmed daily start is retried instead of locked for the day`() {
         val locked = DungeonPassPolicy.locked(snapshot(emptySet(), mapOf(
             DungeonKey.APOCALYMON_WALL to DungeonDailyProgress(attempts = 1),
             DungeonKey.BAKEMON to DungeonDailyProgress(attempts = 5))))
-        assertEquals(setOf(DungeonKey.APOCALYMON_WALL), locked)
+        assertTrue(locked.isEmpty())
     }
 
     @Test fun `fresh pass resets normal budget but does not manufacture ad grants`() {
@@ -44,5 +44,17 @@ class DungeonPassPolicyTest {
         assertEquals(15, DungeonRotationAnalyzer.attemptLimit(DungeonKey.DEMIDEVIMON, 3))
         assertEquals(15, DungeonRotationAnalyzer.attemptLimit(DungeonKey.BAKEMON, 3))
         assertEquals(3, DungeonRotationAnalyzer.attemptLimit(DungeonKey.DIGIFACTORY, 3))
+    }
+
+    @Test fun `apocalymon opens even when list counter is misread as zero`() {
+        val scheduler = DungeonRotationController(setOf(DungeonKey.APOCALYMON_WALL), emptySet())
+        val card = DungeonCardReading(
+            DungeonKey.APOCALYMON_WALL,
+            de.robinthor.digiworldexplorer.vision.NormalizedPoint(.5, .2),
+            CounterAvailability.ZERO,
+        )
+        val decision = scheduler.onList(DungeonListReading(DungeonListPosition.TOP, listOf(card))) { false }
+        assertEquals(DungeonRotationCommand.SELECT_CARD, decision.command)
+        assertEquals(DungeonKey.APOCALYMON_WALL, decision.card?.key)
     }
 }
