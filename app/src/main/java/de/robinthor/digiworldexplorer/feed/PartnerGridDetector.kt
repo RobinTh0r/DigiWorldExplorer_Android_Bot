@@ -11,36 +11,70 @@ data class PartnerGrid(val page: Boolean = false, val expanded: Boolean = false,
 object PartnerGridDetector {
     fun detect(frame: PixelFrame): PartnerGrid {
         val viewport = GameViewport.fit(frame.width, frame.height)
+        val tallPhone = viewport.width.toDouble() / viewport.height < .50
         fun ratio(x: Double, y: Double, rx: Double, ry: Double, match: (Hsv) -> Boolean) =
             frame.ratioInViewportPatch(viewport, NormalizedPoint(x, y), rx, ry, 1) { match(it.hsv()) }
         fun cyan(x: Double, y: Double, rx: Double, ry: Double) = ratio(x, y, rx, ry) {
             it.hue in 85..110 && it.saturation > 120 && it.value > 170
         }
-        val header = cyan(.5, .09, .36, .012) > .45
-        val hero = cyan(.13, .285, .004, .14) > .30 && cyan(.87, .285, .004, .14) > .30 &&
-            cyan(.5, .4515, .34, .001) > .55
+        fun blue(x: Double, y: Double, rx: Double, ry: Double) = ratio(x, y, rx, ry) {
+            it.hue in 80..120 && it.saturation > 75 && it.value > 95
+        }
+        fun pale(x: Double, y: Double, rx: Double, ry: Double) = ratio(x, y, rx, ry) {
+            it.value > 190 && it.saturation < 130
+        }
+        val headerY = if (tallPhone) .128 else .09
+        val heroLeft = if (tallPhone) .058 else .13
+        val heroRight = if (tallPhone) .944 else .87
+        val heroY = if (tallPhone) .318 else .285
+        val heroHalfHeight = if (tallPhone) .145 else .14
+        val heroBottom = if (tallPhone) .472 else .4515
+        val header = cyan(.5, headerY, .36, .012) > .45
+        val heroSides = cyan(heroLeft, heroY, .004, heroHalfHeight) > .30 &&
+            cyan(heroRight, heroY, .004, heroHalfHeight) > .30
+        val hero = heroSides && (tallPhone || cyan(.5, heroBottom, .42, .001) > .55)
         // A dimmed page is accepted only as a prompt shape; its caller must own a Raise.
         val prompt = ratio(.35, .59, .075, .013) { it.hue in 135..165 && it.saturation > 100 && it.value > 160 } > .45 &&
             cyan(.635, .59, .075, .013) > .45
         if (!header || !hero) return PartnerGrid(confirmation = prompt)
-        val expanded = cyan(.159, .642, .003, .025) > .45
+        val expanded = if (tallPhone) {
+            // The adaptive phone layout keeps the roster's first-row position occupied by
+            // passive-skill icons while collapsed, so a blue-frame probe is ambiguous. The
+            // bottom-right control is unambiguous: '+' has a bright vertical stroke, '−' has not.
+            pale(.883, .827, .006, .018) < .30 && pale(.883, .827, .018, .006) > .30
+        } else cyan(.159, .642, .003, .025) > .45
         if (!expanded) return PartnerGrid(page = true)
-        val cells = (0 until 15).map { i -> NormalizedPoint(.214 + (i % 5) * .143, .644 + (i / 5) * .0825) }
+        val cells = (0 until 15).map { i ->
+            if (tallPhone) NormalizedPoint(.158 + (i % 5) * .172, .663 + (i / 5) * .086)
+            else NormalizedPoint(.214 + (i % 5) * .143, .644 + (i / 5) * .0825)
+        }
         // Each cell must have its blue/cyan left frame; no guessed empty or off-screen cell taps.
-        if (cells.count { cyan(it.x - .055, it.y, .003, .024) > .30 } < 14)
+        val cellFrameOffset = if (tallPhone) .067 else .055
+        val provedCells = if (tallPhone) cells.count { blue(it.x - cellFrameOffset, it.y, .006, .027) > .25 }
+            else cells.count { cyan(it.x - cellFrameOffset, it.y, .003, .024) > .30 }
+        if (provedCells < 14)
             return PartnerGrid(page = true)
         val raised = cells.indices.filter { i ->
             val p = cells[i]
-            ratio(p.x - .039, p.y - .021, .012, .008) { it.hue in 35..80 && it.saturation > 140 && it.value > 160 } > .12 &&
-                ratio(p.x - .039, p.y - .021, .012, .008) { it.value < 130 } > .45
+            if (tallPhone) {
+                ratio(p.x - .039, p.y - .030, .014, .010) {
+                    it.hue in 35..85 && it.saturation > 80 && it.value > 90
+                } > .12
+            } else {
+                ratio(p.x - .039, p.y - .021, .012, .008) { it.hue in 35..80 && it.saturation > 140 && it.value > 160 } > .12 &&
+                    ratio(p.x - .039, p.y - .021, .012, .008) { it.value < 130 } > .45
+            }
         }.singleOrNull()
         val selected = cells.indices.filter { i ->
             val p = cells[i]
-            ratio(p.x - .065, p.y - .025, .004, .016) { it.hue in 20..35 && it.saturation > 150 && it.value > 190 } > .35
+            ratio(p.x - if (tallPhone) .079 else .065, p.y - if (tallPhone) .012 else .025, .004, if (tallPhone) .026 else .016) {
+                it.hue in 20..35 && it.saturation > 150 && it.value > 190
+            } > if (tallPhone) .18 else .35
         }.singleOrNull()
         // MAX-level partners show two buttons. Only the cyan Start button is actionable.
-        val raiseTarget = listOf(.5, .632).firstOrNull { cyan(it, .397, .085, .012) > .65 }
-            ?.let { NormalizedPoint(it, .4) }
+        val raiseY = if (tallPhone) .425 else .397
+        val raiseTarget = listOf(.5, .632).firstOrNull { cyan(it, raiseY, .085, .012) > .65 }
+            ?.let { NormalizedPoint(it, raiseY + .003) }
         return PartnerGrid(true, true, cells, raised, selected, raiseTarget != null, prompt, raiseTarget)
     }
 }

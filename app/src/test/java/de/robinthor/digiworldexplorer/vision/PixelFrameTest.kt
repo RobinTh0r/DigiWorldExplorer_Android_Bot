@@ -5,8 +5,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PixelFrameTest {
-    @Test fun `viewport centers a 9 by 16 game in tall capture`() {
-        assertEquals(GameViewport(0, 240, 1080, 1920), GameViewport.fit(1080, 2400))
+    @Test fun `viewport retains full adaptive game in tall capture`() {
+        assertEquals(GameViewport(0, 0, 1080, 2400), GameViewport.fit(1080, 2400))
     }
 
     @Test fun `viewport centers a 9 by 16 game in wide capture`() {

@@ -69,8 +69,12 @@ data class GameViewport(val left: Int, val top: Int, val width: Int, val height:
                 val gameWidth = (frameHeight * GAME_ASPECT).toInt().coerceAtLeast(1)
                 GameViewport((frameWidth - gameWidth) / 2, 0, gameWidth, frameHeight)
             } else {
-                val gameHeight = (frameWidth / GAME_ASPECT).toInt().coerceAtLeast(1)
-                GameViewport(0, (frameHeight - gameHeight) / 2, frameWidth, gameHeight)
+                // Modern phones can be taller than 16:9 and the game adapts its layout to the
+                // complete window (it does not add horizontal letterboxing). Cropping such a
+                // frame to a synthetic 9:16 canvas shifts every normalized tap vertically; on a
+                // 582x1280 OnePlus frame the Partner-grid '+' was consequently tapped ~90 px too
+                // high. Only wide frames need pillar-box removal; narrow frames are the viewport.
+                GameViewport(0, 0, frameWidth, frameHeight)
             }
         }
     }

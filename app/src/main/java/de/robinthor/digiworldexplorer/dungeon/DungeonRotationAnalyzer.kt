@@ -187,7 +187,8 @@ object DungeonRotationAnalyzer {
             return true
         }
         // Modal overlays dim the page header. Background cards never authorize navigation.
-        val header = frame.ratioInViewportPatch(v,NormalizedPoint(.65,.095),.10,.012) {
+        val headerY = if (v.width.toDouble() / v.height < .50) .128 else .095
+        val header = frame.ratioInViewportPatch(v,NormalizedPoint(.65,headerY),.10,.012) {
             val hsv=it.hsv(); hsv.hue in 90..115 && hsv.value >= 180 && hsv.saturation >= 90
         }
         val reading = if(header > .5) DungeonListDetector.detect(frame,v) else DungeonListReading(DungeonListPosition.NONE,emptyList())

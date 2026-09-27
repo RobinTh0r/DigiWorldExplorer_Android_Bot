@@ -13,6 +13,7 @@ object DungeonListDetector {
     private const val H = 320
 
     fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): DungeonListReading {
+        val tallPhone = viewport.width.toDouble() / viewport.height < .50
         val cyan = BooleanArray(W * H)
         for (y in 0 until H) for (x in 0 until W) {
             val hsv = frame.rgbAt(viewport.left + x * viewport.width / W, viewport.top + y * viewport.height / H).hsv()
@@ -22,7 +23,8 @@ object DungeonListDetector {
             // Dungeon cards are at least about 9% of the viewport high. The shorter cyan
             // DUNGEON header can otherwise be mistaken for card zero at the bottom position,
             // shifting DAILY onto Metal Sea.
-            it.pixels >= 75 && it.width.toDouble() / W in .66.. .86 && it.height.toDouble() / H in .09.. .24
+            it.pixels >= 75 && it.width.toDouble() / W in (if (tallPhone) .82.. .98 else .66.. .86) &&
+                it.height.toDouble() / H in .09.. .24
         }.sortedBy { it.top }
         if (components.size < 3) return DungeonListReading(DungeonListPosition.NONE, emptyList())
         val firstHeight = components.first().height.toDouble() / H

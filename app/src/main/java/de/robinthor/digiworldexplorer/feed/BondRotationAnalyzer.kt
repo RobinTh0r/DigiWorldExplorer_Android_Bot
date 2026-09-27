@@ -100,8 +100,8 @@ object BondRotationAnalyzer {
         }
         if (command == null) return owns
         val target = when (command.step) {
-            BondStep.OPEN -> NormalizedPoint(.254, .956)
-            BondStep.EXPAND -> NormalizedPoint(.823, .818)
+            BondStep.OPEN -> if (w.toDouble() / h < .50) NormalizedPoint(.205, .956) else NormalizedPoint(.254, .956)
+            BondStep.EXPAND -> if (w.toDouble() / h < .50) NormalizedPoint(.883, .827) else NormalizedPoint(.823, .818)
             BondStep.SELECT -> grid.cells.getOrNull(command.cell ?: -1)
             BondStep.RAISE -> grid.raiseTarget
             BondStep.CONFIRM -> NormalizedPoint(.634, .59)
