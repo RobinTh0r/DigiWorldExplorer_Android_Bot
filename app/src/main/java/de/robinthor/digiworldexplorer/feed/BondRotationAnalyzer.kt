@@ -100,8 +100,8 @@ object BondRotationAnalyzer {
         }
         if (command == null) return owns
         val target = when (command.step) {
-            BondStep.OPEN -> if (w.toDouble() / h < .50) NormalizedPoint(.205, .956) else NormalizedPoint(.254, .956)
-            BondStep.EXPAND -> if (w.toDouble() / h < .50) NormalizedPoint(.883, .827) else NormalizedPoint(.823, .818)
+            BondStep.OPEN -> if (tapViewportIsTall(w, h)) NormalizedPoint(.205, .956) else NormalizedPoint(.254, .956)
+            BondStep.EXPAND -> if (tapViewportIsTall(w, h)) NormalizedPoint(.883, .827) else NormalizedPoint(.823, .818)
             BondStep.SELECT -> grid.cells.getOrNull(command.cell ?: -1)
             BondStep.RAISE -> grid.raiseTarget
             BondStep.CONFIRM -> NormalizedPoint(.634, .59)
@@ -125,4 +125,6 @@ object BondRotationAnalyzer {
         matches = 0
         return true
     }
+
+    private fun tapViewportIsTall(width: Int, height: Int) = GameViewport.fit(width, height).usesTallPhoneLayout
 }

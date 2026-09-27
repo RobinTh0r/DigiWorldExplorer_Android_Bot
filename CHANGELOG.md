@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.0.2 Beta 1 — 27 September 2026
+
+- Added adaptive tall-phone coordinate mapping for current 19.5:9 and 20:9 Android displays.
+- Fixed Digi Co-Pilot opening the Partner roster but missing the `+` control or stopping on the expanded roster on OnePlus devices.
+- Added tall-layout Partner header, roster, active-partner and navigation detection shared by Galaxy S/Ultra, Pixel and OnePlus-class displays.
+- Fixed Dungeon Co-Pilot list recognition on tall phones, including the shifted Dungeon header and wider card geometry.
+- Kept the established 9:16 BlueStacks profile separate to avoid changing its proven targets.
+- Preview notice: Bond and Dungeon were verified against supplied OnePlus captures; Meat Field and reward flows use the corrected common viewport but still need supervised device testing.
+
 ## 5.0.1 — 27 September 2026
 
 - Digital World Search now recognizes varied partner sprites instead of depending on Botamon's yellow eyes. General shaded-body recognition supports forms such as WarGreymon and MetalGarurumon while retaining the existing eye detector and movement safeguards.

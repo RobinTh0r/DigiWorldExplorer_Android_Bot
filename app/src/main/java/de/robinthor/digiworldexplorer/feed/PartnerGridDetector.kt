@@ -11,7 +11,7 @@ data class PartnerGrid(val page: Boolean = false, val expanded: Boolean = false,
 object PartnerGridDetector {
     fun detect(frame: PixelFrame): PartnerGrid {
         val viewport = GameViewport.fit(frame.width, frame.height)
-        val tallPhone = viewport.width.toDouble() / viewport.height < .50
+        val tallPhone = viewport.usesTallPhoneLayout
         fun ratio(x: Double, y: Double, rx: Double, ry: Double, match: (Hsv) -> Boolean) =
             frame.ratioInViewportPatch(viewport, NormalizedPoint(x, y), rx, ry, 1) { match(it.hsv()) }
         fun cyan(x: Double, y: Double, rx: Double, ry: Double) = ratio(x, y, rx, ry) {

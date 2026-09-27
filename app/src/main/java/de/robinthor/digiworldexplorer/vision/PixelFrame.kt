@@ -58,6 +58,9 @@ data class GameViewport(val left: Int, val top: Int, val width: Int, val height:
         (left + (point.x.coerceIn(0.0, 1.0) * (width - 1)).toInt()) to
             (top + (point.y.coerceIn(0.0, 1.0) * (height - 1)).toInt())
 
+    /** Adaptive phone UI used by current 19.5:9 and 20:9 Galaxy, Pixel and OnePlus devices. */
+    val usesTallPhoneLayout: Boolean get() = width.toDouble() / height < .53
+
     companion object {
         private const val GAME_ASPECT = 9.0 / 16.0
 

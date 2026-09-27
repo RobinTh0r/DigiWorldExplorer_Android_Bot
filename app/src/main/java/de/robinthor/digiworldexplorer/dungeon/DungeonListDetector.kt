@@ -13,7 +13,7 @@ object DungeonListDetector {
     private const val H = 320
 
     fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): DungeonListReading {
-        val tallPhone = viewport.width.toDouble() / viewport.height < .50
+        val tallPhone = viewport.usesTallPhoneLayout
         val cyan = BooleanArray(W * H)
         for (y in 0 until H) for (x in 0 until W) {
             val hsv = frame.rgbAt(viewport.left + x * viewport.width / W, viewport.top + y * viewport.height / H).hsv()
