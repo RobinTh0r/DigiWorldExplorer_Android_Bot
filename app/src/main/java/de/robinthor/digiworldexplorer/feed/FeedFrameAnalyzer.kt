@@ -24,6 +24,8 @@ object FeedFrameAnalyzer {
 
     fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; lastCollectedAt = 0L }
     fun collectedSince(since: Long): Boolean = lastCollectedAt >= since && since > 0L
+    fun collectionSettledSince(since: Long, now: Long, settleMillis: Long = 1_000L): Boolean =
+        collectedSince(since) && now - lastCollectedAt >= settleMillis
 
     fun analyze(image: Image, width: Int, height: Int, homeAlreadyConfirmed: Boolean = false): Boolean {
         if (!AutomationState.autoFeedEnabled) { reset(); return false }

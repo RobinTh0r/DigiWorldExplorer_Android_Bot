@@ -13,7 +13,9 @@ object BondRotationAnalyzer {
     private var signature = ""
     private var matches = 0
     private var owns = false
-    fun reset() { rotation = BondRotation(); scanAt = 0; signature = ""; matches = 0; owns = false }
+    @Volatile private var fastPolling = false
+    fun reset() { rotation = BondRotation(); scanAt = 0; signature = ""; matches = 0; owns = false; fastPolling = false }
+    fun needsFastPolling() = fastPolling
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val forced = BondRotationRequest.active()
@@ -22,8 +24,9 @@ object BondRotationAnalyzer {
             reset(); return false
         }
         val now = SystemClock.elapsedRealtime()
+        fastPolling = rotation.fastBubblePolling(now)
         if (now < scanAt) return owns
-        scanAt = now + 500
+        scanAt = now + if (fastPolling) 100 else 500
         val plane = image.planes.firstOrNull() ?: return owns
         val w = minOf(width, image.width); val h = minOf(height, image.height)
         val bytes = plane.buffer
@@ -43,7 +46,9 @@ object BondRotationAnalyzer {
         val previous = rotation.step
         val bubble = home && BondBubbleDetector.detect(frame) != null
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
-            forced || BondCycleTimer.canStartBond(now), FeedFrameAnalyzer.collectedSince(rotation.collectStartedAt))
+            forced || BondCycleTimer.canStartBond(now),
+            FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now))
+        fastPolling = rotation.fastBubblePolling(now)
         if (matches == 3) android.util.Log.i(
             "DigiWorldBond",
             "probe step=${rotation.step} home=$home forced=$forced scheduled=$scheduled " +
@@ -54,7 +59,6 @@ object BondRotationAnalyzer {
         if (rotation.step == BondStep.COLLECT) {
             // This Home boundary was confirmed by the rotation itself. Delegating here avoids the
             // stricter passive Home fingerprint rejecting battle-animation frames with a bubble.
-            if (!rotation.bubbleScanReady(now)) return true
             return FeedFrameAnalyzer.analyze(image, w, h, homeAlreadyConfirmed = true)
         }
         if (previous != BondStep.REST && rotation.step == BondStep.REST) {

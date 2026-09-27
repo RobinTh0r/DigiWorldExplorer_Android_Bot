@@ -473,7 +473,12 @@ erfinde aber keine live getesteten Ergebnisse. Keine Veröffentlichung ohne geso
   Diaboromon-Strategie bleibt aktiv; es laufen keine zwei konkurrierenden Besitzer.
 - Classic VS/Tower Loop ist wieder als eigener Punkt in der Haupt-App sichtbar. Overlay-Aktionen und
   Optionen der Next-Gen-Module tragen eine gelbe BETA-Markierung.
-- Nach Live-Rückmeldung vor Release: Partner-COLLECT scannt frühestens fünf Sekunden nach Home und
-  bleibt bis 30 Sekunden offen. Der Digi-Co-Pilot aktiviert Bond und Meat Field als feste Kernkette.
-  Ein weiterhin sichtbarer Reward-Result-/Erhalten-Bildschirm erhält bis zu drei erneute, zeitlich
-  begrenzte Taps statt nach einem von Unity verschluckten Tap bis zum Timeout zu warten.
+- Nach Live-Rückmeldung: Partner-COLLECT scannt ab Home sofort für 15 Sekunden engmaschig (jeder
+  Capture-Frame, intern maximal alle 100 ms), tippt ausschließlich bei positiver Bubble-Erkennung
+  und wartet nach bestätigtem Tap eine Sekunde. Danach bleibt ein langsameres Sicherheitsfenster bis
+  30 Sekunden. Digi Co-Pilot respektiert die im Overlay aktivierten Module und schaltet Bond/Meat
+  nicht mehr selbst ein. Ein weiterhin sichtbarer Reward-Result-/Erhalten-Bildschirm erhält bis zu
+  drei erneute, zeitlich begrenzte Taps statt nach einem verschluckten Tap bis zum Timeout zu warten.
+- Apocalymon-Ursache gefunden: Sein Einzelknopf liegt mittig bei ca. x=.50/y=.756 und der Material-
+  zähler bei y=.708; der gemeinsame Detector erwartete die normale Zwei-Knopf-Geometrie x=.66/y=.70.
+  Eigene Geometrie ist implementiert, die Beta-2-Sperre bleibt bis zu einem Live-Test bestehen.

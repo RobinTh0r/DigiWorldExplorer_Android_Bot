@@ -42,6 +42,7 @@ import de.robinthor.digiworldexplorer.automation.DigiCopilotRequest
 import de.robinthor.digiworldexplorer.automation.BondCycleTimer
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
+import de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer
 import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
 import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.dungeon.DungeonFrameAnalyzer
@@ -263,7 +264,8 @@ class ScreenCaptureService : Service() {
                             (!digiCopilotOwns || BondCycleTimer.awaitingFarm())) {
                             de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.analyze(image, width, height)
                         },
-                        FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
+                        FrameProbe(FrameOwner.BOND, enabled = (featureFrame || BondRotationAnalyzer.needsFastPolling()) &&
+                            !DungeonFrameAnalyzer.isSessionActive()) {
                             de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.analyze(image, width, height)
                         },
                         FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {

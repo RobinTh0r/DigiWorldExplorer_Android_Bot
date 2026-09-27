@@ -280,21 +280,15 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 } else if (DungeonRotationRequest.ownsFrames()) {
                     service.showStatusOnly("Stop Dungeon Co-Pilot first")
                 } else {
-                    // Digi Co-Pilot means the complete core route. Do not silently skip Bond or
-                    // Meat Field merely because an older per-module preference was left off.
-                    AutomationState.autoBondRotationEnabled = true
-                    AutomationState.autoFarmEnabled = true
-                    preferences.edit()
-                        .putBoolean("auto_bond_rotation", true)
-                        .putBoolean("auto_farm_harvest", true)
-                        .apply()
-                    refreshFeatureSwitches()
                     de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.start()
-                    if (de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis() == 0L)
+                    if (AutomationState.autoBondRotationEnabled &&
+                        de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis() == 0L) {
                         de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
-                    else {
+                    } else if (AutomationState.autoFarmEnabled) {
                         de.robinthor.digiworldexplorer.automation.BondCycleTimer.requestFarmRecovery()
                         de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.requestVisit()
+                    } else {
+                        de.robinthor.digiworldexplorer.automation.HomeIdleRewardRequest.start()
                     }
                     service.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
                 }

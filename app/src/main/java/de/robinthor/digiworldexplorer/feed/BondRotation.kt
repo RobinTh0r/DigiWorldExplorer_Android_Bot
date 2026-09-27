@@ -14,7 +14,7 @@ class BondRotation {
     private var target: Int? = null
     private var deadline = 0L
     private var collectUntil = 0L
-    private var collectScanFrom = 0L
+    private var collectFastUntil = 0L
     private var nextBubbleArmed = false
     private var issuedAt = 0L
     private var retries = 0
@@ -39,9 +39,9 @@ class BondRotation {
             // A failed/restarting stage hides the bubble for roughly 3–10 seconds. Keep a clear
             // safety margin without stalling every partner for 90 seconds when no bubble exists.
             // The detector still requires verified Home and stable bubble evidence before tapping.
-            // Let the stage settle before scanning. On slower devices the bubble is hidden by
-            // defeat/restart animation for several seconds and an immediate scan races that UI.
-            collectScanFrom = now + 5_000
+            // Scan immediately and frequently while the short-lived bubble can appear. Never tap
+            // from this timer alone: FeedFrameAnalyzer still requires positive bubble evidence.
+            collectFastUntil = now + 15_000
             collectUntil = now + 30_000
             deadline = collectUntil + 10_000
             bubbleSeenDuringCollect = false
@@ -98,7 +98,7 @@ class BondRotation {
     }
 
     fun ownsFrame() = step !in setOf(BondStep.IDLE, BondStep.COLLECT, BondStep.REST)
-    fun bubbleScanReady(now: Long) = step == BondStep.COLLECT && now >= collectScanFrom
+    fun fastBubblePolling(now: Long) = step == BondStep.COLLECT && now < collectFastUntil
     fun cancel() { step = BondStep.PARK }
     private fun issue(next: BondStep, now: Long, cell: Int? = null): BondCommand {
         step = next; deadline = now + 25_000; issuedAt = now; retries = 0

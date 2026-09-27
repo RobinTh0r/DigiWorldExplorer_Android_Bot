@@ -18,12 +18,13 @@
 ## Digi Co-Pilot, Bond and Meat Field (Beta)
 
 - Runs the 15-partner Bond rotation, restores the starting partner and keeps the 20-minute timer.
-- Waits at least five seconds after each partner switch before scanning for the animated Bond bubble
-  and keeps a longer bounded search window, reducing skipped bubbles on slower stage transitions.
+- Scans immediately and at high frequency for the first 15 seconds after each partner switch, but
+  taps only after positive Bubble detection. It waits another second after a confirmed tap before
+  opening the next partner and keeps a slower bounded fallback window afterward.
 - Can continue with Meat Field, Home rewards and an optional bounded Digital World Search phase.
 - Meat Field harvests, replants and prioritizes available watering actions.
-- Starting Digi Co-Pilot now enables its Bond and Meat Field core route instead of silently skipping
-  a step because an older per-module preference was disabled.
+- Digi Co-Pilot respects the modules selected in the overlay instead of silently enabling Bond or
+  Meat Field. Disabled modules are skipped deliberately.
 - Reward result/receive screens are retried at a bounded interval when the game swallows the first tap.
 
 ## UI and controls

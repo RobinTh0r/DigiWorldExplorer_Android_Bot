@@ -11,7 +11,12 @@ object DungeonPanelDetector {
             val h = it.hsv()
             h.value >= 150 && h.saturation >= 100 && if (purple) h.hue in 120..155 else h.hue in 90..115
         }
-        val titleY = when(key) { DungeonKey.NETWORK_DEFENSE, DungeonKey.DAILY -> .196; DungeonKey.METAL_SEA -> .186; else -> .234 }
+        val titleY = when(key) {
+            DungeonKey.APOCALYMON_WALL -> .208
+            DungeonKey.NETWORK_DEFENSE, DungeonKey.DAILY -> .196
+            DungeonKey.METAL_SEA -> .186
+            else -> .234
+        }
         val title = frame.ratioInViewportPatch(v,NormalizedPoint(.5,titleY),.22,.018) {
             val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
         }
@@ -21,8 +26,18 @@ object DungeonPanelDetector {
             if (color(.61,.59) > .45 && color(.34,.59, true) > .45)
                 return DungeonPanel("network_leave", NormalizedPoint(.64,.59))
         }
-        val y = when(key) { DungeonKey.NETWORK_DEFENSE, DungeonKey.DAILY -> .790; DungeonKey.METAL_SEA -> .746; else -> .700 }
-        val ticketY = when(key) { DungeonKey.NETWORK_DEFENSE, DungeonKey.DAILY -> .145; DungeonKey.METAL_SEA -> .690; else -> .644 }
+        val y = when(key) {
+            DungeonKey.APOCALYMON_WALL -> .756
+            DungeonKey.NETWORK_DEFENSE, DungeonKey.DAILY -> .790
+            DungeonKey.METAL_SEA -> .746
+            else -> .700
+        }
+        val ticketY = when(key) {
+            DungeonKey.APOCALYMON_WALL -> .708
+            DungeonKey.NETWORK_DEFENSE, DungeonKey.DAILY -> .145
+            DungeonKey.METAL_SEA -> .690
+            else -> .644
+        }
         val ticketX = if (key == DungeonKey.NETWORK_DEFENSE || key == DungeonKey.DAILY) .802 else .480
         val tickets = number(frame, v, ticketX, ticketX + .078, ticketY)
         if (key == DungeonKey.DAILY && color(.41,y,true) > .45)
@@ -33,7 +48,11 @@ object DungeonPanelDetector {
             if (color(.59,.570) > .45)
                 return DungeonPanel("network_challenge", NormalizedPoint(.65,.57), tickets)
             if (color(.41,.79) > .45) return DungeonPanel("network_matching", NormalizedPoint(.5,.79), tickets)
-        } else if (color(.59,y) > .45) return DungeonPanel("challenge", NormalizedPoint(.66,y), tickets)
+        } else if (color(.59,y) > .45) return DungeonPanel(
+            "challenge",
+            if (key == DungeonKey.APOCALYMON_WALL) NormalizedPoint(.50, y) else NormalizedPoint(.66, y),
+            tickets,
+        )
         return null
     }
 
