@@ -74,7 +74,11 @@ object BondFarmAnalyzer {
             FarmHarvestAnalyzer.visitComplete, FeedFrameAnalyzer.isBusy(), now)
         if (cycle.consumeReturnedHome()) {
             BondCycleTimer.farmReturnedHome(now)
-            HomeIdleRewardRequest.start()
+            when {
+                AutomationState.copilotRewardsEnabled -> HomeIdleRewardRequest.start()
+                AutomationState.copilotDwsEnabled -> DwsExcursionRequest.start()
+                else -> DigiCopilotRequest.stop("Selected modules complete")
+            }
         }
         if (step == CycleStep.PARK && seen == CycleScreen.FIELD && BondCycleTimer.awaitingFarm()) {
             blocked = false

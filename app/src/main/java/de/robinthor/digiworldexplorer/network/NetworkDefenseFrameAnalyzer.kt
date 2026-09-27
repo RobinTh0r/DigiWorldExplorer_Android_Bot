@@ -85,9 +85,16 @@ object NetworkDefenseFrameAnalyzer {
             if (!sessionActive) return false
             sessionActive = true
             lastEvidenceAt = now
-            finalBossArmed = true
             lastBossSeen = now
             lastScreen = NetworkDefenseScreen.FINAL_BOSS
+            if (!shouldGiveUpAtFinalBoss(rotationOwned)) {
+                // Dungeon Co-Pilot must finish the Diaboromon attempt. Giving up at the final boss
+                // is exclusively the Classic Network Defense farming strategy.
+                finalBossArmed = false
+                showStatus(R.string.overlay_network_waiting)
+                return true
+            }
+            finalBossArmed = true
             showStatus(R.string.overlay_network_give_up)
             if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
             return true
@@ -111,7 +118,7 @@ object NetworkDefenseFrameAnalyzer {
         if (detection.screen == NetworkDefenseScreen.BATTLE) {
             lastEvidenceAt = now
             lastScreen = NetworkDefenseScreen.BATTLE
-            if (finalBossArmed) {
+            if (finalBossArmed && shouldGiveUpAtFinalBoss(rotationOwned)) {
                 lastBossSeen = now
                 showStatus(R.string.overlay_network_give_up)
                 if (AutomationState.enabled) tryTap(detection, now, BOSS_RETRY_INTERVAL)
@@ -163,6 +170,8 @@ object NetworkDefenseFrameAnalyzer {
     private fun showStatus(stringId: Int) {
         DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(stringId)) }
     }
+
+    internal fun shouldGiveUpAtFinalBoss(rotationOwned: Boolean): Boolean = !rotationOwned
 
     fun reset() {
         sessionActive = false

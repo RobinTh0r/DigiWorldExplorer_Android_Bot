@@ -482,3 +482,9 @@ erfinde aber keine live getesteten Ergebnisse. Keine Veröffentlichung ohne geso
 - Apocalymon-Ursache gefunden: Sein Einzelknopf liegt mittig bei ca. x=.50/y=.756 und der Material-
   zähler bei y=.708; der gemeinsame Detector erwartete die normale Zwei-Knopf-Geometrie x=.66/y=.70.
   Eigene Geometrie ist implementiert, die Beta-2-Sperre bleibt bis zu einem Live-Test bestehen.
+- Diaboromon-Abbruch war trotz deaktiviertem Classic-Schalter fest im delegierten Network-Analyzer:
+  `rotationOwned=true` umging zwar den Feature-Schalter, erbte aber weiterhin den Aufgeben-Tap.
+  Jetzt gibt nur der Classic Network-Defense-Loop auf; Dungeon Co-Pilot wartet durch Endboss und
+  Kampf bis zur bestätigten Rückkehr. Ein Ownership-Regressionstest hält diese Trennung fest.
+- Overlay hat nun auch `Home-Belohnungen` als eigenen Beta-Schalter. Digi Co-Pilot startet nur die
+  ausgewählten Module Bond, Meat Field, Home-Belohnungen und DWS; bei leerer Auswahl startet er nicht.

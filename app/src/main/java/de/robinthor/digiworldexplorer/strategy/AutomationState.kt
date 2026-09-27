@@ -12,6 +12,7 @@ object AutomationState {
  @Volatile var autoBondRotationEnabled=false
  @Volatile var autoRunnerEnabled=false
  @Volatile var autoFarmEnabled=false
+ @Volatile var copilotRewardsEnabled=true
  @Volatile var copilotDwsEnabled=false
  @Volatile var farmWateringEnabled=true
  @Volatile var adSkipPassEnabled=false

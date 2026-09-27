@@ -235,6 +235,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
         addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
         addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
+        addView(featureToggle("Home-Belohnungen", "copilot_rewards", AutomationState.copilotRewardsEnabled, density, beta = true))
         addView(featureToggle("DWS im Digi Co-Pilot (5 min)", "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
         addView(actionButton("Statusanzeige ein / aus") { toggleDirectorCard(); collapse() },
@@ -287,8 +288,15 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                     } else if (AutomationState.autoFarmEnabled) {
                         de.robinthor.digiworldexplorer.automation.BondCycleTimer.requestFarmRecovery()
                         de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.requestVisit()
-                    } else {
+                    } else if (AutomationState.copilotRewardsEnabled) {
                         de.robinthor.digiworldexplorer.automation.HomeIdleRewardRequest.start()
+                    } else if (AutomationState.copilotDwsEnabled) {
+                        de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.start()
+                    } else {
+                        de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("No modules selected")
+                        service.showStatusOnly("Digi Co-Pilot: select at least one module")
+                        collapse()
+                        return@actionButton
                     }
                     service.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
                 }
@@ -364,6 +372,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
                 featureSwitches[preferenceKey]?.isChecked = allowed
             }
+            "copilot_rewards" -> {
+                val allowed = enabled && SupporterLicenseManager.load(service) != null
+                AutomationState.copilotRewardsEnabled = allowed
+                if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
+                featureSwitches[preferenceKey]?.isChecked = allowed
+            }
             "auto_bond_rotation" -> {
                 val allowed = enabled && SupporterLicenseManager.load(service) != null
                 AutomationState.autoBondRotationEnabled = allowed
@@ -387,6 +401,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         featureSwitches["auto_feed"]?.isChecked = preferences.getBoolean("auto_feed", false)
         featureSwitches["auto_bond_rotation"]?.isChecked = supporter && preferences.getBoolean("auto_bond_rotation", false)
         featureSwitches["auto_farm_harvest"]?.isChecked = supporter && preferences.getBoolean("auto_farm_harvest", false)
+        featureSwitches["copilot_rewards"]?.isChecked = supporter && preferences.getBoolean("copilot_rewards", true)
         featureSwitches["copilot_dws"]?.isChecked = supporter && preferences.getBoolean("copilot_dws", false)
         featureSwitches["auto_network_defense"]?.isChecked = preferences.getBoolean("auto_network_defense", false)
         syncingFeatureSwitches = false
@@ -416,6 +431,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         AutomationState.autoNetworkDefenseEnabled = preferences.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = preferences.getBoolean("auto_feed", false)
         AutomationState.autoBondRotationEnabled = supporter && preferences.getBoolean("auto_bond_rotation", false)
+        AutomationState.copilotRewardsEnabled = supporter && preferences.getBoolean("copilot_rewards", true)
         AutomationState.copilotDwsEnabled = supporter && preferences.getBoolean("copilot_dws", false)
         AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", false)
         AutomationState.dwsNavigationSettings = AutomationState.dwsNavigationSettings.copy(blindStageFailedTap = true)

@@ -65,9 +65,15 @@ object BondRotationAnalyzer {
             BondRotationRequest.complete()
             BondCycleTimer.bondCompleted(now)
             if (AutomationState.autoFarmEnabled) BondFarmAnalyzer.requestVisit()
-            else {
+            else if (AutomationState.copilotRewardsEnabled) {
                 BondCycleTimer.farmReturnedHome(now)
                 HomeIdleRewardRequest.start()
+            } else if (AutomationState.copilotDwsEnabled) {
+                BondCycleTimer.farmReturnedHome(now)
+                DwsExcursionRequest.start()
+            } else {
+                BondCycleTimer.farmReturnedHome(now)
+                DigiCopilotRequest.stop("Selected modules complete")
             }
             android.util.Log.i("DigiWorldBond", "complete visited=${rotation.visited} restored=${rotation.original}; waiting for next bubble after farm")
         }

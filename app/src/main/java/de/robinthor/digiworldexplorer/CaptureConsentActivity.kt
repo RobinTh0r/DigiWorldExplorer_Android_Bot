@@ -66,6 +66,7 @@ class CaptureConsentActivity : ComponentActivity() {
         AutomationState.autoNetworkDefenseEnabled = settings.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = settings.getBoolean("auto_feed", false)
         AutomationState.autoBondRotationEnabled = supporter && settings.getBoolean("auto_bond_rotation", false)
+        AutomationState.copilotRewardsEnabled = supporter && settings.getBoolean("copilot_rewards", true)
         AutomationState.copilotDwsEnabled = supporter && settings.getBoolean("copilot_dws", false)
         AutomationState.autoFarmEnabled = supporter && settings.getBoolean("auto_farm_harvest", false)
         AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
