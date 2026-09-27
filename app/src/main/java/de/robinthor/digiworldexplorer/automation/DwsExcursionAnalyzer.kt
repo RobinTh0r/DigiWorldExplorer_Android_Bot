@@ -40,10 +40,15 @@ object DwsExcursionAnalyzer {
         if (!DwsExcursionRequest.active()) return false
         val plane = image.planes.firstOrNull() ?: return true
         val w = minOf(width, image.width); val h = minOf(height, image.height)
-        if (plane.pixelStride < 3 || w <= 0 || h <= 0) return true
+        // Snapshot plane metadata while the Image is unquestionably open. Reading rowStride or
+        // pixelStride lazily from PixelFrame's callback can race ImageReader closing the frame.
+        val rowStride = plane.rowStride
+        val pixelStride = plane.pixelStride
         val bytes = plane.buffer
+        if (pixelStride < 3 || w <= 0 || h <= 0 ||
+            (h - 1L) * rowStride + (w - 1L) * pixelStride + 2 >= bytes.limit()) return true
         val frame = PixelFrame(w, h) { x, y ->
-            val i = y * plane.rowStride + x * plane.pixelStride
+            val i = y * rowStride + x * pixelStride
             (255 shl 24) or ((bytes.get(i).toInt() and 255) shl 16) or
                 ((bytes.get(i + 1).toInt() and 255) shl 8) or (bytes.get(i + 2).toInt() and 255)
         }

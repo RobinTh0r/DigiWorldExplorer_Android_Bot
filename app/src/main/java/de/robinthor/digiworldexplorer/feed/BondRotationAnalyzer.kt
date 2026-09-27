@@ -42,13 +42,19 @@ object BondRotationAnalyzer {
         val grid = PartnerGridDetector.detect(frame)
         val key = "$home|${grid.page}|${grid.expanded}|${grid.raised}|${grid.selected}|${grid.canRaise}|${grid.confirmation}"
         if (key == signature) matches++ else { signature = key; matches = 1 }
-        if (matches < 3) return owns
+        // A short-lived bubble must not wait for three identical scene classifications.
+        if (matches < 3 && rotation.step != BondStep.COLLECT) return owns
         val previous = rotation.step
         val bubble = home && BondBubbleDetector.detect(frame) != null
-        val collectedSettled = FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now)
+        // Evidence belongs to the current COLLECT only. On HOME entry the timestamp still
+        // belongs to the previous partner until tick() starts the new collection window.
+        val collectedSettled = previous == BondStep.COLLECT &&
+            FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now)
+        val fallbackSettled = previous == BondStep.COLLECT &&
+            FeedFrameAnalyzer.fallbackSettledSince(rotation.collectStartedAt, now)
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
             forced || BondCycleTimer.canStartBond(now),
-            collectedSettled)
+            collectedSettled, fallbackSettled)
         fastPolling = rotation.fastBubblePolling(now)
         if (matches == 3) android.util.Log.i(
             "DigiWorldBond",
@@ -67,6 +73,7 @@ object BondRotationAnalyzer {
             // Once a tap has been accepted, freeze collection until its one-second settle period
             // completes instead of tapping the still-visible animated bubble again.
             if (FeedFrameAnalyzer.collectedSince(rotation.collectStartedAt)) return true
+            if (!home) return true
             return FeedFrameAnalyzer.analyze(image, w, h, homeAlreadyConfirmed = true, rotationOwned = true)
         }
         if (previous != BondStep.REST && rotation.step == BondStep.REST) {

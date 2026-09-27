@@ -23,10 +23,13 @@ object FeedFrameAnalyzer {
     private var rotationFallbackAt = 0L
     private var rotationFallbackIndex = 0
     @Volatile private var lastCollectedAt = 0L
+    private var fallbackFinishedAt = 0L
 
     fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; rotationFallbackAt = 0L; rotationFallbackIndex = 0; lastCollectedAt = 0L }
     fun collectedSince(since: Long): Boolean = lastCollectedAt >= since && since > 0L
-    fun collectionSettledSince(since: Long, now: Long, settleMillis: Long = 1_000L): Boolean =
+    fun fallbackSettledSince(since: Long, now: Long): Boolean =
+        since > 0L && fallbackFinishedAt >= since && now - fallbackFinishedAt >= 1_500L
+    fun collectionSettledSince(since: Long, now: Long, settleMillis: Long = 1_500L): Boolean =
         collectedSince(since) && now - lastCollectedAt >= settleMillis
 
     fun analyze(image: Image, width: Int, height: Int, homeAlreadyConfirmed: Boolean = false, rotationOwned: Boolean = false): Boolean {
@@ -59,17 +62,14 @@ object FeedFrameAnalyzer {
             tapsLeft = 0
             if (rotationOwned && homeAlreadyConfirmed && now >= rotationFallbackAt &&
                 rotationFallbackIndex < ROTATION_FALLBACK_POINTS.size) {
+                val service = DigiWorldAccessibilityService.instance ?: return true
                 val target = ROTATION_FALLBACK_POINTS[rotationFallbackIndex++]
                 rotationFallbackAt = now + 420L
                 val (x, y) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width, height).pixel(target)
                 android.util.Log.i("DigiWorldBond", "collect fallback ${rotationFallbackIndex}/${ROTATION_FALLBACK_POINTS.size} at=$x,$y")
-                DigiWorldAccessibilityService.instance?.dispatchSafeRandomizedTap(x.toFloat(), y.toFloat()) { }
-                if (rotationFallbackIndex == ROTATION_FALLBACK_POINTS.size) {
-                    // The detector can miss the animated/partly covered panel even though one of
-                    // these bounded Home-only taps collected it. Give the game the same settle
-                    // time as a visually detected collection, then continue the tour.
-                    lastCollectedAt = now
-                }
+                service.dispatchSafeRandomizedTap(x.toFloat(), y.toFloat()) { }
+                if (rotationFallbackIndex == ROTATION_FALLBACK_POINTS.size) fallbackFinishedAt = now
+                // A blind fallback never proves that a token was collected.
             }
             return true
         }
@@ -81,6 +81,16 @@ object FeedFrameAnalyzer {
         else stableFrames=1
         lastX=cx; lastY=cy
         lastBubbleSeenAt=now
+        if (rotationOwned) {
+            if (lastCollectedAt == 0L) {
+                DigiWorldAccessibilityService.instance?.let { service ->
+                    lastCollectedAt = now
+                    android.util.Log.i("DigiWorldBond", "collect detected bubble=$cx,$cy; settling 1500ms")
+                    service.dispatchSafeRandomizedTap(cx, cy) { }
+                }
+            }
+            return true
+        }
         if (progressSequence(now)) return true
         // The bubble can be exposed for only one sampled frame while a failed stage restarts.
         // In this branch both the caller and the Home detector have already established the
@@ -93,13 +103,15 @@ object FeedFrameAnalyzer {
     }
 
     fun allowImmediateScan() {
+        fallbackFinishedAt = 0L
+        lastCollectedAt = 0L
         stableFrames = 0
         mainScreenFrames = 0
         cooldownUntil = 0L
         lastBubbleSeenAt = 0L
         // Prefer visual evidence first. Only sweep the known stage bubble corridor when the
         // rotation has remained on its already verified Home boundary for a short grace period.
-        rotationFallbackAt = SystemClock.elapsedRealtime() + 2_000L
+        rotationFallbackAt = SystemClock.elapsedRealtime() + 6_000L
         rotationFallbackIndex = 0
     }
 

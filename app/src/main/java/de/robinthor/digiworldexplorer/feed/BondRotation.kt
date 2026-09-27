@@ -23,7 +23,8 @@ class BondRotation {
     private var bubbleSeenDuringCollect = false
 
     fun tick(home: Boolean, grid: PartnerGrid, feedBusy: Boolean, now: Long, bubbleVisible: Boolean = false,
-        cycleReady: Boolean = true, bubbleCollected: Boolean = false): BondCommand? {
+        cycleReady: Boolean = true, bubbleCollected: Boolean = false,
+        fallbackFinished: Boolean = false): BondCommand? {
         if (step == BondStep.PARK) return null
         if (step in setOf(BondStep.IDLE, BondStep.REST)) {
             if (!home || feedBusy || !cycleReady) return null
@@ -49,10 +50,14 @@ class BondRotation {
         }
         if (step == BondStep.COLLECT) {
             // Farm may interrupt only here. Resume on Home without losing the original partner.
+            if (bubbleVisible && !bubbleSeenDuringCollect) {
+                collectUntil = maxOf(collectUntil, now + 20_000L)
+                deadline = collectUntil + 10_000L
+            }
             bubbleSeenDuringCollect = bubbleSeenDuringCollect || bubbleVisible
             // A visually confirmed tap is stronger evidence than the transient Home classifier:
             // the collection animation can cover the stable Home icons for several seconds.
-            if (bubbleCollected && !feedBusy) {
+            if ((bubbleCollected || (fallbackFinished && home && !bubbleVisible)) && !feedBusy) {
                 if (visited == 15) {
                     step = BondStep.REST
                     nextBubbleArmed = !bubbleVisible
