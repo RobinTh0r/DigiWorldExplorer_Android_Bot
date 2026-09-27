@@ -219,6 +219,16 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         params = null
     }
 
+    fun setDirectorCardVisible(visible: Boolean) {
+        preferences.edit().putBoolean("director_card_visible", visible).apply()
+        root?.post {
+            directorCard?.visibility = if (visible) View.VISIBLE else View.GONE
+            directorTail?.visibility = if (visible) View.VISIBLE else View.GONE
+            root?.requestLayout()
+            params?.let { layout -> root?.let { runCatching { windowManager.updateViewLayout(it, layout) } } }
+        }
+    }
+
     fun refresh() {
         root?.post {
             bubble?.alpha = if (AutomationState.enabled) 1f else .78f
@@ -594,11 +604,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     private fun toggleDirectorCard() {
         val card = directorCard ?: return
-        val visible = card.visibility != View.VISIBLE
-        card.visibility = if (visible) View.VISIBLE else View.GONE
-        directorTail?.visibility = card.visibility
-        preferences.edit().putBoolean("director_card_visible", visible).apply()
-        root?.requestLayout()
+        setDirectorCardVisible(card.visibility != View.VISIBLE)
     }
 
     private fun togglePanel(layoutParams: WindowManager.LayoutParams) {

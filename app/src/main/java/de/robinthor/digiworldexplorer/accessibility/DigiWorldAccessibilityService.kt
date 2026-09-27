@@ -52,6 +52,10 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   if(enabled&&SupporterLicenseManager.load(this)!=null){if(quickControls==null)quickControls=QuickControlOverlay(this).also{it.show()}}
   else{quickControls?.destroy();quickControls=null}
  }
+ fun setQuickStatusVisible(visible:Boolean){
+  getSharedPreferences("settings",MODE_PRIVATE).edit().putBoolean("director_card_visible",visible).apply()
+  quickControls?.setDirectorCardVisible(visible)
+ }
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
  fun updateStatusKeepingGrid(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{this.status=status;director=snapshot;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  fun showStatusOnly(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;director=snapshot;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
@@ -70,7 +74,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   // CellClassifier und PreviewClassifier lassen an jeder Zellkante 7% Rand aus. Linien liegen auf den
   // Zellgrenzen, Boxen bei 3,5% Einrückung, jeweils inklusive halber Strichstärke unter 6%. Dadurch
   // darf das Overlay dauerhaft sichtbar bleiben und muss für die Analyse nicht mehr ausgeblendet werden.
-  override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;if(quickControls==null)drawDirectorCard(c);val b=bounds
+  override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;val b=bounds
    if(b==null)return
    val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;val unit=minOf(cw,ch)
    p.pathEffect=null;p.style=Paint.Style.STROKE;p.color=Color.GREEN;p.strokeWidth=unit*.025f;for(i in 0..5){c.drawLine(b.left+i*cw,b.top.toFloat(),b.left+i*cw,b.bottom.toFloat(),p);c.drawLine(b.left.toFloat(),b.top+i*ch,b.right.toFloat(),b.top+i*ch,p)}
@@ -90,26 +94,6 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,b.left.toFloat(),ty,p)
    p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,b.left.toFloat(),ty,p)
 }
-  private fun drawDirectorCard(c:Canvas){
-   val density=resources.displayMetrics.density;val left=10f*density
-   // Farm counters occupy the normal top-left card area. Once the Director proves the field,
-   // move below the HUD so capture-based seed reading remains unobstructed.
-   val farmScreen=director.screen==de.robinthor.digiworldexplorer.automation.ObservedScreen.MEAT_FIELD||director.screen==de.robinthor.digiworldexplorer.automation.ObservedScreen.MEAT_FIELD_DIALOG
-   val top=(if(farmScreen)110f else 48f)*density
-   val cardWidth=minOf(width-left*2,250f*density);val cardHeight=66f*density
-   p.pathEffect=null;p.style=Paint.Style.FILL;p.color=Color.argb(224,16,24,38)
-   c.drawRoundRect(left,top,left+cardWidth,top+cardHeight,12f*density,12f*density,p)
-   p.style=Paint.Style.STROKE;p.strokeWidth=1.5f*density;p.color=when(director.state){"Active"->Color.rgb(46,204,146);"Paused"->Color.rgb(244,173,66);else->Color.rgb(67,190,198)}
-   c.drawRoundRect(left,top,left+cardWidth,top+cardHeight,12f*density,12f*density,p)
-   val dotX=left+14f*density;val dotY=top+16f*density;p.style=Paint.Style.FILL;c.drawCircle(dotX,dotY,4f*density,p)
-   p.typeface=Typeface.create(Typeface.DEFAULT,Typeface.BOLD);p.textSize=12f*density;p.color=Color.WHITE
-   c.drawText(director.state,left+24f*density,top+18f*density,p)
-   p.typeface=Typeface.create(Typeface.DEFAULT,Typeface.NORMAL);p.textSize=11f*density;p.color=Color.rgb(190,204,219)
-   c.drawText("Screen: ${director.screen.label}",left+12f*density,top+37f*density,p)
-   val rawAction=if((director.action.isBlank()||director.action=="No action")&&de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active())"Warten auf nächste Rotation" else director.action.ifBlank{"No action"}
-   val action=rawAction.let{if(it.length>32)it.take(31)+"…" else it}
-   p.textSize=10f*density;p.color=Color.rgb(150,229,224);c.drawText("Action: $action",left+12f*density,top+54f*density,p)
-  }
  }
  companion object{@Volatile var instance:DigiWorldAccessibilityService?=null;private set}
 }

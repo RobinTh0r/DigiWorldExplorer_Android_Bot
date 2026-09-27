@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
     private var preReleaseUpdates by mutableStateOf(false)
     private var darkMode by mutableStateOf(false)
     private var quickOverlayEnabled by mutableStateOf(false)
+    private var quickStatusVisible by mutableStateOf(true)
     private var supporterLicense by mutableStateOf<SupporterLicense?>(null)
     private var showLicenseDialog by mutableStateOf(false)
     private var showReleaseNotes by mutableStateOf(false)
@@ -147,6 +148,7 @@ class MainActivity : ComponentActivity() {
         supporterLicense = SupporterLicenseManager.load(this)
         autoDungeon = supporterLicense != null && settings.getBoolean("auto_dungeon", true)
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
+        quickStatusVisible = settings.getBoolean("director_card_visible", true)
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
         autoFeed = settings.getBoolean("auto_feed", false)
         autoRunner = false
@@ -227,7 +229,7 @@ class MainActivity : ComponentActivity() {
             )
             MaterialTheme(colorScheme = colors) { Surface(Modifier.fillMaxSize(), color = colors.background) {
             ControlScreen(
-                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, autoRunner, automationMode, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, darkMode, quickOverlayEnabled, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, autoRunner, automationMode, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, darkMode, quickOverlayEnabled, quickStatusVisible, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
                 onBattery = ::requestBatteryOptimizationExemption,
@@ -315,6 +317,11 @@ class MainActivity : ComponentActivity() {
                         Toast.makeText(this, getString(R.string.quick_overlay_reconnect_accessibility), Toast.LENGTH_LONG).show()
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
+                },
+                onQuickStatus = { visible ->
+                    quickStatusVisible = visible
+                    settings.edit().putBoolean("director_card_visible", visible).apply()
+                    DigiWorldAccessibilityService.instance?.setQuickStatusVisible(visible)
                 },
                 onStart = ::requestAutomationStart,
                 onReturnToGame = ::bringGameToForeground,
@@ -471,7 +478,16 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (isFinishing && !isChangingConfigurations) ScreenCaptureService.stop(this)
+        if (isFinishing && !isChangingConfigurations) {
+            ScreenCaptureService.stop(this)
+            // Closing the actual app task also closes its floating UI. Keep the preferences so
+            // opening the app again can restore the user's chosen icon/status configuration.
+            DigiWorldAccessibilityService.instance?.apply {
+                setQuickControlsEnabled(false)
+                clearCalibrationOverlay()
+                setOverlayEnabled(false)
+            }
+        }
         super.onDestroy()
     }
 
@@ -502,12 +518,20 @@ class MainActivity : ComponentActivity() {
         AutomationState.mode = automationMode
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
+        quickStatusVisible = settings.getBoolean("director_card_visible", true)
+        // The service outlives the Activity. Restore transiently hidden overlays when the user
+        // opens the main app again, without requiring an Accessibility reconnect.
+        DigiWorldAccessibilityService.instance?.apply {
+            setQuickControlsEnabled(quickOverlayEnabled)
+            setQuickStatusVisible(quickStatusVisible)
+            setOverlayEnabled(grid)
+        }
         refreshPermissions()
         window.decorView.postDelayed({ if (!isFinishing) refreshPermissions() }, 500L)
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, autoRunner: Boolean, automationMode: AutomationMode, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, darkMode: Boolean, quickOverlayEnabled: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onAutoRunner: (Boolean) -> Unit, onAutomationMode: (AutomationMode) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onDarkMode: (Boolean) -> Unit, onQuickOverlay: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, autoRunner: Boolean, automationMode: AutomationMode, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, darkMode: Boolean, quickOverlayEnabled: Boolean, quickStatusVisible: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onAutoRunner: (Boolean) -> Unit, onAutomationMode: (AutomationMode) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onDarkMode: (Boolean) -> Unit, onQuickOverlay: (Boolean) -> Unit, onQuickStatus: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     var setupExpanded by remember { mutableStateOf(!(access && overlay && batteryExempt)) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
@@ -613,48 +637,48 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 }
             }
         }
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.fillMaxWidth().height(44.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             OutlinedButton(
                 onClick = { onQuickOverlay(!quickOverlayEnabled) },
-                modifier = Modifier.weight(1.15f),
+                modifier = Modifier.weight(1.15f).fillMaxHeight(),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = betaContainerColor(),
                     contentColor = betaContentColor(),
                 ),
                 border = BorderStroke(1.5.dp, betaBorderColor()),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 7.dp),
+                contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_launcher_foreground),
                     contentDescription = null,
-                    modifier = Modifier.size(21.dp).alpha(if (quickOverlayEnabled) 1f else .24f),
+                    modifier = Modifier.size(18.dp).alpha(if (quickOverlayEnabled) 1f else .24f),
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(stringResource(if (quickOverlayEnabled) R.string.quick_overlay_disable else R.string.quick_overlay_enable), fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                Spacer(Modifier.width(5.dp))
-                BetaChip()
+                Spacer(Modifier.width(3.dp))
+                Text("BETA", fontSize = 7.sp, fontWeight = FontWeight.Bold, color = betaContentColor())
             }
             OutlinedButton(
-                onClick = onGrid,
-                enabled = overlay,
-                modifier = Modifier.weight(1.05f),
+                onClick = { onQuickStatus(!quickStatusVisible) },
+                enabled = quickOverlayEnabled,
+                modifier = Modifier.weight(1.05f).fillMaxHeight(),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (grid) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    containerColor = if (quickStatusVisible) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
-                border = BorderStroke(1.dp, if (grid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
-                contentPadding = PaddingValues(horizontal = 5.dp, vertical = 7.dp),
+                border = BorderStroke(1.dp, if (quickStatusVisible) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                contentPadding = PaddingValues(horizontal = 5.dp, vertical = 0.dp),
             ) {
-                Text(if (grid) "●" else "○", color = if (grid) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(if (quickStatusVisible) "●" else "○", color = if (quickStatusVisible) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.width(4.dp))
-                Text(stringResource(if (grid) R.string.status_overlay_disable else R.string.status_overlay_enable), fontSize = 8.5.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = 9.sp)
+                Text(stringResource(if (quickStatusVisible) R.string.status_overlay_disable else R.string.status_overlay_enable), fontSize = 8.sp, fontWeight = FontWeight.Bold, maxLines = 1)
             }
             Button(
                 onClick = if (auto) onReturnToGame else onStart,
                 enabled = access,
-                modifier = Modifier.weight(.8f),
+                modifier = Modifier.weight(.8f).fillMaxHeight(),
                 colors = ButtonDefaults.buttonColors(containerColor = if (auto) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary),
-                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 7.dp),
+                contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp),
             ) {
                 Text(
                     stringResource(if (auto) R.string.bot_return_game else R.string.auto_start),
