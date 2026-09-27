@@ -25,8 +25,8 @@ android {
         applicationId = "de.robinthor.digiworldexplorer"
         minSdk = 28
         targetSdk = 36
-        versionCode = 71
-        versionName = "5.0.0"
+        versionCode = 72
+        versionName = "5.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -481,7 +481,7 @@ class ScreenCaptureService : Service() {
         private const val STUCK_NOTIFICATION_ID = 1002
         private const val IDLE_NOTIFICATION_ID = 1003
         private const val GRID_HIDE_TIMEOUT = 3_000L
-        private const val GRID_RELEASE_TIMEOUT = 7_000L
+        private const val GRID_RELEASE_TIMEOUT = 1_500L
         private const val MISSING_IMAGE_CONFIRMATION = 2_000L
         private const val CAPTURE_RECOVERY_CONFIRMATION = 750L
         private const val IDLE_STOP_TIMEOUT = 60_000L

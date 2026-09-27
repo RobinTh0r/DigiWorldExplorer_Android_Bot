@@ -4,15 +4,15 @@
 
 **Native, local grid-navigation automation for Android 9+**
 
-[![Version](https://img.shields.io/badge/version-4.0-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-5.0.1-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v4.0.0/DigiWorldExplorer-Bot-v4.0.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v5.0.1/DigiWorldExplorer-Bot-v5.0.1.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-_Version 4.0 is the current public release._
+_Version 5.0.1 is the current public release._
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
 
@@ -38,9 +38,24 @@ Community reports are welcome. When reporting an issue, include your device, And
 
 The app runs directly on an Android device without a PC, BlueStacks, ADB, root, injection, or game-APK modification. It captures the screen locally through `MediaProjection`, detects the visible 5×5 grid, player, collectibles, obstacles and HUD counters, then sends user-authorized gestures through an `AccessibilityService`.
 
+## 🌟 What is new in Version 5
+
+### Digital World Search for more partner Digimon
+
+Digital World Search is no longer tied to Botamon's yellow-eye appearance. Version 5.0.1 adds a general shaded-body detector alongside the existing eye detector, allowing other partner sprites—including forms such as **WarGreymon** and **MetalGarurumon**—to be tracked without replacing the established grid, route-planning, item exclusion and motion-safety checks. Stale DWS grids are now released shortly after leaving the board instead of remaining over menus.
+
+### The four major Version 5 automation modules
+
+1. **Digi Co-Pilot** — connects Bond Rotation, Meat Field, Home rewards and Digital World Search into one timed workflow.
+2. **Dungeon Co-Pilot** — runs a user-selected dungeon route with normal attempts, optional Ad-Skip attempts, result handling and return navigation.
+3. **Bond Rotation** — cycles up to 15 partners, collects their Bond bubbles, restores the starting partner and persists its 20-minute timer across app restarts.
+4. **Meat Field** — harvests ready plots, plants available seeds by priority and uses remaining watering cans.
+
+Apokalymon is handled once per game day with a local 08:00 Europe/Berlin reset. The compact in-game overlay exposes explicit Start/Stop states and VS/Tower controls. The separate status panel can be shown or hidden from the main app without Beta access.
+
 ### 🎮 Quick-Control Overlay
 
-Version 4.0 adds a movable, compact in-game controller. It can open the bot app, start or restart screen capture, stop automation and toggle Auto Summon, VS/Tower, Bond &amp; Friendship and Network Defense without repeatedly switching away from the game. The round overlay icon can be enabled or disabled from the main app.
+Version 5 provides a movable, compact in-game controller. It can open the bot app, start or restart screen capture, stop automation and control Digi Co-Pilot, Dungeon Co-Pilot, Auto Summon, VS/Tower, Bond &amp; Friendship and Network Defense without repeatedly switching away from the game. The round icon and the adjacent status panel have separate controls in the main app.
 
 ### 🌙 Modern Light &amp; Dark Interface
 
@@ -56,7 +71,7 @@ Advanced navigation controls allow supported users to test forced forward moveme
 
 ### 🧭 Automatic DigiWorld Navigation
 
-The core feature automatically navigates the visible DigiWorld grid. It dynamically detects the 5×5 board, player position, collectibles, obstacles, preview cells and available HUD actions instead of relying on fixed pixel coordinates. The planner searches the full visible board for a safe route toward the right edge, gives all collectables equal value, prefers nearby items in the current/next forward columns, avoids visible dead-end corners and spends attack or dash only when a free detour is unavailable.
+The core feature automatically navigates the visible DigiWorld grid. It dynamically detects the 5×5 board, partner position, collectibles, obstacles, preview cells and available HUD actions instead of relying on fixed pixel coordinates. General body recognition supports varied partner sprites while the existing eye signature remains available as a fallback. The planner searches the full visible board for a safe route toward the right edge, gives all collectables equal value, prefers nearby items in the current/next forward columns, avoids visible dead-end corners and spends attack or dash only when a free detour is unavailable.
 
 
 Movement priorities:
@@ -99,7 +114,7 @@ The bot detects the multilingual **Stage Failed** growth-guide dialog globally, 
 Network Defense ticket recognition uses the ticket badge layout rather than OCR of its numeric value, so visible counters such as `1/2`, `2/2` and `10/2` are supported.
 ## 🚀 Quick start
 
-1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v4.0.0/DigiWorldExplorer-Bot-v4.0.0.apk).**
+1. **[Download the latest signed APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v5.0.1/DigiWorldExplorer-Bot-v5.0.1.apk).**
 2. Allow installation from your browser or file manager if Android asks.
 3. Open DigiWorldExplorer Bot.
 4. Complete the three setup checks. A check mark confirms each one:
@@ -149,7 +164,7 @@ Verify the resulting state before continuing
 
 ## 🐞 Known issues
 
-- The bot can still choose an imperfect route for unusual player sprites or misclassified objects.
+- Very unusual sprite poses or heavily obscured cells can still require a quiet frame before tracking locks on.
 - Dash is used when stuck or when at least two obstacles are detected within three cells ahead, at least two charges remain and no orange energy is visible. One charge is reserved for recovery.
 - After five dispatched actions without detected progress, automation, capture and grid stop automatically and Android posts a stuck notification. Move manually before restarting.
 - The internal claw and dash readings are still used for conservative route planning, but their uncertain `?` labels are intentionally no longer shown in the grid overlay.
@@ -190,6 +205,23 @@ When reporting another device, include its exact model, Android version, OEM bui
 If the app is useful to you, you can support continued development through **[PayPal.me/thor666](https://paypal.me/thor666)**. Contributions are optional and help cover development and testing time.
 
 ## 📝 Changelog
+
+### v5.0.1 — 27 September 2026
+
+- 🌟 Expanded Digital World Search beyond Botamon with general partner-body recognition, including support for forms such as WarGreymon and MetalGarurumon
+- 🧹 Releases stale DWS grids much faster after leaving the board
+- 🎛️ Added a freely available main-app switch for the status panel beside the in-game overlay
+- 🧭 Prevented colourful partner sprites from being excluded as collectible items
+- 🧪 Added regression coverage for partners without yellow eyes and stale text-heavy screens
+
+### v5.0.0 — 27 September 2026
+
+- 🤖 Added **Digi Co-Pilot**, connecting Bond Rotation, Meat Field, Home rewards and Digital World Search
+- 🏰 Added **Dungeon Co-Pilot** with selected-dungeon routing, attempts, Ad Skip handling and return navigation
+- 💞 Added the full **Bond Rotation** for up to 15 partners with bubble collection, starting-partner restore and a persistent 20-minute timer
+- 🌱 Added complete **Meat Field** harvesting, prioritized planting and watering automation
+- 👁️ Added animated bot states, compact in-game controls and persistent timer/status information
+- ⚔️ Added once-daily Apokalymon handling with result confirmation and an 08:00 Europe/Berlin reset
 
 ### v4.0.0 — 26 August 2026
 
