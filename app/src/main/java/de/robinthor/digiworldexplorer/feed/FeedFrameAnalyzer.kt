@@ -27,8 +27,8 @@ object FeedFrameAnalyzer {
     fun collectionSettledSince(since: Long, now: Long, settleMillis: Long = 1_000L): Boolean =
         collectedSince(since) && now - lastCollectedAt >= settleMillis
 
-    fun analyze(image: Image, width: Int, height: Int, homeAlreadyConfirmed: Boolean = false): Boolean {
-        if (!AutomationState.autoFeedEnabled) { reset(); return false }
+    fun analyze(image: Image, width: Int, height: Int, homeAlreadyConfirmed: Boolean = false, rotationOwned: Boolean = false): Boolean {
+        if (!AutomationState.autoFeedEnabled && !rotationOwned) { reset(); return false }
         if (!AutomationState.enabled) { reset(); return false }
         val now=SystemClock.elapsedRealtime()
         val plane = image.planes.firstOrNull() ?: return false

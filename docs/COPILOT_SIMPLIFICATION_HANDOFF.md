@@ -497,3 +497,8 @@ erfinde aber keine live getesteten Ergebnisse. Keine Veröffentlichung ohne geso
   Network Defense. DemiDevimon und Bakemon sind pro manuellem Durchlauf auf 15 Gesamt-Kampfstarts
   inklusive Ad-Gutschriften gedeckelt. Dungeon-Start akzeptiert Home über beide iconbasierten Home-
   Detectoren und tippt den Dungeon-Button im tatsächlich ermittelten Game-Viewport.
+- Bond-Pause nach Overlay-Neugruppierung reproduziert: Log zeigte im bestätigten COLLECT sofort
+  `bubble=true`, aber keinen `collect bubble`-Tap. Ursache war die unbeabsichtigte Abhängigkeit des
+  Rotation-COLLECT vom separaten normalen `Bond & Friendship`-Schalter. `rotationOwned=true`
+  autorisiert nun nur in diesem bestätigten Schritt den Bubble-Tap; passives Sammeln bleibt weiter
+  vollständig vom normalen Schalter abhängig.

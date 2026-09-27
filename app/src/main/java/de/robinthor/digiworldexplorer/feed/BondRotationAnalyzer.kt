@@ -59,7 +59,7 @@ object BondRotationAnalyzer {
         if (rotation.step == BondStep.COLLECT) {
             // This Home boundary was confirmed by the rotation itself. Delegating here avoids the
             // stricter passive Home fingerprint rejecting battle-animation frames with a bubble.
-            return FeedFrameAnalyzer.analyze(image, w, h, homeAlreadyConfirmed = true)
+            return FeedFrameAnalyzer.analyze(image, w, h, homeAlreadyConfirmed = true, rotationOwned = true)
         }
         if (previous != BondStep.REST && rotation.step == BondStep.REST) {
             BondRotationRequest.complete()
