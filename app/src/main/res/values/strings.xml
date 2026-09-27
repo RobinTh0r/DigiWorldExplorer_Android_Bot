@@ -170,7 +170,7 @@
     <string name="dungeon_ads_title">Use up to 2 free ad attempts</string>
     <string name="dungeon_ads_hint">Only with the global Ad Skip Pass enabled and a verified positive ad count.</string>
     <string name="dungeon_cards_title">Included cards</string>
-    <string name="dungeon_apocalymon_limit">Disabled in Beta 2: Start detection is still being revised.</string>
+    <string name="dungeon_apocalymon_limit">Hard limit: one run per rotation.</string>
     <string name="dungeon_vs_limit">Open once; Destroy only with a positive resource count.</string>
     <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
     <string name="overlay_dungeon_failed">AUTO: VS / Tower failed — closing dialog</string>

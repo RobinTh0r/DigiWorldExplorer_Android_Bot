@@ -170,7 +170,7 @@
     <string name="dungeon_ads_title">Bis zu 2 freie Werbeversuche nutzen</string>
     <string name="dungeon_ads_hint">Nur mit global aktiviertem Ad-Skip-Pass und sicher erkanntem positivem Werbezähler.</string>
     <string name="dungeon_cards_title">Einbezogene Karten</string>
-    <string name="dungeon_apocalymon_limit">In Beta 2 deaktiviert: Start-Erkennung wird noch überarbeitet.</string>
+    <string name="dungeon_apocalymon_limit">Hartes Limit: ein Lauf pro Rotation.</string>
     <string name="dungeon_vs_limit">Einmal öffnen; Vernichten nur bei positivem Ressourcenstand.</string>
     <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
     <string name="overlay_dungeon_failed">AUTO: VS / Tower fehlgeschlagen — Dialog wird geschlossen</string>
