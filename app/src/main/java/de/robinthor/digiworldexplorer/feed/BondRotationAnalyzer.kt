@@ -55,7 +55,11 @@ object BondRotationAnalyzer {
             "probe step=${rotation.step} home=$home forced=$forced scheduled=$scheduled " +
                 "feedBusy=${FeedFrameAnalyzer.isBusy()} gridPage=${grid.page} bubble=$bubble command=${command?.step}",
         )
-        owns = rotation.ownsFrame()
+        // COLLECT delegates the actual detector to FeedFrameAnalyzer below, but it must still
+        // exclusively own the frame. Otherwise the later passive feed probe can reset the
+        // shared collection state when Auto Feed itself is disabled, causing a second bubble
+        // tap and leaving the rotation parked instead of opening the next partner.
+        owns = rotation.ownsFrame() || rotation.step == BondStep.COLLECT
         if (previous != BondStep.COLLECT && rotation.step == BondStep.COLLECT) FeedFrameAnalyzer.allowImmediateScan()
         if (rotation.step == BondStep.COLLECT) {
             // This Home boundary was confirmed by the rotation itself. Delegating here avoids the

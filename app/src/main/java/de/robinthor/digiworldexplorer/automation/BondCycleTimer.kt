@@ -47,6 +47,14 @@ object BondCycleTimer {
     fun remainingMillis() = remainingMillis(runCatching { android.os.SystemClock.elapsedRealtime() }
         .getOrElse { System.nanoTime() / 1_000_000L })
     fun awaitingFarm() = awaitingFarm
+    @Synchronized fun resetCooldown() {
+        awaitingFarm = false
+        cooldownUntil = 0L
+        preferences?.edit()
+            ?.remove("due_epoch_ms")
+            ?.putBoolean("awaiting_farm", false)
+            ?.apply()
+    }
     internal fun restoredRemaining(dueEpoch: Long, nowEpoch: Long): Long =
         if (dueEpoch <= nowEpoch) 0L else (dueEpoch - nowEpoch).coerceAtMost(COOLDOWN_MILLIS)
     internal fun resetForTest() { awaitingFarm = false; cooldownUntil = 0L }

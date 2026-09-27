@@ -20,9 +20,11 @@ object FeedFrameAnalyzer {
     private var tapsLeft = 0
     private var cooldownUntil = 0L
     private var lastBubbleSeenAt = 0L
+    private var rotationFallbackAt = 0L
+    private var rotationFallbackIndex = 0
     @Volatile private var lastCollectedAt = 0L
 
-    fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; lastCollectedAt = 0L }
+    fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; rotationFallbackAt = 0L; rotationFallbackIndex = 0; lastCollectedAt = 0L }
     fun collectedSince(since: Long): Boolean = lastCollectedAt >= since && since > 0L
     fun collectionSettledSince(since: Long, now: Long, settleMillis: Long = 1_000L): Boolean =
         collectedSince(since) && now - lastCollectedAt >= settleMillis
@@ -55,6 +57,20 @@ object FeedFrameAnalyzer {
             // requiring an impossible uninterrupted run of detections.
             if (!homeAlreadyConfirmed || now - lastBubbleSeenAt > 1_500L) stableFrames = 0
             tapsLeft = 0
+            if (rotationOwned && homeAlreadyConfirmed && now >= rotationFallbackAt &&
+                rotationFallbackIndex < ROTATION_FALLBACK_POINTS.size) {
+                val target = ROTATION_FALLBACK_POINTS[rotationFallbackIndex++]
+                rotationFallbackAt = now + 420L
+                val (x, y) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width, height).pixel(target)
+                android.util.Log.i("DigiWorldBond", "collect fallback ${rotationFallbackIndex}/${ROTATION_FALLBACK_POINTS.size} at=$x,$y")
+                DigiWorldAccessibilityService.instance?.dispatchSafeRandomizedTap(x.toFloat(), y.toFloat()) { }
+                if (rotationFallbackIndex == ROTATION_FALLBACK_POINTS.size) {
+                    // The detector can miss the animated/partly covered panel even though one of
+                    // these bounded Home-only taps collected it. Give the game the same settle
+                    // time as a visually detected collection, then continue the tour.
+                    lastCollectedAt = now
+                }
+            }
             return true
         }
         val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(bubble)
@@ -81,6 +97,10 @@ object FeedFrameAnalyzer {
         mainScreenFrames = 0
         cooldownUntil = 0L
         lastBubbleSeenAt = 0L
+        // Prefer visual evidence first. Only sweep the known stage bubble corridor when the
+        // rotation has remained on its already verified Home boundary for a short grace period.
+        rotationFallbackAt = SystemClock.elapsedRealtime() + 2_000L
+        rotationFallbackIndex = 0
     }
 
     fun pauseForDigiWorld() {
@@ -99,7 +119,14 @@ object FeedFrameAnalyzer {
                 DigiWorldAccessibilityService.instance?.apply {
                     updateStatusKeepingGrid(getString(R.string.overlay_auto_feed),true)
                     android.util.Log.i("DigiWorldBond", "collect bubble=$lastX,$lastY")
-                    dispatchSafeRandomizedTap(lastX,lastY) { ok -> if (ok) lastCollectedAt = now }
+                    // Android may report a cancelled gesture when the accepted tap immediately
+                    // changes the game window. The positive bubble detection is the visual proof;
+                    // record dispatch now so BondRotation advances after its one-second settle
+                    // instead of re-tapping the same animated bubble.
+                    lastCollectedAt = now
+                    dispatchSafeRandomizedTap(lastX,lastY) { ok ->
+                        if (!ok) android.util.Log.w("DigiWorldBond", "bubble gesture callback cancelled; keeping visual confirmation")
+                    }
                 }
                 if (tapsLeft==0) cooldownUntil=now+60_000L
             }
@@ -107,5 +134,13 @@ object FeedFrameAnalyzer {
         }
         return false
     }
+
+    private val ROTATION_FALLBACK_POINTS = listOf(
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.34, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.42, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.50, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.58, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.66, .40),
+    )
 
 }

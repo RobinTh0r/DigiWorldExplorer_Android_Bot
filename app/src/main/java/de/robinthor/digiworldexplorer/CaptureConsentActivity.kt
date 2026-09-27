@@ -24,8 +24,11 @@ import de.robinthor.digiworldexplorer.strategy.DwsNavigationSettings
 
 /** Requests MediaProjection without bringing the full settings UI in front of the game. */
 class CaptureConsentActivity : ComponentActivity() {
-    private companion object {
-        const val GAME_PACKAGE = "com.bandainamcoent.dgup_ww"
+    companion object {
+        private const val GAME_PACKAGE = "com.bandainamcoent.dgup_ww"
+        const val EXTRA_START_MODE = "start_mode"
+        const val START_COPILOT = "copilot"
+        const val START_DUNGEON = "dungeon"
     }
 
     private val consent = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -35,6 +38,7 @@ class CaptureConsentActivity : ComponentActivity() {
             ScreenCaptureService.start(this, result.resultCode, result.data!!)
             ScreenCaptureService.setAutomation(this, true)
             DigiWorldAccessibilityService.instance?.setOverlayEnabled(AutomationState.overlayEnabled)
+            runRequestedMode()
             returnToGame()
         } else {
             Toast.makeText(this, getString(R.string.status_capture_denied), Toast.LENGTH_SHORT).show()
@@ -47,6 +51,7 @@ class CaptureConsentActivity : ComponentActivity() {
         if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) {
             applyRuntimeSettings()
             ScreenCaptureService.setAutomation(this, true)
+            runRequestedMode()
             finishWithoutAnimation()
             return
         }
@@ -92,6 +97,33 @@ class CaptureConsentActivity : ComponentActivity() {
         StageFailedFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         AutoMoveController.reset()
+    }
+
+    private fun runRequestedMode() {
+        when (intent.getStringExtra(EXTRA_START_MODE)) {
+            START_DUNGEON -> {
+                de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.start(this)
+                DigiWorldAccessibilityService.instance?.showStatusOnly("Dungeon rotation: waiting for Home")
+            }
+            START_COPILOT -> {
+                de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.start()
+                when {
+                    AutomationState.autoBondRotationEnabled &&
+                        de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis() == 0L ->
+                        de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
+                    AutomationState.autoFarmEnabled -> {
+                        de.robinthor.digiworldexplorer.automation.BondCycleTimer.requestFarmRecovery()
+                        de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.requestVisit()
+                    }
+                    AutomationState.copilotRewardsEnabled ->
+                        de.robinthor.digiworldexplorer.automation.HomeIdleRewardRequest.start()
+                    AutomationState.copilotDwsEnabled ->
+                        de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.start()
+                    else -> de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("No modules selected")
+                }
+                DigiWorldAccessibilityService.instance?.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
+            }
+        }
     }
 
     private fun finishWithoutAnimation() {

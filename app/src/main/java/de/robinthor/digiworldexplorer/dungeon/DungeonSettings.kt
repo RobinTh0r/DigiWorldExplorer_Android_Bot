@@ -12,7 +12,7 @@ import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 data class DungeonRotationSettings(
-    val enabledCards: Set<DungeonKey> = DungeonKey.entries.toSet(),
+    val enabledCards: Set<DungeonKey> = DungeonKey.entries.filterTo(mutableSetOf()) { it != DungeonKey.APOCALYMON_WALL },
     val normalAttempts: Int = 3,
     val useAdAttempts: Boolean = true,
 ) {
@@ -38,7 +38,9 @@ object DungeonSettingsStore {
     fun load(context: Context): DungeonRotationSettings {
         val p = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         return DungeonRotationSettings(
-            enabledCards = DungeonKey.entries.filterTo(mutableSetOf()) { p.getBoolean(cardKey(it), true) },
+            enabledCards = DungeonKey.entries.filterTo(mutableSetOf()) {
+                p.getBoolean(cardKey(it), it != DungeonKey.APOCALYMON_WALL)
+            },
             normalAttempts = p.getInt(NORMAL_ATTEMPTS, 3).coerceIn(1, 3),
             useAdAttempts = p.getBoolean(USE_ADS, true),
         )

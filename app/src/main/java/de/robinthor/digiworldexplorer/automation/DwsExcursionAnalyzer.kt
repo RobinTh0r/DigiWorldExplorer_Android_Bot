@@ -74,7 +74,10 @@ object DwsExcursionAnalyzer {
                     return false
                 }
                 if (!stable("explore:${explore.menu}:${explore.worldSearchTarget != null}")) return true
-                val target = explore.worldSearchTarget ?: return waitOrPark(now, service, "DWS card not confirmed")
+                // Explore itself is already confirmed twice. The animated card artwork or the
+                // draggable status bubble can hide its colour anchor, but the first card keeps a
+                // stable normalized position on phones and BlueStacks.
+                val target = explore.worldSearchTarget ?: NormalizedPoint(.294, .286)
                 deadline = now + 30_000L
                 tap(service, viewport, target, "Opening Digital World Search")
                 return true

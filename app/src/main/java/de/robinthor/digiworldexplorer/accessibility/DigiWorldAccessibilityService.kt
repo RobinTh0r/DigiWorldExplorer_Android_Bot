@@ -106,7 +106,8 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    c.drawText(director.state,left+24f*density,top+18f*density,p)
    p.typeface=Typeface.create(Typeface.DEFAULT,Typeface.NORMAL);p.textSize=11f*density;p.color=Color.rgb(190,204,219)
    c.drawText("Screen: ${director.screen.label}",left+12f*density,top+37f*density,p)
-   val action=director.action.ifBlank{"No action"}.let{if(it.length>32)it.take(31)+"…" else it}
+   val rawAction=if((director.action.isBlank()||director.action=="No action")&&de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active())"Warten auf nächste Rotation" else director.action.ifBlank{"No action"}
+   val action=rawAction.let{if(it.length>32)it.take(31)+"…" else it}
    p.textSize=10f*density;p.color=Color.rgb(150,229,224);c.drawText("Action: $action",left+12f*density,top+54f*density,p)
   }
  }

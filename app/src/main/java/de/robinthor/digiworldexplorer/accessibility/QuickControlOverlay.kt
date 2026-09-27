@@ -219,7 +219,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         root?.post {
             val captureActive = CaptureSessionState.snapshot(AutomationState.enabled).captureActive
             directorTitle?.text = if (!captureActive) "Screen capture stopped" else "${snapshot.copilot.ifBlank { snapshot.state }} · ${snapshot.screen.label}"
-            val value = if (!captureActive) "Start / Restart Bot" else snapshot.action.ifBlank { "No action" }
+            val idle = snapshot.action.isBlank() || snapshot.action == "No action"
+            val value = when {
+                !captureActive -> "Start / Restart Bot"
+                idle && de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() -> "Warten auf nächste Rotation"
+                else -> snapshot.action.ifBlank { "No action" }
+            }
             directorAction?.text = if (value.length > 20) value.take(19) + "…" else value
             updateTimer()
             eyeStatus?.update(snapshot)
@@ -253,7 +258,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
             } else if (!AutomationState.enabled) {
-                service.showStatusOnly("Start the bot first")
+                requestCaptureAndStart(CaptureConsentActivity.START_DUNGEON)
             } else if (DungeonRotationRequest.active()) {
                 DungeonRotationRequest.cancel()
                 service.showStatusOnly("Dungeon Co-Pilot stopped")
@@ -268,10 +273,22 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             WindowManager.LayoutParams.MATCH_PARENT,
             WindowManager.LayoutParams.WRAP_CONTENT,
         ).apply { topMargin = (7 * density).toInt() })
-        addView(actionButton("Start / Restart Bot") {
+        val startRow = LinearLayout(service).apply { orientation = LinearLayout.HORIZONTAL }
+        startRow.addView(actionButton("Start / Restart Bot") {
             if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
             collapse()
-        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (50 * density).toInt()).apply { topMargin = (7 * density).toInt() })
+        }, LinearLayout.LayoutParams(0, (50 * density).toInt(), 1f).apply { marginEnd = (4 * density).toInt() })
+        startRow.addView(actionButton("Bond Reset", beta = true) {
+            de.robinthor.digiworldexplorer.automation.BondCycleTimer.resetCooldown()
+            if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() &&
+                AutomationState.autoBondRotationEnabled) {
+                de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
+            }
+            service.showStatusOnly("Bond timer reset — ready")
+            updateTimer()
+            collapse()
+        }, LinearLayout.LayoutParams((88 * density).toInt(), (50 * density).toInt()).apply { marginStart = (4 * density).toInt() })
+        addView(startRow, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT).apply { topMargin = (7 * density).toInt() })
     }
 
     private fun buildDigiCopilotSection(density: Float): LinearLayout = LinearLayout(service).apply {
@@ -287,7 +304,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
             } else if (!AutomationState.enabled) {
-                service.showStatusOnly("Start the bot first")
+                requestCaptureAndStart(CaptureConsentActivity.START_COPILOT)
             } else {
                 if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()) {
                     de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("Stopped by user")
@@ -479,9 +496,10 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         })
     }
 
-    private fun requestCaptureAndStart() {
+    private fun requestCaptureAndStart(startMode: String? = null) {
         service.startActivity(Intent(service, CaptureConsentActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION)
+            startMode?.let { putExtra(CaptureConsentActivity.EXTRA_START_MODE, it) }
         })
     }
 

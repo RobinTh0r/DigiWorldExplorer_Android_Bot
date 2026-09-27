@@ -13,10 +13,19 @@ class DungeonSettingsTest {
         val settings = DungeonRotationSettings(enabledCards = setOf(DungeonKey.DEMIDEVIMON))
         assertEquals(DungeonBudget(), settings.budget(DungeonKey.METAL_SEA, true))
     }
-    @Test fun `special cards ignore regular and ad counts`() {
-        val settings = DungeonRotationSettings(normalAttempts = 2, useAdAttempts = true)
+    @Test fun `special cards ignore regular and ad counts when enabled`() {
+        val settings = DungeonRotationSettings(
+            enabledCards = DungeonKey.entries.toSet(),
+            normalAttempts = 2,
+            useAdAttempts = true,
+        )
         assertEquals(DungeonBudget(1), settings.budget(DungeonKey.APOCALYMON_WALL, true))
         assertEquals(DungeonBudget(1), settings.budget(DungeonKey.DAILY, true))
+    }
+    @Test fun `apocalymon is disabled by default but remains configurable`() {
+        val defaults = DungeonRotationSettings()
+        assertEquals(DungeonBudget(), defaults.budget(DungeonKey.APOCALYMON_WALL, true))
+        assertEquals(DungeonBudget(1), defaults.copy(enabledCards = defaults.enabledCards + DungeonKey.APOCALYMON_WALL).budget(DungeonKey.APOCALYMON_WALL, true))
     }
     @Test fun `completed card has zero budget until daily reset`() {
         val settings = DungeonRotationSettings()

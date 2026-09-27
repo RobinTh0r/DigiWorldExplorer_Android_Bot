@@ -82,7 +82,11 @@ class BondRotation {
                 if (!grid.expanded) return if (step == BondStep.OPEN) issue(BondStep.EXPAND, now) else null
                 if (grid.cells.size != 15 || grid.raised == null) return null
                 if (original == null) original = grid.raised
-                if (target != null && grid.raised != target) { step = BondStep.PARK; return null }
+                // The yellow border/green check animate while the partner sheet opens. A sampled
+                // frame can therefore briefly report the previous/wrong raised cell. Keep the
+                // current command pending and let the existing deadline guard a genuinely wrong
+                // screen instead of aborting the complete tour on that transient frame.
+                if (target != null && grid.raised != target) return null
                 target = (original!! + visited + 1) % 15
                 return issue(BondStep.SELECT, now, target)
             }

@@ -13,6 +13,7 @@ class GameEntryController {
     private var parked = false
     private var issuedAt = 0L
     private var retries = 0
+    private var resultReadyAt: Long? = null
     fun busy() = pending != null || parked
 
     fun tick(screen: EntryScreen, now: Long, adSkip: Boolean = false, adRemaining: Int? = null): EntryAction {
@@ -32,7 +33,7 @@ class GameEntryController {
                 // visible result/receive tap. Retrying this idempotent close on the still proven
                 // result screen is safer than waiting until the whole reward flow parks.
                 if (pending == EntryAction.CLOSE_RESULT && screen == EntryScreen.RESULT &&
-                    now - issuedAt >= 2_500L && retries < 3) {
+                    now - issuedAt >= 1_000L && retries < 2) {
                     issuedAt = now
                     retries++
                     return EntryAction.CLOSE_RESULT
@@ -40,10 +41,14 @@ class GameEntryController {
                 return EntryAction.WAIT
             }
             if (pending in setOf(EntryAction.CLAIM_IDLE, EntryAction.CLAIM_AD)) {
+                val readyAt = resultReadyAt ?: (now + 1_000L).also { resultReadyAt = it }
+                if (now < readyAt) return EntryAction.WAIT
+                resultReadyAt = null
                 awaitingAdProof = pending == EntryAction.CLAIM_AD
                 return issue(EntryAction.CLOSE_RESULT, now)
             }
             pending = null
+            resultReadyAt = null
         }
         if (screen == EntryScreen.HOME) { adClaims = 0; awaitingAdProof = false; return EntryAction.WAIT }
         if (awaitingAdProof) {
@@ -57,7 +62,14 @@ class GameEntryController {
             EntryScreen.NOTICE -> issue(EntryAction.CLOSE_NOTICE, now)
             // RESULT reaches this controller only through the specific idle-reward detector,
             // so capture/service restarts may safely resume by closing it.
-            EntryScreen.RESULT -> issue(EntryAction.CLOSE_RESULT, now)
+            EntryScreen.RESULT -> {
+                val readyAt = resultReadyAt ?: (now + 1_000L).also { resultReadyAt = it }
+                if (now < readyAt) EntryAction.WAIT
+                else {
+                    resultReadyAt = null
+                    issue(EntryAction.CLOSE_RESULT, now)
+                }
+            }
             EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY -> {
                 if (adSkip && adRemaining in 1..2 && adClaims < 2) {
                     adBefore = adRemaining; adClaims++

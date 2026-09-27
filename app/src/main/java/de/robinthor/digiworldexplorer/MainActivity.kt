@@ -752,19 +752,18 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     ) {
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("BETA AUTOMATION", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                Text(stringResource(R.string.beta_automation_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
                 BetaChip()
             }
             Text(
-                if (unlocked) "Start und Stop über den runden Bot im Spiel."
-                else "Beta-Code erforderlich · Zum Freischalten antippen.",
+                stringResource(if (unlocked) R.string.beta_automation_unlocked_hint else R.string.beta_automation_locked_hint),
                 style = MaterialTheme.typography.labelSmall,
                 color = betaContentColor().copy(alpha = .78f),
             )
-            BetaFeatureCompactRow("Digi Co-Pilot", "Bond → Meat Field → Belohnung → DWS", unlocked, onSettings, { onHelp(5) })
-            BetaFeatureCompactRow("Dungeon Co-Pilot", "Ein manueller Tagesdurchlauf aus dem Overlay", unlocked, onSettings, { onHelp(1) })
-            BetaFeatureCompactRow("Bond Rotation", "15 Partner; Timer und Wiederherstellung", unlocked, onSettings, { onHelp(5) })
-            BetaFeatureCompactRow("Meat Field", "Ernten, pflanzen und priorisiert gießen", unlocked, onSettings, { onHelp(4) })
+            BetaFeatureCompactRow(stringResource(R.string.digi_copilot_title), stringResource(R.string.digi_copilot_summary), unlocked, onSettings, { onHelp(7) })
+            BetaFeatureCompactRow(stringResource(R.string.dungeon_copilot_title), stringResource(R.string.dungeon_copilot_summary), unlocked, onSettings, { onHelp(1) })
+            BetaFeatureCompactRow(stringResource(R.string.bond_rotation_title), stringResource(R.string.bond_rotation_summary), unlocked, onSettings, { onHelp(5) })
+            BetaFeatureCompactRow(stringResource(R.string.meat_field_title), stringResource(R.string.meat_field_summary), unlocked, onSettings, { onHelp(8) })
         }
     }
 }
@@ -1192,8 +1191,8 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
 }
 
 @Composable private fun FeatureHelpDialog(kind: Int, onClose: () -> Unit) {
-    val title = when (kind) { 0 -> R.string.summon_help_title; 1 -> R.string.dungeon_help_title; 2 -> R.string.digiworld_help_title; 3 -> R.string.network_help_title; 5 -> R.string.partner_rotation_help_title; 6 -> R.string.runner_help_title; else -> R.string.feed_help_title }
-    val body = when (kind) { 0 -> R.string.summon_help_body; 1 -> R.string.dungeon_help_body; 2 -> R.string.digiworld_help_body; 3 -> R.string.network_help_body; 5 -> R.string.partner_rotation_help_body; 6 -> R.string.runner_help_body; else -> R.string.feed_help_body }
+    val title = when (kind) { 0 -> R.string.summon_help_title; 1 -> R.string.dungeon_help_title; 2 -> R.string.digiworld_help_title; 3 -> R.string.network_help_title; 5 -> R.string.partner_rotation_help_title; 6 -> R.string.runner_help_title; 7 -> R.string.digi_copilot_help_title; 8 -> R.string.meat_field_help_title; else -> R.string.feed_help_title }
+    val body = when (kind) { 0 -> R.string.summon_help_body; 1 -> R.string.dungeon_help_body; 2 -> R.string.digiworld_help_body; 3 -> R.string.network_help_body; 5 -> R.string.partner_rotation_help_body; 6 -> R.string.runner_help_body; 7 -> R.string.digi_copilot_help_body; 8 -> R.string.meat_field_help_body; else -> R.string.feed_help_body }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(title)) },

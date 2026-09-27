@@ -98,6 +98,23 @@ class BondRotationTest {
         )?.step)
     }
 
+    @Test fun transientWrongRaisedCellWhileOpeningDoesNotParkTour() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        val first = PartnerGrid(true, true, cells, raised = 0, selected = 0)
+        tour.tick(true, PartnerGrid(), false, 0)
+        tour.tick(false, first, false, 1)
+        tour.tick(false, first.copy(selected = 1, canRaise = true), false, 2)
+        tour.tick(false, PartnerGrid(confirmation = true), false, 3)
+        tour.tick(false, first.copy(raised = 1), false, 4)
+        tour.tick(true, PartnerGrid(), false, 5)
+        assertEquals(BondStep.OPEN, tour.tick(true, PartnerGrid(), false, 31_000)?.step)
+
+        assertNull(tour.tick(false, first.copy(raised = 0), false, 31_100))
+        assertEquals(BondStep.OPEN, tour.step)
+        assertEquals(BondStep.SELECT, tour.tick(false, first.copy(raised = 1), false, 31_200)?.step)
+    }
+
     @Test fun foreignPromptNeverStartsTourAndFailedSelectionDoesNotConfirm() {
         val tour = BondRotation()
         assertNull(tour.tick(false, PartnerGrid(confirmation = true), false, 0))

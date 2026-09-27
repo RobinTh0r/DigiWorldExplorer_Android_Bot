@@ -117,6 +117,18 @@ class FarmControllerTest {
         assertEquals(FarmOperation.HARVEST, controller.tick(field(PlotState.RIPE, 0), 1).operation)
     }
 
+    @Test fun `covered plot cannot hold an otherwise growing field forever`() {
+        val controller = FarmController()
+        val covered = FarmObservation(
+            FarmView.FIELD,
+            listOf(PlotState.UNKNOWN, PlotState.LOCKED) + List(4) { PlotState.GROWING },
+            freeSeeds = 0,
+        )
+        assertEquals(FarmOperation.WAIT, controller.tick(covered, 1_000).operation)
+        assertEquals(FarmOperation.WAIT, controller.tick(covered, 8_999).operation)
+        assertEquals(FarmOperation.COMPLETE, controller.tick(covered, 9_000).operation)
+    }
+
     @Test fun `late confirming frame wins over timeout`() {
         val controller = FarmController(100)
         assertEquals(FarmOperation.HARVEST, controller.tick(field(PlotState.RIPE), 0).operation)

@@ -32,6 +32,7 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
     private var seedCountBefore: Int? = null
     private var plantingPlot: Int? = null
     private var terminal: FarmOperation? = null
+    private var unresolvedSince: Long? = null
     var harvested = 0
         private set
     var planted = 0
@@ -147,7 +148,24 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
         val unresolvedUnknown = frame.plots.indices.any {
             frame.plots[it] == PlotState.UNKNOWN && it !in plantedPlots
         }
-        return FarmCommand(if (unresolvedUnknown) FarmOperation.WAIT else FarmOperation.COMPLETE)
+        if (unresolvedUnknown) {
+            // Moving Palmon sprites can cover a timer forever. When every readable plot is
+            // already growing or locked, wait a bounded period for a clear frame and then finish
+            // this check; the next scheduled field visit will inspect it again.
+            val onlySafeKnownStates = frame.plots.all {
+                it in setOf(PlotState.UNKNOWN, PlotState.GROWING, PlotState.LOCKED)
+            }
+            if (onlySafeKnownStates) {
+                val since = unresolvedSince ?: now.also { unresolvedSince = it }
+                if (now - since >= 8_000L) {
+                    unresolvedSince = null
+                    return FarmCommand(FarmOperation.COMPLETE)
+                }
+            }
+            return FarmCommand(FarmOperation.WAIT)
+        }
+        unresolvedSince = null
+        return FarmCommand(FarmOperation.COMPLETE)
     }
 
     fun cancel() { terminal = FarmOperation.PARK; pending = null }

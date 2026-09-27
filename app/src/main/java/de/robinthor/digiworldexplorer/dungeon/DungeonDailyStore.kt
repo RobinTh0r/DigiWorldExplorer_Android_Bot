@@ -49,9 +49,17 @@ object DungeonDailyStore {
                 .remove(progressKey(DungeonKey.DAILY, "unknown"))
                 .commit()
         }
+        if (p.getInt("executor_schema", 0) < 4) {
+            // Older executors persisted an Ad as spent before the game showed any transition.
+            // Clear only those unreliable counters once; battle and once-daily completion state
+            // remains intact.
+            val edit = p.edit().putInt("executor_schema", 4)
+            DungeonKey.entries.forEach { edit.remove(progressKey(it, "ads")) }
+            edit.commit()
+        }
         val sameDay = p.getString(DAY, null) == gameDay.toString()
         val mask = if (sameDay) p.getInt(COMPLETED, 0) else {
-            p.edit().clear().putInt("executor_schema", 3).putString(DAY, gameDay.toString()).putInt(COMPLETED, 0).apply(); 0
+            p.edit().clear().putInt("executor_schema", 4).putString(DAY, gameDay.toString()).putInt(COMPLETED, 0).apply(); 0
         }
         val progress = if (!sameDay) emptyMap() else DungeonKey.entries.associateWith { key -> DungeonDailyProgress(
             attempts = p.getInt(progressKey(key, "attempts"), 0), wins = p.getInt(progressKey(key, "wins"), 0),

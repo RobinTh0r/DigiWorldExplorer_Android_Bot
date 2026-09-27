@@ -26,6 +26,7 @@ object DungeonRotationAnalyzer {
     private var startRetries = 0
     private var retryAt = 0L
     private var rewardFallbackAt = 0L
+    private var waitingSawTransition = false
     private var passUsage = DungeonPassUsage()
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
@@ -71,10 +72,12 @@ object DungeonRotationAnalyzer {
         val rewardVisible = key != null && DungeonScreenDetector.detect(w,h,frame::argbAt).screen == DungeonScreen.REWARD
         if(rewardVisible && DungeonFrameAnalyzer.analyze(image,w,h,resultsOnly=true)) {
             unknownAt=0L
+            if(key == DungeonKey.DAILY) DungeonDailyStore.markComplete(service, DungeonKey.DAILY)
             if(rewardFallbackAt == 0L) rewardFallbackAt = now
             // The VS Destroy reward uses a longer reveal variant which can outlive the generic
-            // Tower handler. Only tap after the same confirmed reward remains visible for 8 s.
-            if(now-rewardFallbackAt >= 8_000L) {
+            // Tower handler. Retry the explicit close prompt if the generic result handler was
+            // swallowed; four seconds still leaves ample time for the reveal animation.
+            if(now-rewardFallbackAt >= 4_000L) {
                 rewardFallbackAt=0L
                 tap(service,v,NormalizedPoint(.5,.825),now,"Closing daily reward")
             }
@@ -84,14 +87,25 @@ object DungeonRotationAnalyzer {
         if(waiting.isNotEmpty()) {
             val retryPanel = if(key != null) DungeonPanelDetector.detect(frame,key,v) else null
             val returnedToPanel = retryPanel?.kind in setOf("challenge", "network_challenge", "network_matching", "destroy", "ad")
+            if(retryPanel == null) waitingSawTransition = true
             val returnDelay = if(waiting == "ad") 2_500L else 15_000L
-            if(returnedToPanel && now-waitingAt > returnDelay) {
+            if(returnedToPanel && now-waitingAt > returnDelay && (waiting != "ad" || waitingSawTransition)) {
                 val completed = waiting
-                waiting=""; startRetries=0; retryAt=0; unknownAt=0
+                waiting=""; startRetries=0; retryAt=0; unknownAt=0; waitingSawTransition=false
                 if(completed=="battle") DungeonDailyStore.record(service,key!!) { it.copy(wins=it.wins+1) }
+                if(completed=="ad") {
+                    passUsage.reserveAd(key!!)
+                    DungeonDailyStore.record(service,key) { it.copy(ads=it.ads+1) }
+                }
                 Log.i("DigiWorldDungeonRotation","RESUME $key $completed confirmed by returned panel ${retryPanel!!.kind}:${retryPanel.remaining}")
                 status(service,"${key!!.name}: ${if(completed=="ad") "Ad ticket received" else "battle complete"}")
                 candidate=""; matches=0
+                return true
+            }
+            if(waiting == "ad" && returnedToPanel && !waitingSawTransition &&
+                now-waitingAt > 1_500L && now-retryAt > 1_500L && startRetries < 2) {
+                startRetries++; retryAt=now
+                tap(service,v,retryPanel!!.target,now,"Retrying unaccepted Ad-Skip ($startRetries)")
                 return true
             }
             if(waiting == "battle" && now-waitingAt > 4_000L && now-retryAt > 4_000L &&
@@ -125,10 +139,8 @@ object DungeonRotationAnalyzer {
                         finishCard(service,v,now); return true
                     }
                     if(panel.remaining == null) { park(service,"Ad counter unreadable: ${key!!.name}"); return true }
-                    waiting="ad"; waitingAt=now
-                    passUsage.reserveAd(key!!)
-                    DungeonDailyStore.record(service,key!!) { it.copy(ads=it.ads+1) }
-                    tap(service,v,panel.target,now,"${key.name}: Ad-Skip ${used.ads+1}/2")
+                    waiting="ad"; waitingAt=now; waitingSawTransition=false; startRetries=0; retryAt=now
+                    tap(service,v,panel.target,now,"${key!!.name}: Ad-Skip ${used.ads+1}/2")
                 }
                 "destroy" -> {
                     // VS Battles is a once-daily destruction/claim action. The displayed ticket
@@ -195,9 +207,7 @@ object DungeonRotationAnalyzer {
             }
             return true
         }
-        if(activeKey == null && (HomeScreenDetector.detect(w,h,frame::argbAt) ||
-                de.robinthor.digiworldexplorer.automation.GameEntryDetector.detect(frame).screen ==
-                de.robinthor.digiworldexplorer.automation.EntryScreen.HOME)) {
+        if(activeKey == null && HomeScreenDetector.detect(w,h,frame::argbAt)) {
             unknownAt=0L
             if(!stable("home")) return true
             val homeViewport = HomeScreenDetector.viewport(w, h, frame::argbAt) ?: v
@@ -252,6 +262,12 @@ object DungeonRotationAnalyzer {
     fun onReward() {
         val key=activeKey ?: return
         if(waiting.isEmpty() || SystemClock.elapsedRealtime()-waitingAt < 1_500) return
+        if(waiting=="ad") {
+            // The reward overlay is the visual proof that the Ad-Skip tap was accepted. Keep the
+            // transaction open until the panel returns, then persist the consumed Ad exactly once.
+            waitingSawTransition=true
+            return
+        }
         Log.i("DigiWorldDungeonRotation","RESULT $key $waiting")
         if(waiting=="battle") DigiWorldAccessibilityService.instance?.let { service -> DungeonDailyStore.record(service,key) { it.copy(wins=it.wins+1) } }
         waiting=""
@@ -268,7 +284,7 @@ object DungeonRotationAnalyzer {
     fun reset() {
         controller=null; settings=null; activeKey=null; waiting=""; waitingAt=0; settleUntil=0
         candidate=""; matches=0; returning=false; returningHome=false; unknownAt=0
-        startRetries=0; retryAt=0
+        startRetries=0; retryAt=0; waitingSawTransition=false
         rewardFallbackAt=0L
         passUsage= DungeonPassUsage()
     }
