@@ -33,11 +33,18 @@ object DungeonScreenDetector {
         val rewardTiles = ratio(width, height, .10, .29, .86, .47, argbAt, ::navy)
         val rewardDistance = rewardTemplateDistance(width, height, argbAt)
         val rewardScore = 1.0 - rewardDistance
+        // Apocalymon and Network Defense render different scenery behind the same translucent
+        // result sheet, so their template distance can be too large. This structural fallback
+        // requires the blue result body, the small bright "tap to close" line and the navy footer.
+        val rewardBody = ratio(width, height, .02, .30, .98, .72, argbAt, ::blueOverlay)
+        val rewardCloseText = ratio(width, height, .20, .78, .80, .85, argbAt, ::neutralBright)
+        val rewardFooter = ratio(width, height, .10, .76, .90, .96, argbAt, ::navy)
+        val structuralReward = rewardBody >= .80 && rewardCloseText >= .015 && rewardFooter >= .12
 
         return when {
             challengeButton >= .08 && challengeHeader >= .08 && challengePanel >= .28 && challengeFrame >= .025 && hologramWarning < .012 && challengeDistance <= CHALLENGE_TEMPLATE_MAX_DISTANCE ->
                 DungeonDetection(DungeonScreen.CHALLENGE, challengeTapX, height * .78f, challengeScore)
-            rewardBlue >= .55 && rewardTiles >= .45 && rewardDistance <= REWARD_TEMPLATE_MAX_DISTANCE ->
+            (rewardBlue >= .55 && rewardTiles >= .45 && rewardDistance <= REWARD_TEMPLATE_MAX_DISTANCE) || structuralReward ->
                 DungeonDetection(DungeonScreen.REWARD, width * .50f, height * .66f, rewardScore)
             else -> DungeonDetection(DungeonScreen.NONE, 0f, 0f, maxOf(challengeScore, rewardScore))
         }
@@ -47,6 +54,7 @@ object DungeonScreenDetector {
     private fun navy(r: Int, g: Int, b: Int) = b > 45 && b > r * 1.20 && b > g * .75 && r < 70 && g < 115
     private fun blueOverlay(r: Int, g: Int, b: Int) = b > 95 && b > r * 1.20 && b > g * .85 && r < 125
     private fun warningYellow(r: Int, g: Int, b: Int) = r > 160 && g > 110 && b < 100
+    private fun neutralBright(r: Int, g: Int, b: Int) = minOf(r, g, b) >= 170 && maxOf(r, g, b) - minOf(r, g, b) < 65
 
     // The reference was captured from the VS layout. Tower uses the same dialog structure but a
     // different hero image and centered button, so allow that content variation while retaining

@@ -141,7 +141,9 @@ object DungeonRotationAnalyzer {
                     tap(service,v,panel.target,now,"${key.name}: daily Destroy")
                 }
                 "challenge", "network_challenge", "network_matching" -> {
-                    val limit = passUsage.limit(key!!, cfg.normalAttempts)
+                    val configuredLimit = attemptLimit(key!!, cfg.normalAttempts)
+                    val limit = if (key in setOf(DungeonKey.DEMIDEVIMON, DungeonKey.BAKEMON))
+                        configuredLimit else passUsage.limit(key!!, configuredLimit)
                     val spent = if (key in DungeonPassPolicy.dailyLimited) used.attempts else passUsage.attempts(key)
                     if(panel.remaining == 0 || spent >= limit) { finishCard(service,v,now); return true }
                     if(panel.remaining == null) { park(service,"Ticket counter unreadable: ${key!!.name}"); return true }
@@ -193,9 +195,12 @@ object DungeonRotationAnalyzer {
             }
             return true
         }
-        if(activeKey == null && HomeScreenDetector.detect(w,h,frame::argbAt)) {
+        if(activeKey == null && (HomeScreenDetector.detect(w,h,frame::argbAt) ||
+                de.robinthor.digiworldexplorer.automation.GameEntryDetector.detect(frame).screen ==
+                de.robinthor.digiworldexplorer.automation.EntryScreen.HOME)) {
             unknownAt=0L
             if(!stable("home")) return true
+            val homeViewport = HomeScreenDetector.viewport(w, h, frame::argbAt) ?: v
             if(returningHome) {
                 DungeonRotationRequest.complete()
                 // The passive classifier may already have promoted the visible screen to HOME.
@@ -209,7 +214,7 @@ object DungeonRotationAnalyzer {
                 reset()
             } else {
                 DungeonRotationRequest.openingList()
-                tap(service,v,NormalizedPoint(.375,.955),now,"Opening dungeon list")
+                tap(service,homeViewport,NormalizedPoint(.375,.955),now,"Opening dungeon list")
             }
             return true
         }
@@ -258,6 +263,8 @@ object DungeonRotationAnalyzer {
         waiting=""
     }
     internal fun panelKind(frame: PixelFrame,viewport: GameViewport,key: DungeonKey) = DungeonPanelDetector.detect(frame,key,viewport)?.kind ?: ""
+    internal fun attemptLimit(key: DungeonKey, configured: Int) =
+        if (key in setOf(DungeonKey.DEMIDEVIMON, DungeonKey.BAKEMON)) 15 else configured
     fun reset() {
         controller=null; settings=null; activeKey=null; waiting=""; waitingAt=0; settleUntil=0
         candidate=""; matches=0; returning=false; returningHome=false; unknownAt=0

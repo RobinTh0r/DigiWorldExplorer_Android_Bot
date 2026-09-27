@@ -13,7 +13,7 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 object DungeonFrameAnalyzer {
     private const val TAP_INTERVAL = 1_200L
     private const val PENDING_TAP_TIMEOUT = 2_500L
-    private const val REWARD_CLOSE_DELAY = 6_000L
+    private const val REWARD_CLOSE_DELAY = 2_000L
     private const val ACTIVE_RUN_TIMEOUT = 120_000L
     private const val HASH_CHANGE_MIN = 5
     private var sessionActive = false

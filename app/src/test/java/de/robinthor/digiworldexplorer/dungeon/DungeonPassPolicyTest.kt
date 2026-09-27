@@ -39,4 +39,10 @@ class DungeonPassPolicyTest {
         assertEquals(3, next.limit(DungeonKey.BAKEMON, 3))
         assertEquals(1, next.limit(DungeonKey.APOCALYMON_WALL, 3))
     }
+
+    @Test fun `difficult DemiDevimon and Bakemon cards get bounded fifteen start cap`() {
+        assertEquals(15, DungeonRotationAnalyzer.attemptLimit(DungeonKey.DEMIDEVIMON, 3))
+        assertEquals(15, DungeonRotationAnalyzer.attemptLimit(DungeonKey.BAKEMON, 3))
+        assertEquals(3, DungeonRotationAnalyzer.attemptLimit(DungeonKey.DIGIFACTORY, 3))
+    }
 }

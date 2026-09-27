@@ -491,3 +491,9 @@ erfinde aber keine live getesteten Ergebnisse. Keine Veröffentlichung ohne geso
 - Overlay-Layout live geprüft: Der Digi-Co-Pilot-Start/Stop-Button und genau diese vier Module stehen
   gemeinsam in einem gelb umrandeten Beta-Rahmen. Auto Summon, Bond & Friendship und Network Defense
   bleiben als normale Einzelfunktionen außerhalb; Dungeon Co-Pilot bleibt eine getrennte Beta-Aktion.
+- Dungeon-Livefeedback: Apocalymon öffnet und startet mit der eigenen Panel-Geometrie erfolgreich;
+  die Settings-Sperre ist entfernt, das harte Tageslimit bleibt. Reward-Abschluss wird nach zwei
+  Sekunden wiederholt bestätigt und besitzt zusätzlich eine strukturelle Erkennung für Apocalymon/
+  Network Defense. DemiDevimon und Bakemon sind pro manuellem Durchlauf auf 15 Gesamt-Kampfstarts
+  inklusive Ad-Gutschriften gedeckelt. Dungeon-Start akzeptiert Home über beide iconbasierten Home-
+  Detectoren und tippt den Dungeon-Button im tatsächlich ermittelten Game-Viewport.
