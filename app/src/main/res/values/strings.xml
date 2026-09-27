@@ -89,6 +89,8 @@
     <string name="quick_reloaded">Detection reloaded</string>
     <string name="quick_overlay_enable">Show Overlay Icon</string>
     <string name="quick_overlay_disable">Disable Overlay Icon</string>
+    <string name="status_overlay_enable">Show status panel</string>
+    <string name="status_overlay_disable">Hide status panel</string>
     <string name="quick_overlay_reconnect_accessibility">Accessibility control is not connected. Turn it off and on again, then return to the app.</string>
     <string name="auto_start">START</string>
     <string name="auto_start_with_capture">START + SHARE</string>

@@ -79,7 +79,7 @@ object AutoMoveController{
   // wird unauffindbar.
   val self=setOfNotNull(previous,expected)
   recentItems.replaceAll{_,ttl->ttl-1};recentItems.entries.removeIf{it.value<=0||it.key in self}
-  cells.filter{(_,score)->score.item>.06&&(!AutomationState.dwsNavigationSettings.collectOnlyEnergy||score.orange>.06)}
+  cells.filter{(_,score)->score.item>.06&&score.player<MIN_PLAYER&&(!AutomationState.dwsNavigationSettings.collectOnlyEnergy||score.orange>.06)}
    .filterKeys{it !in self}.keys.forEach{recentItems[it]=6}
   val service=DigiWorldAccessibilityService.instance
   if(pending&&SystemClock.elapsedRealtime()-lastTap>PENDING_TIMEOUT){

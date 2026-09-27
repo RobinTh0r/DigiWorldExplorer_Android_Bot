@@ -29,6 +29,15 @@ class CellClassifierTest{
   assertTrue(c.getValue(Cell(1,3)).orange>.06)
   assertTrue(c.getValue(Cell(3,2)).obstacle())
  }
+ @Test fun recognisesPartnerSpriteWithoutYellowEyes(){
+  val p=canvas();val partner=Cell(1,2)
+  p.fill(partner,0xff2090d0.toInt())
+  // Neutral dark body, intentionally without any yellow Botamon eye pixels.
+  p.blob(partner,0xff34383a.toInt(),.30)
+  val cells=CellClassifier.classify(w,h,p,b)
+  assertTrue("generic player=${cells.getValue(partner).player}",cells.getValue(partner).player>=.08)
+  assertEquals(partner, de.robinthor.digiworldexplorer.strategy.PlayerSelector.select(cells,null,null,emptySet())?.key)
+ }
 
  /**
   * Blendet das Spiel "Bewegung zum ausgewaehlten Ort ist nicht moeglich." ein, deckt weisse

@@ -616,7 +616,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OutlinedButton(
                 onClick = { onQuickOverlay(!quickOverlayEnabled) },
-                modifier = Modifier.weight(1.35f),
+                modifier = Modifier.weight(1.15f),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = betaContainerColor(),
                     contentColor = betaContentColor(),
@@ -634,10 +634,25 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 Spacer(Modifier.width(5.dp))
                 BetaChip()
             }
+            OutlinedButton(
+                onClick = onGrid,
+                enabled = overlay,
+                modifier = Modifier.weight(1.05f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (grid) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+                border = BorderStroke(1.dp, if (grid) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+                contentPadding = PaddingValues(horizontal = 5.dp, vertical = 7.dp),
+            ) {
+                Text(if (grid) "●" else "○", color = if (grid) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.onSurfaceVariant)
+                Spacer(Modifier.width(4.dp))
+                Text(stringResource(if (grid) R.string.status_overlay_disable else R.string.status_overlay_enable), fontSize = 8.5.sp, fontWeight = FontWeight.Bold, maxLines = 2, lineHeight = 9.sp)
+            }
             Button(
                 onClick = if (auto) onReturnToGame else onStart,
                 enabled = access,
-                modifier = Modifier.weight(.9f),
+                modifier = Modifier.weight(.8f),
                 colors = ButtonDefaults.buttonColors(containerColor = if (auto) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.primary),
                 contentPadding = PaddingValues(horizontal = 8.dp, vertical = 7.dp),
             ) {

@@ -17,4 +17,8 @@ class PlayerSelectorTest{
   val player=Cell(4,2)
   assertEquals(player,PlayerSelector.select(mapOf(player to s(.16,item=.10)),player,Cell(4,3),setOf(player))?.key)
  }
+ @Test fun acceptsNewGenericPartnerEvenWhenItsColoursAlsoLookLikeAnItem(){
+  val evolved=Cell(2,1)
+  assertEquals(evolved,PlayerSelector.select(mapOf(evolved to s(.14,item=.11)),null,null,emptySet())?.key)
+ }
 }

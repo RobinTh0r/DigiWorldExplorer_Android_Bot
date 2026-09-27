@@ -24,7 +24,7 @@ object CellClassifier{
    val y0=(b.top+row*ch+ch*.07).toInt().coerceIn(0,height-1)
    val y1=(b.top+(row+1)*ch-ch*(if(row==4).42 else .11)).toInt().coerceIn(y0+1,height)
    val playerY1=(b.top+(row+1)*ch-ch*.11).toInt().coerceIn(y0+1,height)
-   var n=0;var orange=0;var pink=0;var green=0;var red=0;var neutral=0;var yellow=0;var dark=0;var hi=0;var pyramid=0
+   var n=0;var orange=0;var pink=0;var green=0;var red=0;var neutral=0;var yellow=0;var dark=0;var body=0;var hi=0;var pyramid=0
    for(y in y0 until y1 step STEP)for(x in x0 until x1 step STEP){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val bl=p and 255;n++
     val o=r>180&&g>55&&g<190&&bl<100;if(o)orange++
     if(r>170&&bl>140&&g<170&&r>g+40)pink++
@@ -32,6 +32,10 @@ object CellClassifier{
     if(r>110&&r>g+45&&r>bl+25&&!o)red++
     val max=maxOf(r,g,bl);val min=minOf(r,g,bl);if(min>165&&max-min<65)neutral++
     if(r>190&&g>140&&bl<80)yellow++;if(r<65&&g<65&&bl<75)dark++
+    // Partner sprites change shape and colour, but their shaded body contains a stable share of
+    // dark, desaturated pixels. Unlike the old yellow-eye signature this also covers evolved
+    // partners. Saturated blue board tiles and purple pyramids deliberately do not qualify.
+    val delta=max-min;if(max<90&&(max==0||delta*255<max*120))body++
     if(bl>120&&g>90&&bl>r+25)hi++
     if(bl>70&&r>45&&bl>g+10)pyramid++
    }
@@ -40,6 +44,8 @@ object CellClassifier{
    // helle und rote Flaechen - beides trifft auf die Dialogschrift zu und hat die Verfolgung
    // auf die Fehlermeldung gezogen, statt auf die Figur.
    val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
+   val bodyFraction=q(body)
+   val genericBody=if(bodyFraction>=.05)(.08+(bodyFraction-.05)*2.0).coerceAtMost(.60) else 0.0
    // Die Krallen-Aufsammelbelohnung ist ein satt rotes Symbol, kein orangenes wie die
    // Energiekugel - ohne den eigenen Rotanteil wurde sie nie als Item erkannt und die Figur
    // ist einfach daran vorbeigelaufen.
@@ -57,13 +63,15 @@ object CellClassifier{
    // Rand unten). Fuer alle anderen Reihen ist der zweite Durchlauf Wort fuer Wort derselbe
    // Bereich und damit reine Doppelarbeit.
    val extra=if(row==4)playerScore(width,argb,x0,x1,y0,playerY1) else 0.0
-   out[Cell(row,col)]=CellScores(maxOf(shadow,extra),os,ps,gs,item,q(pyramid),q(hi),q(neutral))
+   out[Cell(row,col)]=CellScores(maxOf(shadow,genericBody,extra),os,ps,gs,item,q(pyramid),q(hi),q(neutral))
   }
   return out
  }
  private fun playerScore(width:Int,argb:IntArray,x0:Int,x1:Int,y0:Int,y1:Int):Double{
-  var n=0;var yellow=0;var dark=0;var hi=0;var orange=0
-  for(y in y0 until y1 step STEP)for(x in x0 until x1 step STEP){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val b=p and 255;n++;if(r>180&&g>55&&g<190&&b<100)orange++;if(r>190&&g>140&&b<80)yellow++;if(r<65&&g<65&&b<75)dark++;if(b>120&&g>90&&b>r+25)hi++}
+  var n=0;var yellow=0;var dark=0;var body=0;var hi=0;var orange=0
+  for(y in y0 until y1 step STEP)for(x in x0 until x1 step STEP){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val b=p and 255;n++;if(r>180&&g>55&&g<190&&b<100)orange++;if(r>190&&g>140&&b<80)yellow++;if(r<65&&g<65&&b<75)dark++;val max=maxOf(r,g,b);val min=minOf(r,g,b);val delta=max-min;if(max<90&&(max==0||delta*255<max*120))body++;if(b>120&&g>90&&b>r+25)hi++}
   fun q(v:Int):Double{return v/n.coerceAtLeast(1).toDouble()}
-  return if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
+  val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
+  val bodyFraction=q(body);val genericBody=if(bodyFraction>=.05)(.08+(bodyFraction-.05)*2.0).coerceAtMost(.60) else 0.0
+  return maxOf(shadow,genericBody)
  }}
