@@ -97,6 +97,13 @@ class BondRotation {
             }
             BondStep.SELECT -> if (grid.selected == target && grid.canRaise) return issue(BondStep.RAISE, now)
             BondStep.RAISE -> {
+                // The confirmation dialog can appear and disappear between capture frames on
+                // fast phones. A changed active-partner marker is definitive visual proof that
+                // the switch completed; continue Home instead of waiting until the deadline.
+                if (grid.page && grid.raised == target && !grid.canRaise) {
+                    visited++
+                    return issue(BondStep.HOME, now)
+                }
                 if (grid.confirmation) return issue(BondStep.CONFIRM, now)
                 if (grid.page && grid.selected == target && grid.canRaise && now - issuedAt >= 4_000 && retries < 2) {
                     retries++; issuedAt = now

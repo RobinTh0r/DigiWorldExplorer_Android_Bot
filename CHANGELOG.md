@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.0.2 Beta 2 — 27 September 2026
+
+- Fixed Touch to Start recognition on OnePlus 8T Pro and current Galaxy tall-screen layouts.
+- Reworked tall-phone dungeon panel anchors and counter regions for Apocalymon, DemiDevimon and Network Defense.
+- Fixed positive counters such as `4/2` being interpreted as zero because of the shape of digit 4.
+- Added Bond recovery when a fast device switches partner between capture frames and the confirmation dialog is never observed.
+- Verified title, dungeon panels and active Partner state directly against five supplied 582×1280 device captures.
+
 ## 5.0.2 Beta 1 — 27 September 2026
 
 - Added adaptive tall-phone coordinate mapping for current 19.5:9 and 20:9 Android displays.

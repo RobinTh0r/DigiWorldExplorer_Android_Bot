@@ -137,4 +137,14 @@ class BondRotationTest {
         tour.tick(false, PartnerGrid(confirmation = true), false, 25_001)
         assertEquals(BondStep.PARK, tour.step)
     }
+
+    @Test fun `active marker recovers when fast phone skips confirmation capture`() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        val first = PartnerGrid(true, true, cells, raised = 0, selected = 0)
+        tour.tick(true, PartnerGrid(), false, 0)
+        tour.tick(false, first, false, 1)
+        tour.tick(false, first.copy(selected = 1, canRaise = true), false, 2)
+        assertEquals(BondStep.HOME, tour.tick(false, first.copy(raised = 1, selected = 1, canRaise = false), false, 3)?.step)
+    }
 }

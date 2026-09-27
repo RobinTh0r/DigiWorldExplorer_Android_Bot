@@ -172,7 +172,9 @@ object DungeonRotationAnalyzer {
                     // for every repeatable dungeon.
                     val noTickets = panel.remaining == 0 && key != DungeonKey.APOCALYMON_WALL
                     if(noTickets || spent >= limit) { finishCard(service,v,now); return true }
-                    if(panel.remaining == null) { park(service,"Ticket counter unreadable: ${key!!.name}"); return true }
+                    if(panel.remaining == null && key != DungeonKey.APOCALYMON_WALL) {
+                        park(service,"Ticket counter unreadable: ${key!!.name}"); return true
+                    }
                     val target = if(key==DungeonKey.NETWORK_DEFENSE) NormalizedPoint(.5,.79) else panel.target
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
