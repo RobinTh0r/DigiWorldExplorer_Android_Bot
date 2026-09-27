@@ -24,6 +24,16 @@ class GameEntryControllerTest {
         assertEquals(EntryAction.CLOSE_RESULT,GameEntryController().tick(EntryScreen.RESULT,0))
         assertEquals(EntryAction.WAIT,GameEntryController().tick(EntryScreen.UNKNOWN,1))
     }
+    @Test fun visibleResultRetriesReceiveTapWithoutUnboundedSpam() {
+        val c = GameEntryController()
+        assertEquals(EntryAction.CLOSE_RESULT, c.tick(EntryScreen.RESULT, 0))
+        assertEquals(EntryAction.WAIT, c.tick(EntryScreen.RESULT, 2_499))
+        assertEquals(EntryAction.CLOSE_RESULT, c.tick(EntryScreen.RESULT, 2_500))
+        assertEquals(EntryAction.CLOSE_RESULT, c.tick(EntryScreen.RESULT, 5_000))
+        assertEquals(EntryAction.CLOSE_RESULT, c.tick(EntryScreen.RESULT, 7_500))
+        assertEquals(EntryAction.WAIT, c.tick(EntryScreen.RESULT, 10_000))
+        assertEquals(EntryAction.PARK, c.tick(EntryScreen.RESULT, 20_000))
+    }
     @Test fun adNeedsPassAndCountThenVerifiedDecrement() {
         assertEquals(EntryAction.CLAIM_IDLE,GameEntryController().tick(EntryScreen.IDLE_CLAIM,0,false,2))
         assertEquals(EntryAction.CLAIM_IDLE,GameEntryController().tick(EntryScreen.IDLE_CLAIM,0,true,null))

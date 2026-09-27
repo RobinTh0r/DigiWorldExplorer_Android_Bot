@@ -35,7 +35,25 @@ object GameEntryAnalyzer {
             (255 shl 24) or ((buffer.get(offset).toInt() and 255) shl 16) or
                 ((buffer.get(offset + 1).toInt() and 255) shl 8) or (buffer.get(offset + 2).toInt() and 255)
         }
+        // The colorful field can resemble the idle-reward panel to the broad entry detector.
+        // A positively recognized Meat Field is an established game page and must be released
+        // to FarmHarvestAnalyzer instead of keeping the blocking entry flow alive.
+        val gameViewport = de.robinthor.digiworldexplorer.vision.GameViewport.fit(w, h)
+        if (de.robinthor.digiworldexplorer.farm.FarmHarvestDetector.detect(frame, gameViewport).field) {
+            reset()
+            return false
+        }
         val reading = GameEntryDetector.detect(frame)
+        // A remembered entry task must not monopolize frames once a real game page appears.
+        if (reading.screen == EntryScreen.UNKNOWN) {
+            val partner = de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame)
+            if (partner.page || partner.confirmation ||
+                KnownPageDetector.detect(frame) != ObservedScreen.UNKNOWN ||
+                de.robinthor.digiworldexplorer.farm.ExploreMenuDetector.detect(frame).menu) {
+                reset()
+                return false
+            }
+        }
         if (reading.screen == signature) confirmations++ else if (
             // Once the real start field was seen, a single animated/loading frame must not erase
             // that evidence. Two independently observed READY frames are still required to tap.
@@ -55,7 +73,9 @@ object GameEntryAnalyzer {
         observedScreen = when (reading.screen) {
             EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY, EntryScreen.RESULT -> ObservedScreen.IDLE_REWARDS
             EntryScreen.HOME -> ObservedScreen.HOME
-            else -> ObservedScreen.LOGIN
+            EntryScreen.LOGIN_LOADING, EntryScreen.LOGIN_READY -> ObservedScreen.LOGIN
+            EntryScreen.NOTICE -> ObservedScreen.MESSAGE
+            EntryScreen.UNKNOWN -> ObservedScreen.UNKNOWN
         }
         if (reading.screen == EntryScreen.HOME) {
             controller.tick(EntryScreen.HOME, now)
@@ -106,11 +126,15 @@ object GameEntryAnalyzer {
         if (target != null) {
             // Entry fixtures and the title screen cover the complete captured game surface.
             // Viewport remapping shifts the title target upward on BlueStacks.
-            val x = (target.x * w).toFloat()
-            val y = (target.y * h).toFloat()
+            val bounds = reading.viewport ?: de.robinthor.digiworldexplorer.vision.GameViewport(0, 0, w, h)
+            val x = (bounds.left + target.x * bounds.width).toFloat()
+            val y = (bounds.top + target.y * bounds.height).toFloat()
             AutomationEventLog.record(AutomationEventKind.ACTION_DISPATCHED, "ENTRY_${action.name}")
             service.dispatchValidatedTap(x, y) { success ->
-                if (!success) synchronized(this) { controller.cancel() }
+                // Unity commonly replaces the window before Accessibility reports completion.
+                // Treat the next verified screen as proof; the controller's deadline still parks
+                // safely when the visual transition never occurs.
+                if (!success) android.util.Log.w("DigiWorldEntry", "gesture callback cancelled for $action; awaiting visual proof")
             }
         }
         return true

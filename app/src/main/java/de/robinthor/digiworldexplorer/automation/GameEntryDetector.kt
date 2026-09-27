@@ -5,7 +5,7 @@ import de.robinthor.digiworldexplorer.vision.NormalizedPoint
 import de.robinthor.digiworldexplorer.vision.PixelFrame
 import de.robinthor.digiworldexplorer.vision.ratioInViewportPatch
 
-data class GameEntryReading(val screen: EntryScreen, val adRemaining: Int? = null)
+data class GameEntryReading(val screen: EntryScreen, val adRemaining: Int? = null, val viewport: GameViewport? = null)
 
 /** Conservative, language-independent recognition for the game's title and idle-reward flow. */
 object GameEntryDetector {
@@ -32,37 +32,17 @@ object GameEntryDetector {
         if (noticeHeader > .35 && noticePanel > .30 && noticeCards > .18)
             return GameEntryReading(EntryScreen.NOTICE)
 
-        val viewport = GameViewport.fit(frame.width, frame.height)
-        val purple = frame.ratioInViewportPatch(viewport, NormalizedPoint(.50, .46), .38, .38) {
-            it.red > 65 && it.blue > 80 && it.blue > it.green * 1.18 && it.red > it.green * 1.05
-        }
-        // Use full-frame coordinates here: the loading progress bar sits lower (about 91%) and
-        // must never be confused with the wide Touch-to-Start button at about 84%.
-        val cyanStart = ratio(frame, .20, .815, .80, .87) {
-            it.blue > 110 && it.green > 80 && it.blue > it.red * 1.22
-        }
-        val whiteLabel = ratio(frame, .34, .825, .66, .86) {
-            it.red > 185 && it.green > 185 && it.blue > 185
-        }
-        if (purple > .24 && cyanStart > .44 && whiteLabel > .025)
-            return GameEntryReading(EntryScreen.LOGIN_READY)
-        if (purple > .24) return GameEntryReading(EntryScreen.LOGIN_LOADING)
-
-        // Home is intentionally last: its broad, animation-tolerant detector also sees parts of
-        // the title artwork. Specific blocking entry screens must always win.
-        val bottomNavigation = ratio(frame, .05, .90, .95, .995) {
-            it.blue > 75 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
-        }
-        val rightActionRail = ratio(frame, .77, .07, .94, .32) {
-            it.blue > 80 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
-        }
-        val centerBlue = ratio(frame, .22, .30, .72, .72) {
-            it.blue > 80 && it.blue > it.red * 1.35 && it.blue > it.green * 1.03
-        }
-        if (HomeScreenDetector.detect(frame.width, frame.height, frame::argbAt) ||
-            (bottomNavigation > .18 && rightActionRail > .08 && centerBlue < .45))
+        // Fixed Home controls outrank artwork: stages may also be pink/purple like the title.
+        if (HomeScreenDetector.detect(frame.width, frame.height, frame::argbAt))
             return GameEntryReading(EntryScreen.HOME)
-        return GameEntryReading(EntryScreen.UNKNOWN)
+
+        // Shared game chrome and positively recognized Partner screens cannot be a title.
+        val partner = de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame)
+        if (partner.page || partner.confirmation) return GameEntryReading(EntryScreen.UNKNOWN)
+        val titleViewport = TitleScreenEvidence.viewport(frame) ?: return GameEntryReading(EntryScreen.UNKNOWN)
+        if (TitleScreenEvidence.ready(frame, titleViewport))
+            return GameEntryReading(EntryScreen.LOGIN_READY, viewport = titleViewport)
+        return GameEntryReading(EntryScreen.LOGIN_LOADING, viewport = titleViewport)
     }
 
     /** Red numerator means 0/2. A visibly enabled purple button means at least one remains. */

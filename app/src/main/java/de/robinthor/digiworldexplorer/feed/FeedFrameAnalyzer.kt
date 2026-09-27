@@ -19,10 +19,13 @@ object FeedFrameAnalyzer {
     private var nextTapAt = 0L
     private var tapsLeft = 0
     private var cooldownUntil = 0L
+    private var lastBubbleSeenAt = 0L
+    @Volatile private var lastCollectedAt = 0L
 
-    fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L }
+    fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; lastCollectedAt = 0L }
+    fun collectedSince(since: Long): Boolean = lastCollectedAt >= since && since > 0L
 
-    fun analyze(image: Image, width: Int, height: Int): Boolean {
+    fun analyze(image: Image, width: Int, height: Int, homeAlreadyConfirmed: Boolean = false): Boolean {
         if (!AutomationState.autoFeedEnabled) { reset(); return false }
         if (!AutomationState.enabled) { reset(); return false }
         val now=SystemClock.elapsedRealtime()
@@ -33,24 +36,10 @@ object FeedFrameAnalyzer {
             return Color.rgb(buffer.get(offset).toInt() and 255, buffer.get(offset + 1).toInt() and 255, buffer.get(offset + 2).toInt() and 255)
         }
 
-        fun sampleRatio(l:Float,t:Float,r:Float,b:Float,steps:Int,p:(Int)->Boolean):Double {
-            var matches=0; var total=0
-            for (iy in 0 until steps) for (ix in 0 until steps) {
-                val x=(width*(l+(r-l)*(ix+.5f)/steps)).toInt().coerceIn(0,width-1)
-                val y=(height*(t+(b-t)*(iy+.5f)/steps)).toInt().coerceIn(0,height-1)
-                total++; if(p(rgb(x,y)))matches++
-            }
-            return matches.toDouble()/total.coerceAtLeast(1)
-        }
-
-        // Main screen fingerprint: dark-blue bottom control deck and no cyan Partner header.
-        val bottomDark = sampleRatio(.18f, .76f, .82f, .92f, 12) { c ->
-            Color.blue(c) > Color.red(c) * 1.25 && Color.blue(c) > Color.green(c) * 1.05 && Color.blue(c) < 150
-        }
-        val headerCyan = sampleRatio(.18f, .13f, .82f, .18f, 8) { c ->
-            Color.blue(c) > 145 && Color.green(c) > 105 && Color.red(c) < 85
-        }
-        if (bottomDark < .30 || headerCyan > .32 ||
+        // HomeScreenDetector uses the stable navigation/header icons. Do not additionally gate
+        // feeding on stage artwork colours: bright stages such as Binary Load legitimately make
+        // the old dark-deck/cyan ratios fail while the food bubble is plainly visible.
+        if (!homeAlreadyConfirmed &&
             !de.robinthor.digiworldexplorer.automation.HomeScreenDetector.detect(width, height, ::rgb)) {
             stableFrames = 0; mainScreenFrames = 0; return false
         }
@@ -58,13 +47,28 @@ object FeedFrameAnalyzer {
 
         val frame = de.robinthor.digiworldexplorer.vision.PixelFrame(width, height) { x,y -> rgb(x,y) }
         val bubble = BondBubbleDetector.detect(frame)
-        if (bubble == null) { stableFrames = 0; tapsLeft = 0; return true }
+        if (bubble == null) {
+            // The animated bubble can disappear for individual capture frames. Once Home has
+            // already been proven by BondRotation, retain nearby evidence briefly instead of
+            // requiring an impossible uninterrupted run of detections.
+            if (!homeAlreadyConfirmed || now - lastBubbleSeenAt > 1_500L) stableFrames = 0
+            tapsLeft = 0
+            return true
+        }
         val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(bubble)
         val cx = px.toFloat(); val cy = py.toFloat()
-        if (kotlin.math.abs(cx-lastX) < width*.04f && kotlin.math.abs(cy-lastY) < height*.035f) stableFrames++ else stableFrames=1
+        val recentConfirmedBubble = homeAlreadyConfirmed && now - lastBubbleSeenAt <= 1_500L
+        if (recentConfirmedBubble ||
+            (kotlin.math.abs(cx-lastX) < width*.04f && kotlin.math.abs(cy-lastY) < height*.035f)) stableFrames++
+        else stableFrames=1
         lastX=cx; lastY=cy
+        lastBubbleSeenAt=now
         if (progressSequence(now)) return true
-        if (stableFrames >= 4 && mainScreenFrames >= 4 && tapsLeft == 0 && now >= cooldownUntil) {
+        // The bubble can be exposed for only one sampled frame while a failed stage restarts.
+        // In this branch both the caller and the Home detector have already established the
+        // bounded COLLECT state, so the bubble detector itself is sufficient authorization.
+        val requiredStableFrames = if (homeAlreadyConfirmed) 1 else 4
+        if (stableFrames >= requiredStableFrames && mainScreenFrames >= requiredStableFrames && tapsLeft == 0 && now >= cooldownUntil) {
             tapsLeft = 1; tappingUntil = now + 3_000L; nextTapAt = now
         }
         return true
@@ -74,6 +78,7 @@ object FeedFrameAnalyzer {
         stableFrames = 0
         mainScreenFrames = 0
         cooldownUntil = 0L
+        lastBubbleSeenAt = 0L
     }
 
     fun pauseForDigiWorld() {
@@ -92,7 +97,7 @@ object FeedFrameAnalyzer {
                 DigiWorldAccessibilityService.instance?.apply {
                     updateStatusKeepingGrid(getString(R.string.overlay_auto_feed),true)
                     android.util.Log.i("DigiWorldBond", "collect bubble=$lastX,$lastY")
-                    dispatchSafeRandomizedTap(lastX,lastY) { }
+                    dispatchSafeRandomizedTap(lastX,lastY) { ok -> if (ok) lastCollectedAt = now }
                 }
                 if (tapsLeft==0) cooldownUntil=now+60_000L
             }

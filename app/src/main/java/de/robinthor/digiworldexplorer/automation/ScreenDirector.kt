@@ -27,6 +27,7 @@ data class DirectorSnapshot(
     val action: String = "No action",
     val confidence: Int = 0,
     val bondCooldownMillis: Long = 0,
+    val copilot: String = "",
 )
 
 /**
@@ -107,6 +108,14 @@ object ScreenDirector {
             else -> 50
         },
         bondCooldownMillis = BondCycleTimer.remainingMillis(),
+        copilot = when {
+            !automationEnabled -> ""
+            de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active() -> "Dungeon Co-Pilot"
+            de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames() -> ""
+            de.robinthor.digiworldexplorer.feed.BondRotationRequest.active() ||
+                DigiCopilotRequest.active() -> "Digi Co-Pilot"
+            else -> ""
+        },
     )
 
     @Synchronized

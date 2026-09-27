@@ -46,6 +46,25 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     private var bubble: View? = null
     private var directorTitle: TextView? = null
     private var directorAction: TextView? = null
+    private var directorTimer: TextView? = null
+    private val timerHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private val timerTick = object : Runnable {
+        override fun run() {
+            if (root == null) return
+            updateTimer()
+            timerHandler.postDelayed(this, 1_000L)
+        }
+    }
+
+    private fun updateTimer() {
+        val remaining = de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis()
+        val seconds = (remaining + 999) / 1000
+        directorTimer?.text = when {
+            de.robinthor.digiworldexplorer.feed.BondRotationRequest.active() -> "Bond-Rotation läuft"
+            seconds > 0 -> "Bond %02d:%02d".format(seconds / 60, seconds % 60)
+            else -> "Nächster Bond bereit"
+        }
+    }
     private var directorCard: View? = null
     private var directorTail: View? = null
     private var eyeStatus: BotEyeStatusView? = null
@@ -56,6 +75,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     fun show() {
         if (root != null) return
+        de.robinthor.digiworldexplorer.automation.BondCycleTimer.initialize(service)
         val density = service.resources.displayMetrics.density
         val container = LinearLayout(service).apply {
             orientation = LinearLayout.VERTICAL
@@ -93,13 +113,22 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         val action = TextView(service).apply {
             textSize = 10f; setTextColor(Color.rgb(150, 229, 224)); maxLines = 1
         }
+        val timer = TextView(service).apply {
+            textSize = 9f; setTextColor(Color.rgb(210, 177, 255)); maxLines = 1
+            gravity = Gravity.END or Gravity.CENTER_VERTICAL
+        }
+        val actionRow = LinearLayout(service).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(action, LinearLayout.LayoutParams(0, WindowManager.LayoutParams.MATCH_PARENT, 1f))
+            addView(timer, LinearLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.MATCH_PARENT))
+        }
         val statusCard = LinearLayout(service).apply {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_VERTICAL
             setPadding((10 * density).toInt(), 0, (10 * density).toInt(), 0)
             background = rounded(Color.argb(232, 16, 24, 38), 11 * density)
             addView(title, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, 0, 1f))
-            addView(action, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, 0, 1f))
+            addView(actionRow, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, 0, 1f))
             layoutParams = LinearLayout.LayoutParams((198 * density).toInt(), (52 * density).toInt())
         }
         val tail = View(service).apply {
@@ -133,25 +162,28 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             PixelFormat.TRANSLUCENT,
         ).apply {
             gravity = Gravity.TOP or Gravity.START
+            val screenHeight = if (Build.VERSION.SDK_INT >= 30) windowManager.maximumWindowMetrics.bounds.height()
+                else service.resources.displayMetrics.heightPixels
             x = preferences.getInt("quick_overlay_x", (8 * density).toInt())
-            y = preferences.getInt("quick_overlay_y", (260 * density).toInt())
+            y = preferences.getInt("quick_overlay_y", (screenHeight * .15f).toInt())
         }
         val cardVisible = preferences.getBoolean("director_card_visible", true)
         statusCard.visibility = if (cardVisible) View.VISIBLE else View.GONE
         tail.visibility = statusCard.visibility
-        installDragAndClick(iconStack, layoutParams) {
+        installDragAndClick(iconStack, layoutParams, onLongPress = {
             val visible = statusCard.visibility != View.VISIBLE
             statusCard.visibility = if (visible) View.VISIBLE else View.GONE
             tail.visibility = statusCard.visibility
             preferences.edit().putBoolean("director_card_visible", visible).apply()
             root?.requestLayout()
-        }
-        installDragAndClick(statusCard, layoutParams) { togglePanel(layoutParams) }
+        }) { togglePanel(layoutParams) }
+        installDragAndClick(statusCard, layoutParams) { }
         root = container
         panel = menu
         bubble = iconStack
         directorTitle = title
         directorAction = action
+        directorTimer = timer
         directorCard = statusCard
         directorTail = tail
         eyeStatus = eyes
@@ -159,9 +191,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         runCatching { windowManager.addView(container, layoutParams) }
         refresh()
         updateDirector(de.robinthor.digiworldexplorer.automation.ScreenDirector.snapshot())
+        timerHandler.post(timerTick)
     }
 
     fun destroy() {
+        timerHandler.removeCallbacks(timerTick)
+        directorTimer = null
         root?.let { runCatching { windowManager.removeView(it) } }
         root = null
         panel = null
@@ -182,11 +217,11 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     fun updateDirector(snapshot: DirectorSnapshot) {
         root?.post {
-            directorTitle?.text = "${snapshot.state} · Screen: ${snapshot.screen.label}"
-            val value = snapshot.action.ifBlank { "No action" }
-            val seconds = (snapshot.bondCooldownMillis + 999) / 1000
-            val timer = if (seconds > 0) " · Bond %02d:%02d".format(seconds / 60, seconds % 60) else ""
-            directorAction?.text = "Action: ${if (value.length > 20) value.take(19) + "…" else value}$timer"
+            val captureActive = CaptureSessionState.snapshot(AutomationState.enabled).captureActive
+            directorTitle?.text = if (!captureActive) "Screen capture stopped" else "${snapshot.copilot.ifBlank { snapshot.state }} · ${snapshot.screen.label}"
+            val value = if (!captureActive) "Start / Restart Bot" else snapshot.action.ifBlank { "No action" }
+            directorAction?.text = if (value.length > 20) value.take(19) + "…" else value
+            updateTimer()
             eyeStatus?.update(snapshot)
         }
     }
@@ -197,11 +232,13 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         background = rounded(Color.argb(248, 27, 30, 36), 16 * density)
         elevation = 10f * density
         addView(featureToggle("Auto Summon", "auto_purchase", AutomationState.autoPurchaseEnabled, density))
-        addView(featureToggle("VS / Tower Loop", "auto_dungeon", AutomationState.autoDungeonEnabled, density))
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
-        addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density))
-        addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density))
+        addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
+        addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
+        addView(featureToggle("DWS im Digi Co-Pilot (5 min)", "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
+        addView(actionButton("Statusanzeige ein / aus") { toggleDirectorCard(); collapse() },
+            LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (42 * density).toInt()).apply { bottomMargin = (6 * density).toInt() })
         val topRow = LinearLayout(service).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
@@ -215,11 +252,14 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             collapse()
         }, LinearLayout.LayoutParams(0, (48 * density).toInt(), 1f).apply { marginStart = (4 * density).toInt() })
         addView(topRow)
-        addView(actionButton("Start Dungeon Rotation") {
+        addView(actionButton(if (DungeonRotationRequest.active()) "Dungeon Co-Pilot stoppen" else "Dungeon Co-Pilot starten", beta = true) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
             } else if (!AutomationState.enabled) {
                 service.showStatusOnly("Start the bot first")
+            } else if (DungeonRotationRequest.active()) {
+                DungeonRotationRequest.cancel()
+                service.showStatusOnly("Dungeon Co-Pilot stopped")
             } else {
                 DungeonRotationRequest.start(service)
                 val apoc = if (de.robinthor.digiworldexplorer.dungeon.DungeonKey.APOCALYMON_WALL in DungeonRotationRequest.completedToday) "; Apocalymon done" else ""
@@ -227,14 +267,37 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             }
             collapse()
         }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
-        addView(actionButton("Force Start Bond Rotation") {
+        addView(actionButton(if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()) "Digi Co-Pilot stoppen" else "Digi Co-Pilot starten", beta = true) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
             } else if (!AutomationState.enabled) {
                 service.showStatusOnly("Start the bot first")
             } else {
-                de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
-                service.showStatusOnly("Bond rotation: waiting for verified Home")
+                if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()) {
+                    de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("Stopped by user")
+                    de.robinthor.digiworldexplorer.feed.BondRotationRequest.cancel()
+                    service.showStatusOnly("Digi Co-Pilot stopped")
+                } else if (DungeonRotationRequest.ownsFrames()) {
+                    service.showStatusOnly("Stop Dungeon Co-Pilot first")
+                } else {
+                    // Digi Co-Pilot means the complete core route. Do not silently skip Bond or
+                    // Meat Field merely because an older per-module preference was left off.
+                    AutomationState.autoBondRotationEnabled = true
+                    AutomationState.autoFarmEnabled = true
+                    preferences.edit()
+                        .putBoolean("auto_bond_rotation", true)
+                        .putBoolean("auto_farm_harvest", true)
+                        .apply()
+                    refreshFeatureSwitches()
+                    de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.start()
+                    if (de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis() == 0L)
+                        de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
+                    else {
+                        de.robinthor.digiworldexplorer.automation.BondCycleTimer.requestFarmRecovery()
+                        de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.requestVisit()
+                    }
+                    service.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
+                }
             }
             collapse()
         }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
@@ -245,7 +308,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     }
 
     @Suppress("DEPRECATION")
-    private fun featureToggle(label: String, preferenceKey: String, initialValue: Boolean, density: Float): LinearLayout {
+    private fun featureToggle(label: String, preferenceKey: String, initialValue: Boolean, density: Float, beta: Boolean = false): LinearLayout {
         val toggle = Switch(service).apply {
             isChecked = preferences.getBoolean(preferenceKey, initialValue)
             showText = false
@@ -267,9 +330,9 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             gravity = Gravity.CENTER_VERTICAL
             setPadding((4 * density).toInt(), 0, 0, 0)
             addView(TextView(service).apply {
-                text = label
+                text = if (beta) "$label  · BETA" else label
                 textSize = 13f
-                setTextColor(Color.rgb(244, 245, 246))
+                setTextColor(if (beta) Color.rgb(255, 202, 74) else Color.rgb(244, 245, 246))
                 maxLines = 1
             }, LinearLayout.LayoutParams(0, (42 * density).toInt(), 1f).apply { gravity = Gravity.CENTER_VERTICAL })
             addView(toggle, LinearLayout.LayoutParams(WindowManager.LayoutParams.WRAP_CONTENT, (42 * density).toInt()))
@@ -301,6 +364,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
                 featureSwitches[preferenceKey]?.isChecked = allowed
             }
+            "copilot_dws" -> {
+                val allowed = enabled && SupporterLicenseManager.load(service) != null
+                AutomationState.copilotDwsEnabled = allowed
+                if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
+                featureSwitches[preferenceKey]?.isChecked = allowed
+            }
             "auto_bond_rotation" -> {
                 val allowed = enabled && SupporterLicenseManager.load(service) != null
                 AutomationState.autoBondRotationEnabled = allowed
@@ -324,27 +393,36 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         featureSwitches["auto_feed"]?.isChecked = preferences.getBoolean("auto_feed", false)
         featureSwitches["auto_bond_rotation"]?.isChecked = supporter && preferences.getBoolean("auto_bond_rotation", false)
         featureSwitches["auto_farm_harvest"]?.isChecked = supporter && preferences.getBoolean("auto_farm_harvest", false)
+        featureSwitches["copilot_dws"]?.isChecked = supporter && preferences.getBoolean("copilot_dws", false)
         featureSwitches["auto_network_defense"]?.isChecked = preferences.getBoolean("auto_network_defense", false)
         syncingFeatureSwitches = false
     }
 
-    private fun actionButton(label: String, danger: Boolean = false, action: () -> Unit): Button = Button(service).apply {
-        text = label
+    private fun actionButton(label: String, danger: Boolean = false, beta: Boolean = false, action: () -> Unit): Button = Button(service).apply {
+        text = if (beta) "$label  · BETA" else label
         textSize = 12f
         isAllCaps = false
         setTextColor(Color.WHITE)
-        backgroundTintList = android.content.res.ColorStateList.valueOf(if (danger) Color.rgb(230, 92, 97) else Color.rgb(20, 127, 130))
+        backgroundTintList = android.content.res.ColorStateList.valueOf(
+            if (danger) Color.rgb(230, 92, 97) else if (beta) Color.rgb(176, 112, 0) else Color.rgb(20, 127, 130)
+        )
         setOnClickListener { action() }
     }
 
     private fun reloadAutomation() {
         val supporter = SupporterLicenseManager.load(service) != null
+        AutomationState.mode = de.robinthor.digiworldexplorer.automation.AutomationMode.fromPreference(
+            preferences.getString("automation_mode", null))
+        AutomationState.farmWateringEnabled = preferences.getBoolean("farm_watering", true)
+        AutomationState.adSkipPassEnabled = preferences.getBoolean("ad_skip_pass", false)
+        de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
         AutomationState.overlayEnabled = preferences.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = preferences.getBoolean("auto_purchase", true)
         AutomationState.autoDungeonEnabled = supporter && preferences.getBoolean("auto_dungeon", true)
         AutomationState.autoNetworkDefenseEnabled = preferences.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = preferences.getBoolean("auto_feed", false)
         AutomationState.autoBondRotationEnabled = supporter && preferences.getBoolean("auto_bond_rotation", false)
+        AutomationState.copilotDwsEnabled = supporter && preferences.getBoolean("copilot_dws", false)
         AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", false)
         AutomationState.dwsNavigationSettings = AutomationState.dwsNavigationSettings.copy(blindStageFailedTap = true)
         RewardPurchaseFrameAnalyzer.reset()
@@ -381,7 +459,8 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         panel?.visibility = View.GONE
     }
 
-    private fun installDragAndClick(view: View, layoutParams: WindowManager.LayoutParams, onClick: () -> Unit) {
+    private fun installDragAndClick(view: View, layoutParams: WindowManager.LayoutParams,
+        onLongPress: (() -> Unit)? = null, onClick: () -> Unit) {
         var startX = 0
         var startY = 0
         var downX = 0f
@@ -402,8 +481,10 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 MotionEvent.ACTION_UP -> {
                     val moved = abs(event.rawX - downX) + abs(event.rawY - downY)
                     val clickTolerance = 32f * service.resources.displayMetrics.density
-                    if (moved < clickTolerance && SystemClock.elapsedRealtime() - downAt < 1_200L) {
-                        onClick()
+                    val held = SystemClock.elapsedRealtime() - downAt
+                    if (moved < clickTolerance) {
+                        if (held >= 2_000L && onLongPress != null) onLongPress()
+                        else if (held < 1_200L) onClick()
                     }
                     preferences.edit().putInt("quick_overlay_x", layoutParams.x).putInt("quick_overlay_y", layoutParams.y).apply()
                     true
@@ -411,6 +492,15 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 else -> false
             }
         }
+    }
+
+    private fun toggleDirectorCard() {
+        val card = directorCard ?: return
+        val visible = card.visibility != View.VISIBLE
+        card.visibility = if (visible) View.VISIBLE else View.GONE
+        directorTail?.visibility = card.visibility
+        preferences.edit().putBoolean("director_card_visible", visible).apply()
+        root?.requestLayout()
     }
 
     private fun togglePanel(layoutParams: WindowManager.LayoutParams) {

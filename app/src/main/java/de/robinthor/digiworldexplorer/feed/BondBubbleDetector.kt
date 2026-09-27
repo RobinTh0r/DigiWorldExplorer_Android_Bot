@@ -9,7 +9,10 @@ object BondBubbleDetector {
         val w = 360; val h = 640
         val white = BooleanArray(w*h)
         val cyan = BooleanArray(w*h)
-        for (y in 175..300) for (x in 150..225) {
+        // Partner position and phone aspect ratio move the bubble farther horizontally than the
+        // original single reference frame. Keep the vertical Home-stage band but cover the full
+        // central partner area.
+        for (y in 175..300) for (x in 115..245) {
             val p = frame.rgbAt(viewport.left+x*viewport.width/w, viewport.top+y*viewport.height/h)
             white[y*w+x] = minOf(p.red,p.green,p.blue) > 200 && maxOf(p.red,p.green,p.blue)-minOf(p.red,p.green,p.blue)<40
             cyan[y*w+x] = p.red < 100 && p.green > 170 && p.blue > 170
@@ -22,7 +25,7 @@ object BondBubbleDetector {
                 if (x in 0 until w && y in 0 until h && cyan[y*w+x]) border++
             border >= 15
         }
-        val panel = panels.singleOrNull() ?: return null
+        val panel = panels.maxByOrNull { it.pixels } ?: return null
         return NormalizedPoint((panel.left+panel.width/2.0)/w, (panel.top+panel.height/2.0)/h)
     }
 }

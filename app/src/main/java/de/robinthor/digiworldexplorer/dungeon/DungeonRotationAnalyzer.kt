@@ -26,10 +26,15 @@ object DungeonRotationAnalyzer {
     private var startRetries = 0
     private var retryAt = 0L
     private var rewardFallbackAt = 0L
+    private var passUsage = DungeonPassUsage()
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!AutomationState.enabled || !DungeonRotationRequest.active()) return false
         val service = DigiWorldAccessibilityService.instance ?: return true
+        if (de.robinthor.digiworldexplorer.license.SupporterLicenseManager.load(service) == null) {
+            park(service, "Beta access required")
+            return true
+        }
         val plane = image.planes.firstOrNull() ?: return true
         val w = minOf(width,image.width); val h = minOf(height,image.height)
         val bytes = plane.buffer
@@ -44,6 +49,15 @@ object DungeonRotationAnalyzer {
         if(now < settleUntil) return true
         val cfg = settings ?: DungeonSettingsStore.load(service).also { settings=it }
         val key = activeKey
+        // Failure recovery belongs to this run; unrelated entry analyzers stay excluded.
+        if (key == DungeonKey.NETWORK_DEFENSE && waiting == "battle" &&
+            de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer.analyze(image, w, h, rotationOwned = true)) return true
+        if (key != null && key != DungeonKey.NETWORK_DEFENSE && waiting == "battle" &&
+            de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.detect(w, h, frame::argbAt)) {
+            onLoss()
+            tap(service, v, NormalizedPoint(.5, .84), now, "Closing dungeon loss")
+            return true
+        }
         if(key == null) {
             val orphanPanel = DungeonKey.entries.firstNotNullOfOrNull { DungeonPanelDetector.detect(frame,it,v) }
             if(orphanPanel != null) {
@@ -112,6 +126,7 @@ object DungeonRotationAnalyzer {
                     }
                     if(panel.remaining == null) { park(service,"Ad counter unreadable: ${key!!.name}"); return true }
                     waiting="ad"; waitingAt=now
+                    passUsage.reserveAd(key!!)
                     DungeonDailyStore.record(service,key!!) { it.copy(ads=it.ads+1) }
                     tap(service,v,panel.target,now,"${key.name}: Ad-Skip ${used.ads+1}/2")
                 }
@@ -122,16 +137,19 @@ object DungeonRotationAnalyzer {
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
                     DungeonDailyStore.record(service,key!!) { it.copy(attempts=it.attempts+1) }
+                    passUsage.reserveAttempt(key)
                     tap(service,v,panel.target,now,"${key.name}: daily Destroy")
                 }
                 "challenge", "network_challenge", "network_matching" -> {
-                    val limit = if(key == DungeonKey.APOCALYMON_WALL || key == DungeonKey.DAILY) 1 else cfg.normalAttempts+used.ads
-                    if(panel.remaining == 0 || used.attempts >= limit) { finishCard(service,v,now); return true }
+                    val limit = passUsage.limit(key!!, cfg.normalAttempts)
+                    val spent = if (key in DungeonPassPolicy.dailyLimited) used.attempts else passUsage.attempts(key)
+                    if(panel.remaining == 0 || spent >= limit) { finishCard(service,v,now); return true }
                     if(panel.remaining == null) { park(service,"Ticket counter unreadable: ${key!!.name}"); return true }
                     val target = if(key==DungeonKey.NETWORK_DEFENSE) NormalizedPoint(.5,.79) else panel.target
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
                     DungeonDailyStore.record(service,key!!) { it.copy(attempts=it.attempts+1) }
+                    passUsage.reserveAttempt(key)
                     tap(service,v,target,now,"${key.name}: starting battle / Matching")
                 }
             }
@@ -147,11 +165,12 @@ object DungeonRotationAnalyzer {
             if(!stable("list:${reading.position}")) return true
             DungeonRotationRequest.listVerified()
             val daily = DungeonDailyStore.snapshot(service)
-            val scheduler = controller ?: DungeonRotationController(cfg.enabledCards,daily.completed).also { controller=it }
+            val scheduler = controller ?: DungeonRotationController(cfg.enabledCards,DungeonPassPolicy.locked(daily)).also { controller=it }
             if(returning) { activeKey=null; returning=false }
             else if(activeKey != null) { scheduler.releaseCurrent(); activeKey=null }
             val decision = scheduler.onList(reading) { cfg.budget(it,AutomationState.adSkipPassEnabled).adTickets > 0 }
-            (scheduler.completed()-daily.completed).forEach { DungeonDailyStore.markComplete(service,it) }
+            (scheduler.completed()-daily.completed).filter { it !in DungeonPassPolicy.dailyLimited }
+                .forEach { DungeonDailyStore.markComplete(service,it) }
             Log.i("DigiWorldDungeonRotation","list=${reading.position} decision=$decision")
             when(decision.command) {
                 DungeonRotationCommand.SELECT_CARD -> {
@@ -218,7 +237,9 @@ object DungeonRotationAnalyzer {
     }
     private fun finishCard(service: DigiWorldAccessibilityService,v: GameViewport,now: Long) {
         val key=activeKey ?: return
-        DungeonDailyStore.markComplete(service,key)
+        val used = DungeonDailyStore.snapshot(service).progress[key]
+        if (key !in DungeonPassPolicy.dailyLimited || (used?.attempts ?: 0) > 0)
+            DungeonDailyStore.markComplete(service,key)
         controller?.finishCurrent()
         returning=true
         tap(service,v,NormalizedPoint(.94,.87),now,"${key.name}: done, returning to list")
@@ -242,5 +263,6 @@ object DungeonRotationAnalyzer {
         candidate=""; matches=0; returning=false; returningHome=false; unknownAt=0
         startRetries=0; retryAt=0
         rewardFallbackAt=0L
+        passUsage= DungeonPassUsage()
     }
 }

@@ -17,7 +17,7 @@ object BondRotationAnalyzer {
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val forced = BondRotationRequest.active()
-        val scheduled = AutomationState.autoBondRotationEnabled && AutomationState.mode == AutomationMode.FULL_AUTOPILOT
+        val scheduled = DigiCopilotRequest.active() && AutomationState.autoBondRotationEnabled
         if (!AutomationState.enabled || (!forced && !scheduled)) {
             reset(); return false
         }
@@ -43,13 +43,28 @@ object BondRotationAnalyzer {
         val previous = rotation.step
         val bubble = home && BondBubbleDetector.detect(frame) != null
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
-            forced || BondCycleTimer.canStartBond(now))
+            forced || BondCycleTimer.canStartBond(now), FeedFrameAnalyzer.collectedSince(rotation.collectStartedAt))
+        if (matches == 3) android.util.Log.i(
+            "DigiWorldBond",
+            "probe step=${rotation.step} home=$home forced=$forced scheduled=$scheduled " +
+                "feedBusy=${FeedFrameAnalyzer.isBusy()} gridPage=${grid.page} bubble=$bubble command=${command?.step}",
+        )
         owns = rotation.ownsFrame()
         if (previous != BondStep.COLLECT && rotation.step == BondStep.COLLECT) FeedFrameAnalyzer.allowImmediateScan()
+        if (rotation.step == BondStep.COLLECT) {
+            // This Home boundary was confirmed by the rotation itself. Delegating here avoids the
+            // stricter passive Home fingerprint rejecting battle-animation frames with a bubble.
+            if (!rotation.bubbleScanReady(now)) return true
+            return FeedFrameAnalyzer.analyze(image, w, h, homeAlreadyConfirmed = true)
+        }
         if (previous != BondStep.REST && rotation.step == BondStep.REST) {
             BondRotationRequest.complete()
-            BondCycleTimer.bondCompleted()
+            BondCycleTimer.bondCompleted(now)
             if (AutomationState.autoFarmEnabled) BondFarmAnalyzer.requestVisit()
+            else {
+                BondCycleTimer.farmReturnedHome(now)
+                HomeIdleRewardRequest.start()
+            }
             android.util.Log.i("DigiWorldBond", "complete visited=${rotation.visited} restored=${rotation.original}; waiting for next bubble after farm")
         }
         val service = DigiWorldAccessibilityService.instance ?: return owns
@@ -69,10 +84,18 @@ object BondRotationAnalyzer {
             else -> null
         } ?: return owns
         FeedFrameAnalyzer.pauseForDigiWorld()
-        val (x,y) = GameViewport.fit(w,h).pixel(target)
+        val tapViewport = if (command.step == BondStep.OPEN)
+            HomeScreenDetector.viewport(w, h, frame::argbAt) ?: return owns
+        else GameViewport.fit(w,h)
+        val (x,y) = tapViewport.pixel(target)
         service.showStatusOnly("Bond ${rotation.visited}/15: ${command.step.name.lowercase()}")
         android.util.Log.i("DigiWorldBond", "step=${command.step} cell=${command.cell} original=${rotation.original} visited=${rotation.visited}")
-        service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { success -> if (!success) rotation.cancel() }
+        service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { success ->
+            // Gesture callbacks can be cancelled by the game's immediate window transition even
+            // when the tap was accepted. Only subsequent visual state or the bounded deadline may
+            // confirm/fail the step; a callback alone must not destroy the whole rotation.
+            if (!success) android.util.Log.w("DigiWorldBond", "gesture callback cancelled for ${command.step}; awaiting visual proof")
+        }
         matches = 0
         return true
     }

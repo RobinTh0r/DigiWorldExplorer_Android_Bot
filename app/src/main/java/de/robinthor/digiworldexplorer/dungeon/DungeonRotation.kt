@@ -15,12 +15,24 @@ object DungeonRotationRequest {
         private set
     @Volatile var completedToday: Set<DungeonKey> = emptySet()
         private set
+    private var suspendedNetworkDefense = false
 
     @Synchronized fun start(context: Context) {
+        if (de.robinthor.digiworldexplorer.license.SupporterLicenseManager.load(context) == null ||
+            !de.robinthor.digiworldexplorer.strategy.AutomationState.enabled) return
         DungeonRotationAnalyzer.reset()
+        DungeonFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer.reset()
+        suspendedNetworkDefense = de.robinthor.digiworldexplorer.strategy.AutomationState.autoNetworkDefenseEnabled
+        de.robinthor.digiworldexplorer.strategy.AutomationState.autoNetworkDefenseEnabled = false
+        de.robinthor.digiworldexplorer.strategy.AutoMoveController.pauseForPurchaseScreen()
+        de.robinthor.digiworldexplorer.feed.BondRotationRequest.cancel()
+        de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("Dungeon Co-Pilot started")
+        de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
+        de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.strategy.AutomationState.adSkipPassEnabled =
             context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("ad_skip_pass", false)
-        completedToday = DungeonDailyStore.snapshot(context).completed
+        completedToday = DungeonPassPolicy.locked(DungeonDailyStore.snapshot(context))
         phase = Phase.REQUESTED
         reason = if (DungeonKey.APOCALYMON_WALL in completedToday)
             "Waiting for Home; Apocalymon already complete today" else "Waiting for verified Home"
@@ -42,9 +54,21 @@ object DungeonRotationRequest {
     }
 
     @Synchronized fun park(why: String) { phase = Phase.PARKED; reason = why }
-    @Synchronized fun complete() { phase = Phase.COMPLETE; reason = "Daily pass complete" }
-    @Synchronized fun cancel() { phase = Phase.IDLE; reason = ""; requestedAt = 0L; completedToday = emptySet() }
+    @Synchronized fun complete() {
+        phase = Phase.COMPLETE; reason = "Daily pass complete"
+        restoreNetworkDefense()
+    }
+    @Synchronized fun cancel() {
+        phase = Phase.IDLE; reason = ""; requestedAt = 0L; completedToday = emptySet()
+        restoreNetworkDefense()
+    }
+    private fun restoreNetworkDefense() {
+        de.robinthor.digiworldexplorer.strategy.AutomationState.autoNetworkDefenseEnabled = suspendedNetworkDefense
+        suspendedNetworkDefense = false
+        de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer.reset()
+    }
     fun active() = phase in setOf(Phase.REQUESTED, Phase.OPENING_LIST, Phase.SURVEYING, Phase.RUNNING)
+    fun ownsFrames() = active() || phase == Phase.PARKED
 }
 
 /** Safe defaults: visible counters remain authoritative; these are hard ceilings, never targets. */

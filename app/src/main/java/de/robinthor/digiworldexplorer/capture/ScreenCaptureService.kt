@@ -34,6 +34,12 @@ import de.robinthor.digiworldexplorer.automation.ScreenDirector
 import de.robinthor.digiworldexplorer.automation.PassiveScreenClassifier
 import de.robinthor.digiworldexplorer.automation.ObservedScreen
 import de.robinthor.digiworldexplorer.automation.GameEntryAnalyzer
+import de.robinthor.digiworldexplorer.automation.HomeIdleRewardAnalyzer
+import de.robinthor.digiworldexplorer.automation.HomeIdleRewardRequest
+import de.robinthor.digiworldexplorer.automation.DwsExcursionAnalyzer
+import de.robinthor.digiworldexplorer.automation.DwsExcursionRequest
+import de.robinthor.digiworldexplorer.automation.DigiCopilotRequest
+import de.robinthor.digiworldexplorer.automation.BondCycleTimer
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.FeedFrameAnalyzer
 import de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer
@@ -70,6 +76,7 @@ class ScreenCaptureService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        de.robinthor.digiworldexplorer.automation.BondCycleTimer.initialize(this)
         createNotificationChannel()
     }
 
@@ -194,10 +201,24 @@ class ScreenCaptureService : Service() {
                     recognized = captureImageMissing
                     publishDirector(FrameOwner.CAPTURE_BLOCKED)
                 } else {
+                    val digiCopilotOwns = DigiCopilotRequest.active()
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
-                    val owner = FrameOrchestrator.resolve(false, listOf(
+                    val owner = if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()) {
+                        // The user-started pass owns ALL frames, including settle/park frames.
+                        // Only the rotation may delegate its own reward/battle handlers.
+                        if (featureFrame && de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active())
+                            de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.analyze(image, width, height)
+                        FrameOwner.DUNGEON
+                    } else FrameOrchestrator.resolve(false, listOf(
+                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame && HomeIdleRewardRequest.active()) {
+                            HomeIdleRewardAnalyzer.analyze(image, width, height)
+                        },
+                        FrameProbe(FrameOwner.WORLD_SEARCH, enabled = featureFrame && DwsExcursionRequest.active()) {
+                            DwsExcursionAnalyzer.analyze(image, width, height)
+                        },
                         // Login and idle rewards are blocking entry screens and outrank feature tasks.
-                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame) {
+                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame &&
+                            (!digiCopilotOwns || !BondCycleTimer.awaitingFarm())) {
                             GameEntryAnalyzer.analyze(image, width, height)
                         },
                         // Persistent failure dialogs outrank every task. Network Defense is excluded
@@ -208,7 +229,7 @@ class ScreenCaptureService : Service() {
                             found
                         },
                         // Active Network runs inspect every frame because the boss banner is brief.
-                        FrameProbe(FrameOwner.NETWORK_DEFENSE, enabled = networkFrame) {
+                        FrameProbe(FrameOwner.NETWORK_DEFENSE, enabled = networkFrame && !digiCopilotOwns) {
                             NetworkDefenseFrameAnalyzer.analyze(image, width, height)
                         },
                         // A calibrated World Search grid keeps priority over all menu tasks.
@@ -226,7 +247,7 @@ class ScreenCaptureService : Service() {
                             }
                             gridFound
                         },
-                        FrameProbe(FrameOwner.GEKKOMON_RUN, enabled = AutomationState.autoRunnerEnabled) {
+                        FrameProbe(FrameOwner.GEKKOMON_RUN, enabled = AutomationState.autoRunnerEnabled && !digiCopilotOwns) {
                             GekkomonRunFrameAnalyzer.analyze(image, width, height)
                         },
                         FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
@@ -235,10 +256,11 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame && de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active()) {
                             de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.analyze(image, width, height)
                         },
-                        FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame) {
+                        FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame && !digiCopilotOwns) {
                             DungeonFrameAnalyzer.analyze(image, width, height)
                         },
-                        FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
+                        FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive() &&
+                            (!digiCopilotOwns || BondCycleTimer.awaitingFarm())) {
                             de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.analyze(image, width, height)
                         },
                         FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
@@ -247,7 +269,7 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
                             FeedFrameAnalyzer.analyze(image, width, height)
                         },
-                        FrameProbe(FrameOwner.SUMMON, enabled = featureFrame) {
+                        FrameProbe(FrameOwner.SUMMON, enabled = featureFrame && !digiCopilotOwns) {
                             RewardPurchaseFrameAnalyzer.analyze(image, width, height)
                         },
                         // Initial calibration runs only after no specialized task claimed the frame.
@@ -261,11 +283,17 @@ class ScreenCaptureService : Service() {
                         AutomationEventLog.record(AutomationEventKind.OWNER_CHANGED, "${lastFrameOwner.name}:${owner.name}")
                         lastFrameOwner = owner
                     }
-                    if (owner == FrameOwner.NONE && framesSeen % 10 == 5) {
+                    // Publish only a classification from this frame. The old independent
+                    // modulo schedules published UNKNOWN between successful feature scans.
+                    if (owner in setOf(FrameOwner.NONE, FrameOwner.BOND) && featureFrame) {
                         passiveScreen = PassiveScreenClassifier.detect(image, width, height)
                     } else if (owner != FrameOwner.NONE) passiveScreen = ObservedScreen.UNKNOWN
                     if (featureFrame || owner != FrameOwner.NONE) {
-                    if (owner == FrameOwner.FARM && de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.screen in
+                    if (owner == FrameOwner.BOND && featureFrame) {
+                        publishDirector(passiveScreen)
+                    } else if (owner == FrameOwner.BOND) {
+                        // No fresh scan: do not overwrite the last observation with the task name.
+                    } else if (owner == FrameOwner.FARM && de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.screen in
                         setOf(ObservedScreen.HOME, ObservedScreen.EXPLORE_MENU)) {
                         publishDirector(de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.screen)
                     } else if (owner == FrameOwner.NONE) publishDirector(passiveScreen) else publishDirector(owner)
@@ -352,6 +380,21 @@ class ScreenCaptureService : Service() {
             DigiWorldAccessibilityService.instance?.updateDirector(ScreenDirector.snapshot())
         }
         if (missingFor >= IDLE_STOP_TIMEOUT) {
+            // A long loading screen, announcement chain, battle transition, or temporarily
+            // missing Bond bubble is normal while the game is in front. Stopping projection
+            // here makes the overlay look alive while no frames are being analysed anymore.
+            // Keep the session alive in-game; the user can still stop it explicitly and the
+            // idle timeout remains useful after leaving the game.
+            if (DigiWorldAccessibilityService.instance?.isGameForeground() == true) return
+            val boundedTaskActive = de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() ||
+                de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames() ||
+                de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.active() ||
+                de.robinthor.digiworldexplorer.automation.HomeIdleRewardRequest.active()
+            if (boundedTaskActive) {
+                // These controllers own explicit per-step deadlines. Black/loading frames during
+                // stage changes must not kill MediaProjection and the whole multi-step run.
+                return
+            }
             idleStopRequested = true
             Handler(Looper.getMainLooper()).post {
                 AutomationState.stop()
@@ -384,6 +427,8 @@ class ScreenCaptureService : Service() {
         GekkomonRunFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
         de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.reset()
+        de.robinthor.digiworldexplorer.automation.HomeIdleRewardAnalyzer.reset()
+        de.robinthor.digiworldexplorer.automation.DwsExcursionAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
         FeedFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()

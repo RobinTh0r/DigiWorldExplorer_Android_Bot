@@ -57,6 +57,8 @@ class CaptureConsentActivity : ComponentActivity() {
     private fun applyRuntimeSettings() {
         val settings = getSharedPreferences("settings", Context.MODE_PRIVATE)
         val supporter = SupporterLicenseManager.load(this) != null
+        AutomationState.mode = de.robinthor.digiworldexplorer.automation.AutomationMode.fromPreference(
+            settings.getString("automation_mode", null))
         val neverLeft = supporter && settings.getBoolean("dws_never_left", false)
         AutomationState.overlayEnabled = settings.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = settings.getBoolean("auto_purchase", true)
@@ -64,6 +66,7 @@ class CaptureConsentActivity : ComponentActivity() {
         AutomationState.autoNetworkDefenseEnabled = settings.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = settings.getBoolean("auto_feed", false)
         AutomationState.autoBondRotationEnabled = supporter && settings.getBoolean("auto_bond_rotation", false)
+        AutomationState.copilotDwsEnabled = supporter && settings.getBoolean("copilot_dws", false)
         AutomationState.autoFarmEnabled = supporter && settings.getBoolean("auto_farm_harvest", false)
         AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
         AutomationState.adSkipPassEnabled = settings.getBoolean("ad_skip_pass", false)

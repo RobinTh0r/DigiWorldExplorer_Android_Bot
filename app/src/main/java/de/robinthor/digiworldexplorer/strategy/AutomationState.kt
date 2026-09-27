@@ -12,11 +12,12 @@ object AutomationState {
  @Volatile var autoBondRotationEnabled=false
  @Volatile var autoRunnerEnabled=false
  @Volatile var autoFarmEnabled=false
+ @Volatile var copilotDwsEnabled=false
  @Volatile var farmWateringEnabled=true
  @Volatile var adSkipPassEnabled=false
  @Volatile var mode=AutomationMode.SEMI_AUTO
  @Volatile var forceLegacyCaptureMetrics=false
  @Volatile var summonTouchCorrection=false
  @Volatile var dwsNavigationSettings=DwsNavigationSettings()
- fun stop(){enabled=false;AutoMoveController.reset();de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset();de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.cancel();de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.reset();de.robinthor.digiworldexplorer.feed.BondRotationRequest.cancel()}
+ fun stop(){enabled=false;AutoMoveController.reset();de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset();de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.cancel();de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.reset();de.robinthor.digiworldexplorer.feed.BondRotationRequest.cancel();de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop()}
 }

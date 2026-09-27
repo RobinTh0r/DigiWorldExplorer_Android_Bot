@@ -3,7 +3,8 @@
     android:accessibilityEventTypes="typeWindowStateChanged"
     android:accessibilityFeedbackType="feedbackGeneric"
     android:canPerformGestures="true"
-    android:canRetrieveWindowContent="false"
+    android:canRetrieveWindowContent="true"
+    android:accessibilityFlags="flagRetrieveInteractiveWindows"
     android:description="@string/accessibility_service_description"
     android:notificationTimeout="100"
     android:settingsActivity="de.robinthor.digiworldexplorer.MainActivity" />

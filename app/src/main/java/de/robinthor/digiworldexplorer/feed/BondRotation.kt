@@ -14,12 +14,16 @@ class BondRotation {
     private var target: Int? = null
     private var deadline = 0L
     private var collectUntil = 0L
+    private var collectScanFrom = 0L
     private var nextBubbleArmed = false
     private var issuedAt = 0L
     private var retries = 0
+    var collectStartedAt = 0L
+        private set
+    private var bubbleSeenDuringCollect = false
 
     fun tick(home: Boolean, grid: PartnerGrid, feedBusy: Boolean, now: Long, bubbleVisible: Boolean = false,
-        cycleReady: Boolean = true): BondCommand? {
+        cycleReady: Boolean = true, bubbleCollected: Boolean = false): BondCommand? {
         if (step == BondStep.PARK) return null
         if (step in setOf(BondStep.IDLE, BondStep.REST)) {
             if (!home || feedBusy || !cycleReady) return null
@@ -31,11 +35,27 @@ class BondRotation {
             return issue(BondStep.OPEN, now)
         }
         if (step == BondStep.HOME && home) {
-            collectUntil = now + 15_000; step = BondStep.COLLECT
+            collectStartedAt = now
+            // A failed/restarting stage hides the bubble for roughly 3–10 seconds. Keep a clear
+            // safety margin without stalling every partner for 90 seconds when no bubble exists.
+            // The detector still requires verified Home and stable bubble evidence before tapping.
+            // Let the stage settle before scanning. On slower devices the bubble is hidden by
+            // defeat/restart animation for several seconds and an immediate scan races that UI.
+            collectScanFrom = now + 5_000
+            collectUntil = now + 30_000
+            deadline = collectUntil + 10_000
+            bubbleSeenDuringCollect = false
+            step = BondStep.COLLECT
         }
         if (step == BondStep.COLLECT) {
             // Farm may interrupt only here. Resume on Home without losing the original partner.
-            if (!home || feedBusy || now < collectUntil) return null
+            bubbleSeenDuringCollect = bubbleSeenDuringCollect || bubbleVisible
+            if (!home || feedBusy) {
+                if (now >= deadline) step = BondStep.PARK
+                return null
+            }
+            if (!bubbleCollected && now < collectUntil) return null
+            if (!bubbleCollected && bubbleSeenDuringCollect) { step = BondStep.PARK; return null }
             if (visited == 15) {
                 step = BondStep.REST
                 nextBubbleArmed = !bubbleVisible
@@ -78,6 +98,7 @@ class BondRotation {
     }
 
     fun ownsFrame() = step !in setOf(BondStep.IDLE, BondStep.COLLECT, BondStep.REST)
+    fun bubbleScanReady(now: Long) = step == BondStep.COLLECT && now >= collectScanFrom
     fun cancel() { step = BondStep.PARK }
     private fun issue(next: BondStep, now: Long, cell: Int? = null): BondCommand {
         step = next; deadline = now + 25_000; issuedAt = now; retries = 0

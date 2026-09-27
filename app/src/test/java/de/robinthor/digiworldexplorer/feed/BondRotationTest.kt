@@ -46,8 +46,8 @@ class BondRotationTest {
             active = target
             assertEquals(BondStep.HOME, tour.tick(false, grid.copy(raised = active), false, now++)?.step)
             tour.tick(true, PartnerGrid(), false, now)
-            now += 15_001
-            tour.tick(true, PartnerGrid(), false, now++, bubbleVisible = true)
+            now += 5_001
+            tour.tick(true, PartnerGrid(), false, now++, bubbleVisible = false, bubbleCollected = true)
         }
         assertEquals(15, visited.toSet().size)
         assertEquals(1, active)
@@ -58,6 +58,25 @@ class BondRotationTest {
         assertEquals(BondStep.REST, tour.step)
         assertNull(tour.tick(false, PartnerGrid(), false, now + 600_001, bubbleVisible = true, cycleReady = true))
         assertEquals(BondStep.OPEN, tour.tick(true, PartnerGrid(), false, now + 600_002, bubbleVisible = true, cycleReady = true)?.step)
+    }
+
+    @Test fun intermittentBubbleCannotBeSkippedWithoutConfirmedTap() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        tour.tick(true, PartnerGrid(), false, 0)
+        val grid = PartnerGrid(true, true, cells, raised = 0, selected = 0)
+        tour.tick(false, grid, false, 1)
+        tour.tick(false, grid.copy(selected = 1, canRaise = true), false, 2)
+        tour.tick(false, PartnerGrid(confirmation = true), false, 3)
+        tour.tick(false, grid.copy(raised = 1), false, 4)
+        tour.tick(true, PartnerGrid(), false, 5)
+        assertNull(tour.tick(true, PartnerGrid(), false, 9_000, bubbleVisible = false))
+        assertNull(tour.tick(true, PartnerGrid(), false, 12_000, bubbleVisible = true))
+        assertNull(tour.tick(true, PartnerGrid(), false, 20_000, bubbleVisible = false))
+        assertNull(tour.tick(true, PartnerGrid(), false, 21_000,
+            bubbleVisible = false, bubbleCollected = false))
+        assertEquals(BondStep.OPEN, tour.tick(true, PartnerGrid(), false, 31_000,
+            bubbleVisible = false, bubbleCollected = true)?.step)
     }
 
     @Test fun foreignPromptNeverStartsTourAndFailedSelectionDoesNotConfirm() {

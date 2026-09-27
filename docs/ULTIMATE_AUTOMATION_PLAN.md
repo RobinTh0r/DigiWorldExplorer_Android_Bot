@@ -1,11 +1,81 @@
 # DigiWorldExplorer – Ultimate Automation Plan
 
 Status: active implementation plan
-Last updated: 2026-09-25
+Last updated: 2026-09-26
 Primary target: `app/` (DigiWorldExplorer)
 Reference implementation under analysis: `DigiautoTap/` (decompiled APK; never ship it)
 
 ## 1. Purpose and hand-off contract
+
+### Neueste Steuerung 2026-09-26: Digi/Dungeon Co-Pilot
+
+Umsetzung nach „go“ autorisiert. Die neueste Korrektur am Anfang von
+`COPILOT_SIMPLIFICATION_HANDOFF.md` ersetzt ältere Timing-/Tageslimit-Regeln:
+Bond 15/15 beendet → persistente 20-Minuten-Frist sofort starten; Feld, Idle-Kiste,
+optional höchstens fünf Minuten DWS innerhalb der Frist; Rest auf Home abwarten.
+Dungeon Co-Pilot besitzt den gesamten Lauf exklusiv. Jeder manuelle Start prüft reguläre
+Karten erneut; nur Apokalymon und VS-Vernichten behalten harte 08:00-Berlin-Tageslimits.
+Neue offene Pakete D1/D2/T1/W1/W2/UI1 dort dokumentiert; nicht ohne Nachweis als fertig markieren.
+
+### Aktuelle offene Priorität: Co-Pilot vereinfachen (2026-09-26, NUR PLAN)
+
+Der neue detaillierte Umsetzungsauftrag steht in
+[COPILOT_SIMPLIFICATION_HANDOFF.md](COPILOT_SIMPLIFICATION_HANDOFF.md).
+Er hat für künftige Umsetzung Vorrang vor widersprüchlichen historischen Modus-, Timer- und
+Reward-Beschreibungen weiter unten. Der Benutzer hat in diesem Schritt nur Planung beauftragt;
+keine dieser neuen Funktionen wurde dabei implementiert oder getestet.
+
+- [ ] P1: Home/Partner/Login-Falscherkennungen mit Sequenztests stabilisieren.
+- [ ] P2–P3: expliziter Co-Pilot-Ablaufbesitzer und persistente 20-Minuten-Fälligkeit.
+- [ ] P4–P5: Bond → Feld → Idle-Kiste links auf Home → Home → Pause, exklusiv orchestriert.
+- [ ] P6/P8: Manual/Co-Pilot-Wahlschalter entfernen; normale Helfer behalten, Beta-Abläufe über
+  Overlay starten; Optionen global, Beta-Gates auch im Ausführungscode; Einstellungen migrieren.
+- [ ] P7: Fortschritt/Frist dauerhaft sichtbar und lila Augen bei aktivem Co-Pilot.
+- [ ] P9: komplette Abnahme inklusive Neustart, Captureverlust, Reset und Handyformaten.
+- [ ] Später: Quests, explizit konfigurierte Ticketbeschaffung und Tagesübersicht.
+
+Präzisierung: Die nach dem Feld gewünschte Belohnung ist die bouncende Idle-Kiste links unter
+den gelben x1-Pfeilen. Frühere Formulierungen „Bond-reward entry“ dürfen dafür nicht als Auftrag
+zum Öffnen eines anderen Bond-Belohnungsmenüs interpretiert werden.
+Normaler Bond-Helfer: etwa alle 10 Sekunden Bubble prüfen, keine Rotation starten.
+Dungeon-Rotation bleibt ein separater Beta-Einmallauf, kein automatisch gestarteter Co-Pilot-Schritt.
+
+### 2026-09-26: dark Home recognition and complete Bond live verification
+
+- Follow-up: removed all stage-brightness/color evidence from Home detection. Require fixed
+  level ring, chamber, deck and navigation together. Home outranks purple loading artwork only
+  when these controls are present. Shared currency headers alone never authorize Home.
+- Added geometry candidates for full-frame layouts and centered 9:16 game areas. Bond OPEN
+  and Farm OPEN_EXPLORE use the same positively matched Home geometry for their tap.
+- Regression coverage uses scaled/letterboxed screenshots at 720x1280, 1080x1920,
+  1080x2160, 1080x2340, 1080x2400 and 1440x3200, replaced stage artwork, and negative menus.
+  These are simulated layout tests, not physical-device certification; real tall-phone Home,
+  system-bar/cutout layouts and subsequent Partner/Farm pages remain to be verified.
+- Latest follow-up APK installed on BlueStacks on 2026-09-26 at about 09:19.
+- Added independent Home icon evidence: yellow/blue location pin, Mission clipboard,
+  Login calendar and bottom navigation. Real Datengrotte fixtures include an icon-only test
+  with battle/chamber masked out, scaled and letterboxed at common portrait sizes.
+- Capture had stopped via MediaProjection callback at 09:10:59; exact external stop cause
+  unknown. Overlay now explicitly says capture stopped instead of implying a failed recognition.
+- Passive classification and publication now share the same frame cadence; foreground gating
+  queries the active application window, avoiding reliance on stale overlay window events.
+- All 216 tests and release build passed. Latest live run shows `Active / Screen: Home` in
+  Datengrotte with repeated successful Bond transitions and bubble collection. Full 15/15 run
+  below applies to the earlier build; the latest build has only this shorter live verification.
+
+- Home now also recognizes the fixed gold level ring and cyan chamber on dark city stages.
+  Removed the broad entry-detector fallback that incorrectly classified a Raise dialog as Home.
+- Capture-consent and quick-overlay restart restore the saved automation mode; overlay restart
+  also restores watering/Ad Skip preferences and resets a parked Bond controller.
+- Added the actual dark-city screenshot regression plus negative Partner/Raise, Explore,
+  Dungeon and idle-dialog checks. All 213 unit tests and signed release build passed.
+- Installed the signed APK with data preserved. Live Co-Pilot run on BlueStacks from 00:03:52
+  to 00:09:56 completed all 15 partner changes without intervention, restored original cell 0
+  last, and collected Bond bubbles on Home. Farm opened afterwards, completed its visit,
+  and returned Home at 00:10:14. Final overlay: `Active / Screen: Home`, `Bond 19:36`.
+- Evidence: `.verify/home-fixed-complete.png`. Bot remains running in its cooldown.
+  This verifies the Bond/Home/Farm cycle on the current stage, not every game screen or dungeon.
+- APK remains local; the withdrawn GitHub release has not been republished.
 
 ### Next accepted scope: Dungeon menu-only audit
 

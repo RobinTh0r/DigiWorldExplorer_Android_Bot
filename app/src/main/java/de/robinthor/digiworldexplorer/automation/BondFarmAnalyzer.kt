@@ -30,7 +30,7 @@ object BondFarmAnalyzer {
         if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active()) return false
         val forcedHandoff = BondCycleTimer.awaitingFarm()
         if (!AutomationState.enabled || !AutomationState.autoFarmEnabled ||
-            (!forcedHandoff && (!AutomationState.autoBondRotationEnabled || AutomationState.mode != AutomationMode.FULL_AUTOPILOT))) {
+            (!forcedHandoff && (!DigiCopilotRequest.active() || !AutomationState.autoBondRotationEnabled))) {
             reset(); return false
         }
         val now = SystemClock.elapsedRealtime()
@@ -64,11 +64,18 @@ object BondFarmAnalyzer {
             CycleScreen.HOME -> ObservedScreen.HOME
             else -> ObservedScreen.UNKNOWN
         }
+        // Android may cancel a gesture callback when the game replaces the window immediately,
+        // even though the tap was accepted. A positively recognized route screen is stronger
+        // evidence than that callback and must recover the navigation instead of parking forever.
+        if (blocked && seen != CycleScreen.OTHER) blocked = false
         if (seen == candidate) matches++ else { candidate = seen; matches = 1 }
         if (matches < 2) return owns
         val step = if (blocked) CycleStep.PARK else cycle.tick(seen,
             FarmHarvestAnalyzer.visitComplete, FeedFrameAnalyzer.isBusy(), now)
-        if (cycle.consumeReturnedHome()) BondCycleTimer.farmReturnedHome(now)
+        if (cycle.consumeReturnedHome()) {
+            BondCycleTimer.farmReturnedHome(now)
+            HomeIdleRewardRequest.start()
+        }
         if (step == CycleStep.PARK && seen == CycleScreen.FIELD && BondCycleTimer.awaitingFarm()) {
             blocked = false
             return false
@@ -90,7 +97,10 @@ object BondFarmAnalyzer {
         FeedFrameAnalyzer.pauseForDigiWorld()
         if (step == CycleStep.OPEN_FIELD) FarmHarvestAnalyzer.reset()
         service.showStatusOnly("Bond / Farm: ${step.name.lowercase().replace('_', ' ')}")
-        val (x, y) = viewport.pixel(target)
+        val tapViewport = if (step == CycleStep.OPEN_EXPLORE)
+            HomeScreenDetector.viewport(w, h, frame::argbAt) ?: return false
+        else viewport
+        val (x, y) = tapViewport.pixel(target)
         android.util.Log.i("DigiWorldCycle", "step=$step screen=$seen target=$target")
         service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { success -> if (!success) blocked = true }
         matches = 0

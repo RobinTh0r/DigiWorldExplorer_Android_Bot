@@ -180,6 +180,10 @@ object AutoMoveController{
      lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0
      if(attackUnavailable&&dashUnavailable){
       Log.w("DigiWorldAuto","Notstopp: Angriff und Dash ohne Fortschritt")
+      if(de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.running()){
+       de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.requestReturn("DWS resources unavailable")
+       reset();return
+      }
       AutomationState.enabled=false;AutomationState.overlayEnabled=false;service?.setOverlayEnabled(false)
       if(service!=null)main.post{ScreenCaptureService.stopForStuck(service)}
       return
@@ -191,6 +195,10 @@ object AutoMoveController{
   val stuck=AutomationState.enabled&&(looping||actionsWithoutProgress>=3||sameCellFrames>=STUCK_FRAMES||noProgressFrames>=NO_PROGRESS_LIMIT)
   if(AutomationState.enabled&&actionsWithoutProgress>=MAX_FAILED_ACTIONS){
    Log.w("DigiWorldAuto","Stopp nach $actionsWithoutProgress Aktionen ohne Fortschritt")
+   if(de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.running()){
+    de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.requestReturn("DWS has no safe progress")
+    reset();return
+   }
    AutomationState.enabled=false;AutomationState.overlayEnabled=false;service?.setOverlayEnabled(false)
    if(service!=null)main.post{ScreenCaptureService.stopForStuck(service)}
    return

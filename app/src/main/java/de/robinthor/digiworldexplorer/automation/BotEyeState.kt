@@ -1,6 +1,6 @@
 package de.robinthor.digiworldexplorer.automation
 
-enum class BotEyeState { OFF, ACTIVE, SEARCHING, UNKNOWN, ERROR }
+enum class BotEyeState { OFF, ACTIVE, SEARCHING, UNKNOWN, ERROR, COPILOT }
 
 /** Maps Director output to one unambiguous mascot-eye state. */
 object BotEyeStateResolver {
@@ -20,6 +20,7 @@ object BotEyeStateResolver {
         if (snapshot.state == "Watching" &&
             (snapshot.confidence > 0 || searchWords.any(action::contains))) return BotEyeState.SEARCHING
         if (snapshot.screen == ObservedScreen.UNKNOWN) return BotEyeState.UNKNOWN
+        if (snapshot.copilot.isNotEmpty()) return BotEyeState.COPILOT
         return BotEyeState.ACTIVE
     }
 }

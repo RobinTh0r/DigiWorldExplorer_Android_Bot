@@ -35,8 +35,8 @@ object NetworkDefenseFrameAnalyzer {
 
     fun isSessionActive(): Boolean = AutomationState.autoNetworkDefenseEnabled && sessionActive
 
-    fun analyze(image: Image, width: Int, height: Int): Boolean {
-        if (!AutomationState.autoNetworkDefenseEnabled) {
+    fun analyze(image: Image, width: Int, height: Int, rotationOwned: Boolean = false): Boolean {
+        if (!AutomationState.autoNetworkDefenseEnabled && !rotationOwned) {
             if (sessionActive || pending || lastScreen != NetworkDefenseScreen.NONE) reset()
             return false
         }

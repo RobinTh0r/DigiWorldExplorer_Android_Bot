@@ -48,10 +48,11 @@ class BondFarmCycleTest {
 
     @Test fun globalCooldownStartsOnlyAfterFarmReturnedHome() {
         BondCycleTimer.resetForTest()
-        BondCycleTimer.bondCompleted()
+        BondCycleTimer.bondCompleted(100)
         assertEquals(false, BondCycleTimer.canStartBond(1))
-        BondCycleTimer.farmReturnedHome(100)
+        BondCycleTimer.farmReturnedHome(20_100)
         assertEquals(1_200_000L, BondCycleTimer.remainingMillis(100))
+        assertEquals(1_180_000L, BondCycleTimer.remainingMillis(20_100))
         assertEquals(false, BondCycleTimer.canStartBond(1_200_099))
         assertEquals(true, BondCycleTimer.canStartBond(1_200_100))
     }

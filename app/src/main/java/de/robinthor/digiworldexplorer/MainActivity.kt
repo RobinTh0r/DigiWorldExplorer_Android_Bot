@@ -152,6 +152,8 @@ class MainActivity : ComponentActivity() {
         autoRunner = false
         settings.edit().putBoolean("auto_runner", false).apply()
         automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
+            .takeIf { it != AutomationMode.FULL_AUTOPILOT || supporterLicense != null }
+            ?: AutomationMode.SEMI_AUTO
         dwsNeverLeft = supporterLicense != null && settings.getBoolean("dws_never_left", false)
         dwsForceForwardAttack = dwsNeverLeft
         dwsDashSpam = supporterLicense != null && settings.getBoolean("dws_dash_spam", false)
@@ -166,6 +168,7 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoFeedEnabled = autoFeed
         AutomationState.autoBondRotationEnabled = supporterLicense != null && getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_bond_rotation", false)
         AutomationState.autoBondRotationEnabled = supporterLicense != null && settings.getBoolean("auto_bond_rotation", false)
+        AutomationState.copilotDwsEnabled = supporterLicense != null && settings.getBoolean("copilot_dws", false)
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
         AutomationState.autoFarmEnabled = supporterLicense != null && settings.getBoolean("auto_farm_harvest", false)
@@ -264,9 +267,13 @@ class MainActivity : ComponentActivity() {
                     getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_runner", enabled).apply()
                 },
                 onAutomationMode = { selected ->
-                    automationMode = selected
-                    AutomationState.mode = selected
-                    settings.edit().putString("automation_mode", selected.name).apply()
+                    if (selected == AutomationMode.FULL_AUTOPILOT && supporterLicense == null) {
+                        showLicenseDialog = true
+                    } else {
+                        automationMode = selected
+                        AutomationState.mode = selected
+                        settings.edit().putString("automation_mode", selected.name).apply()
+                    }
                 },
                 onDwsSettings = { neverLeft, _, dashSpam, onlyEnergy, betterCollect, _ ->
                     val allowed = supporterLicense != null
@@ -482,15 +489,17 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
+        supporterLicense = SupporterLicenseManager.load(this)
         autoPurchase = settings.getBoolean("auto_purchase", true)
         autoDungeon = supporterLicense != null && settings.getBoolean("auto_dungeon", true)
         autoFeed = settings.getBoolean("auto_feed", false)
         autoRunner = false
         settings.edit().putBoolean("auto_runner", false).apply()
         automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
+            .takeIf { it != AutomationMode.FULL_AUTOPILOT || supporterLicense != null }
+            ?: AutomationMode.SEMI_AUTO
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
-        supporterLicense = SupporterLicenseManager.load(this)
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
         quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
         refreshPermissions()
@@ -658,40 +667,17 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
             }
             Text("›", style = MaterialTheme.typography.titleLarge)
         }
-        Text(stringResource(R.string.automation_mode), style = MaterialTheme.typography.titleSmall)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = automationMode == AutomationMode.SEMI_AUTO,
-                onClick = { onAutomationMode(AutomationMode.SEMI_AUTO) },
-                label = { Text(stringResource(R.string.mode_semi_auto)) },
-                modifier = Modifier.weight(1f),
-            )
-            FilterChip(
-                selected = automationMode == AutomationMode.FULL_AUTOPILOT,
-                onClick = { onAutomationMode(AutomationMode.FULL_AUTOPILOT) },
-                label = { Text(stringResource(R.string.mode_full_autopilot)) },
-                modifier = Modifier.weight(1f),
-            )
-        }
-        Text(
-            stringResource(if (automationMode == AutomationMode.SEMI_AUTO) R.string.mode_semi_auto_hint else R.string.mode_full_autopilot_hint),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         FeatureInfoRow(R.string.digiworld_help_title, grid = grid, gridEnabled = overlay, onGrid = onGrid, onAdvanced = { showGlobalSettings = true }, onHelp = { featureHelp = 2 })
         FeatureSwitch(R.string.auto_purchase, autoPurchase, onAutoPurchase, onHelp = { featureHelp = 0 })
-        FeatureSwitch(
-            R.string.dungeon_rotation_title,
-            autoDungeon,
-            onAutoDungeon,
-            onHelp = { featureHelp = 1 },
-            enabled = supporterLicense != null,
-            supporterStyle = true,
-        )
         FeatureSwitch(R.string.auto_feed, autoFeed, onAutoFeed, onHelp = { featureHelp = 4 })
-        BondRotationMainSwitch(betaUnlocked = supporterLicense != null, onUnlock = onLicense)
-        de.robinthor.digiworldexplorer.farm.FarmSettings(showDetails = false, betaUnlocked = supporterLicense != null, onUnlock = onLicense)
+        FeatureSwitch(R.string.auto_dungeon, autoDungeon, onAutoDungeon, onHelp = { featureHelp = 1 })
         FeatureSwitch(R.string.auto_network_defense, autoNetworkDefense, onAutoNetworkDefense, onHelp = { featureHelp = 3 })
+        BetaAutomationBlock(
+            unlocked = supporterLicense != null,
+            onUnlock = onLicense,
+            onSettings = { showGlobalSettings = true },
+            onHelp = { featureHelp = it },
+        )
         OutlinedButton(
             onClick = { showGlobalSettings = true },
             modifier = Modifier.fillMaxWidth(),
@@ -748,6 +734,58 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 dismissButton = { TextButton(onClick = { showContactDialog = false }) { Text(stringResource(R.string.close)) } }
             )
         }
+    }
+}
+
+@Composable private fun BetaAutomationBlock(
+    unlocked: Boolean,
+    onUnlock: () -> Unit,
+    onSettings: () -> Unit,
+    onHelp: (Int) -> Unit,
+) {
+    Surface(
+        modifier = Modifier.fillMaxWidth().clickable(enabled = !unlocked) { onUnlock() },
+        color = betaContainerColor(),
+        contentColor = betaContentColor(),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.25.dp, betaBorderColor()),
+    ) {
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("BETA AUTOMATION", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelLarge, modifier = Modifier.weight(1f))
+                BetaChip()
+            }
+            Text(
+                if (unlocked) "Start und Stop über den runden Bot im Spiel."
+                else "Beta-Code erforderlich · Zum Freischalten antippen.",
+                style = MaterialTheme.typography.labelSmall,
+                color = betaContentColor().copy(alpha = .78f),
+            )
+            BetaFeatureCompactRow("Digi Co-Pilot", "Bond → Meat Field → Belohnung → DWS", unlocked, onSettings, { onHelp(5) })
+            BetaFeatureCompactRow("Dungeon Co-Pilot", "Ein manueller Tagesdurchlauf aus dem Overlay", unlocked, onSettings, { onHelp(1) })
+            BetaFeatureCompactRow("Bond Rotation", "15 Partner; Timer und Wiederherstellung", unlocked, onSettings, { onHelp(5) })
+            BetaFeatureCompactRow("Meat Field", "Ernten, pflanzen und priorisiert gießen", unlocked, onSettings, { onHelp(4) })
+        }
+    }
+}
+
+@Composable private fun BetaFeatureCompactRow(
+    title: String,
+    hint: String,
+    unlocked: Boolean,
+    onSettings: () -> Unit,
+    onHelp: () -> Unit,
+) {
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 39.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodyMedium)
+            Text(hint, style = MaterialTheme.typography.labelSmall, color = betaContentColor().copy(alpha = .72f), maxLines = 1)
+        }
+        IconButton(onClick = onSettings, enabled = unlocked, modifier = Modifier.size(34.dp)) { Text("⚙", fontSize = 17.sp) }
+        IconButton(onClick = onHelp, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
     }
 }
 

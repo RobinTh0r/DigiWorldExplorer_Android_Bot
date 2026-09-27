@@ -59,7 +59,8 @@ object DungeonFrameAnalyzer {
         if (detection.screen != DungeonScreen.NONE) {
             if (detection.screen == DungeonScreen.REWARD) DungeonRotationAnalyzer.onReward()
             AutoMoveController.pauseForPurchaseScreen()
-            if (!AutomationState.autoDungeonEnabled) {
+            val enabledForResult = resultsOnly && DungeonRotationRequest.active()
+            if (!AutomationState.autoDungeonEnabled && !enabledForResult) {
                 sessionActive = false
                 lastScreen = DungeonScreen.NONE
                 DigiWorldAccessibilityService.instance?.let { it.showStatusOnly(it.getString(R.string.overlay_dungeon_disabled), sourceScreen = de.robinthor.digiworldexplorer.automation.ObservedScreen.DUNGEON) }
@@ -84,7 +85,7 @@ object DungeonFrameAnalyzer {
             // already visually recognisable, but tapping it closes the screen before the reveal
             // sequence has finished. Wait, then close at the actual "Tap to close" area.
             val rewardReady = detection.screen != DungeonScreen.REWARD || now - rewardDetectedSince >= REWARD_CLOSE_DELAY
-            if (!pending && stableDetections >= 2 && rewardReady && AutomationState.enabled && AutomationState.autoDungeonEnabled && now - lastTap >= nextTapInterval) {
+            if (!pending && stableDetections >= 2 && rewardReady && AutomationState.enabled && (AutomationState.autoDungeonEnabled || enabledForResult) && now - lastTap >= nextTapInterval) {
                 pending = true
                 pendingSince = now
                 lastTap = now

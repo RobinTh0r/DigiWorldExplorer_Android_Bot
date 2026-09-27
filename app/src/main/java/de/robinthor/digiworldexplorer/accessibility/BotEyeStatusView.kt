@@ -68,10 +68,11 @@ class BotEyeStatusView(context: Context) : View(context) {
             return
         }
 
-        val blink = eyeState == BotEyeState.ACTIVE && frame in 20..21
+        val blink = eyeState in setOf(BotEyeState.ACTIVE, BotEyeState.COPILOT) && frame in 20..21
         val radiusY = when { blink -> .55f*d; eyeState == BotEyeState.UNKNOWN -> 2.7f*d; else -> 4.7f*d }
         val color = when (eyeState) {
             BotEyeState.ACTIVE -> Color.rgb(55, 224, 143)
+            BotEyeState.COPILOT -> Color.rgb(191, 105, 255)
             BotEyeState.SEARCHING -> Color.rgb(250, 190, 48)
             BotEyeState.UNKNOWN -> Color.rgb(145, 153, 164)
             BotEyeState.ERROR -> Color.rgb(239, 74, 82)
@@ -92,7 +93,7 @@ class BotEyeStatusView(context: Context) : View(context) {
         val xOffset = if (eyeState == BotEyeState.SEARCHING) ((frame % 3) - 1) * 3.5f*d else 0f
         val radius = when (eyeState) {
             BotEyeState.ERROR -> (2.25f + .55f * ((sin(frame*.8) + 1.0) / 2.0)).toFloat()
-            BotEyeState.ACTIVE -> 3.25f
+            BotEyeState.ACTIVE, BotEyeState.COPILOT -> 3.25f
             BotEyeState.UNKNOWN -> 2.7f
             BotEyeState.SEARCHING -> 3.25f
             BotEyeState.OFF -> 0f
@@ -111,11 +112,11 @@ class BotEyeStatusView(context: Context) : View(context) {
         }
     }
 
-    private val BotEyeState.animated get() = this == BotEyeState.ACTIVE || this == BotEyeState.SEARCHING || this == BotEyeState.ERROR
+    private val BotEyeState.animated get() = this == BotEyeState.ACTIVE || this == BotEyeState.COPILOT || this == BotEyeState.SEARCHING || this == BotEyeState.ERROR
     private val BotEyeState.frameDelay get() = when (this) {
         BotEyeState.SEARCHING -> 340L
         BotEyeState.ERROR -> 180L
-        BotEyeState.ACTIVE -> 140L
+        BotEyeState.ACTIVE, BotEyeState.COPILOT -> 140L
         else -> 600L
     }
 }

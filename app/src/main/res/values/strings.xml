@@ -103,7 +103,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">THREE NEW BETA FEATURES\n\nDUNGEON ROTATION\n• Daily dungeon route with normal and Ad Skip attempts\n• VS Destroy once per game day\n• Automatic return to Home\n\nBOND ROTATION\n• Visits up to 15 partners\n• Restores the starting partner and uses a 20-minute cooldown\n\nMEAT FIELD\n• Harvests, plants and waters automatically\n• Prioritizes available seeds and watering cans\n\nALSO NEW\n• Movable live status overlay\n• Global Settings with separate module sections\n• Manual and Co-Pilot modes</string>
+    <string name="release_notes_body">5.0.0 BETA 2 · EARLY TEST\n\nThis build is closer to an alpha preview of the next-generation automation. The new flows and UI still need more testing and optimization.\n\nDUNGEON CO-PILOT\n• Up to 3 normal + 2 Ad Skip attempts\n• DemiDevimon and Bakemon: maximum 5 attempts\n• Exclusive run without the separate Network Defense loop\n• Apocalymon remains disabled in Beta 2\n\nDIGI CO-PILOT &amp; BOND\n• 15-partner rotation with persistent 20-minute timer\n• Meat Field, rewards and optional DWS phase\n\nUI\n• Compact Beta block and clearly marked Beta actions in the overlay\n• Classic VS/Tower Loop restored on the main screen</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>
@@ -170,7 +170,7 @@
     <string name="dungeon_ads_title">Use up to 2 free ad attempts</string>
     <string name="dungeon_ads_hint">Only with the global Ad Skip Pass enabled and a verified positive ad count.</string>
     <string name="dungeon_cards_title">Included cards</string>
-    <string name="dungeon_apocalymon_limit">Hard limit: one run per rotation.</string>
+    <string name="dungeon_apocalymon_limit">Disabled in Beta 2: Start detection is still being revised.</string>
     <string name="dungeon_vs_limit">Open once; Destroy only with a positive resource count.</string>
     <string name="overlay_auto_dungeon">AUTO: VS / Tower</string>
     <string name="overlay_dungeon_failed">AUTO: VS / Tower failed — closing dialog</string>
@@ -179,7 +179,7 @@
     <string name="summon_help_title">Auto summon</string>
     <string name="summon_help_body">Automatically uses the yellow summon button on supported ticket and Crest screens. Crest summons also confirm the additional dialog automatically. It keeps tapping briefly through loading and reward transitions and stops when the cost turns red. Disable this option whenever you want to summon manually.</string>
     <string name="dungeon_help_title">VS / Tower Loop</string>
-    <string name="dungeon_help_body">Automatically starts supported VS and Tower challenges, waits without tapping during a battle, closes reward and loss dialogs, then starts the next run. The loss dialog is handled only after this loop has confirmed a VS or Tower screen, so other modes are not affected. The mode stops after 15 seconds without visible progress.</string>
+    <string name="dungeon_help_body">Starts supported VS and Tower challenges, waits during battles and closes result dialogs. DemiDevimon and Bakemon use three normal plus up to two Ad Skip attempts, for a maximum of five, before continuing with the next card. Apocalymon is disabled in Beta 2. An optional endless loop is planned for a later beta.</string>
     <string name="overlay_no_digiworld">No DigiWorld detected</string>
     <string name="overlay_no_capture_image">No game image received — capture is gray or black</string>
     <string name="overlay_auto_purchase">AUTO: Summoning</string>

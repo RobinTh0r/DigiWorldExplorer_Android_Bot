@@ -11,6 +11,8 @@ class GameEntryController {
     private var adClaims = 0
     private var awaitingAdProof = false
     private var parked = false
+    private var issuedAt = 0L
+    private var retries = 0
     fun busy() = pending != null || parked
 
     fun tick(screen: EntryScreen, now: Long, adSkip: Boolean = false, adRemaining: Int? = null): EntryAction {
@@ -26,6 +28,15 @@ class GameEntryController {
             }
             if (!done) {
                 if (now >= deadline) { parked = true; return EntryAction.PARK }
+                // Unity occasionally consumes the accessibility callback without accepting the
+                // visible result/receive tap. Retrying this idempotent close on the still proven
+                // result screen is safer than waiting until the whole reward flow parks.
+                if (pending == EntryAction.CLOSE_RESULT && screen == EntryScreen.RESULT &&
+                    now - issuedAt >= 2_500L && retries < 3) {
+                    issuedAt = now
+                    retries++
+                    return EntryAction.CLOSE_RESULT
+                }
                 return EntryAction.WAIT
             }
             if (pending in setOf(EntryAction.CLAIM_IDLE, EntryAction.CLAIM_AD)) {
@@ -59,6 +70,8 @@ class GameEntryController {
     fun cancel() { parked = true }
     private fun issue(action: EntryAction, now: Long): EntryAction {
         pending = action
+        issuedAt = now
+        retries = 0
         deadline = now + if (action == EntryAction.TOUCH_START) 90_000 else 20_000
         return action
     }

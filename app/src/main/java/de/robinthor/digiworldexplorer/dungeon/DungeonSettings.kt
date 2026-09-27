@@ -18,7 +18,7 @@ data class DungeonRotationSettings(
 ) {
     init { require(normalAttempts in 1..3) }
     fun budget(key: DungeonKey, adSkipPass: Boolean, completedToday: Set<DungeonKey> = emptySet()): DungeonBudget = when {
-        key in completedToday -> DungeonBudget()
+        key in completedToday && key in DungeonPassPolicy.dailyLimited -> DungeonBudget()
         else -> when (key) {
         DungeonKey.APOCALYMON_WALL -> DungeonBudget(if (key in enabledCards) 1 else 0)
         DungeonKey.DAILY -> DungeonBudget(if (key in enabledCards) 1 else 0)
@@ -32,13 +32,17 @@ data class DungeonRotationSettings(
 }
 
 object DungeonSettingsStore {
+    // Temporarily unavailable in Beta 2: its panel opens, but Start is not yet reliable.
+    private val beta2DisabledCards = setOf(DungeonKey.APOCALYMON_WALL)
     private const val NORMAL_ATTEMPTS = "dungeon_normal_attempts"
     private const val USE_ADS = "dungeon_use_ads"
     private fun cardKey(key: DungeonKey) = "dungeon_card_${key.name.lowercase()}"
     fun load(context: Context): DungeonRotationSettings {
         val p = context.getSharedPreferences("settings", Context.MODE_PRIVATE)
         return DungeonRotationSettings(
-            enabledCards = DungeonKey.entries.filterTo(mutableSetOf()) { p.getBoolean(cardKey(it), true) },
+            enabledCards = DungeonKey.entries.filterTo(mutableSetOf()) {
+                it !in beta2DisabledCards && p.getBoolean(cardKey(it), it != DungeonKey.APOCALYMON_WALL)
+            },
             normalAttempts = p.getInt(NORMAL_ATTEMPTS, 3).coerceIn(1, 3),
             useAdAttempts = p.getBoolean(USE_ADS, true),
         )
@@ -46,7 +50,7 @@ object DungeonSettingsStore {
     fun save(context: Context, settings: DungeonRotationSettings) {
         val edit = context.getSharedPreferences("settings", Context.MODE_PRIVATE).edit()
             .putInt(NORMAL_ATTEMPTS, settings.normalAttempts).putBoolean(USE_ADS, settings.useAdAttempts)
-        DungeonKey.entries.forEach { edit.putBoolean(cardKey(it), it in settings.enabledCards) }
+        DungeonKey.entries.forEach { edit.putBoolean(cardKey(it), it !in beta2DisabledCards && it in settings.enabledCards) }
         edit.apply()
     }
 }
@@ -90,6 +94,7 @@ object DungeonSettingsStore {
                     else -> ""
                 },
                 key in settings.enabledCards,
+                enabled = key != DungeonKey.APOCALYMON_WALL,
             ) { checked ->
                 settings = settings.copy(enabledCards = if (checked) settings.enabledCards + key else settings.enabledCards - key)
                 DungeonSettingsStore.save(context, settings)
@@ -98,10 +103,10 @@ object DungeonSettingsStore {
     }
 }
 
-@Composable private fun DungeonSettingSwitch(title: String, hint: String, checked: Boolean, onChecked: (Boolean) -> Unit) {
+@Composable private fun DungeonSettingSwitch(title: String, hint: String, checked: Boolean, enabled: Boolean = true, onChecked: (Boolean) -> Unit) {
     Row(Modifier.fillMaxWidth()) {
         Column(Modifier.weight(1f)) { Text(title, style = MaterialTheme.typography.bodyMedium); if (hint.isNotBlank()) Text(hint, style = MaterialTheme.typography.labelSmall) }
-        Switch(checked = checked, onCheckedChange = onChecked)
+        Switch(checked = checked, enabled = enabled, onCheckedChange = onChecked)
     }
 }
 

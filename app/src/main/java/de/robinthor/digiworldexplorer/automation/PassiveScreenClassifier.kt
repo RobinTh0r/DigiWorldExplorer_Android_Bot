@@ -26,9 +26,26 @@ object PassiveScreenClassifier {
             (255 shl 24) or ((buffer.get(offset).toInt() and 255) shl 16) or
                 ((buffer.get(offset + 1).toInt() and 255) shl 8) or (buffer.get(offset + 2).toInt() and 255)
         }
+        return detect(frame)
+    }
+
+    /** Pure screenshot path shared by live classification and ordered transition tests. */
+    fun detect(frame: PixelFrame): ObservedScreen {
+        val w = frame.width
+        val h = frame.height
         val viewport = GameViewport.fit(w, h)
         val at: (Int, Int) -> Int = frame::argbAt
         val entry = GameEntryDetector.detect(frame).screen
+        when (entry) {
+            EntryScreen.LOGIN_LOADING, EntryScreen.LOGIN_READY -> return ObservedScreen.LOGIN
+            EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY, EntryScreen.RESULT -> return ObservedScreen.IDLE_REWARDS
+            EntryScreen.NOTICE -> return ObservedScreen.MESSAGE
+            EntryScreen.HOME -> return ObservedScreen.HOME
+            EntryScreen.UNKNOWN -> Unit
+        }
+        val partner = de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame)
+        if (partner.confirmation) return ObservedScreen.MESSAGE
+        if (partner.page) return ObservedScreen.PARTNER_PAGE
         val knownPage = KnownPageDetector.detect(frame, viewport)
         val explore = ExploreMenuDetector.detect(frame, viewport)
         val farm = if (knownPage == ObservedScreen.UNKNOWN && !explore.menu)
@@ -36,7 +53,6 @@ object PassiveScreenClassifier {
         val farmDialog = if (!farm.field) FarmDialogDetector.detect(frame, farm.visiblePlots, viewport) else null
         return when {
             entry == EntryScreen.HOME -> ObservedScreen.HOME
-            HomeScreenDetector.detect(w, h, at) -> ObservedScreen.HOME
             DungeonScreenDetector.detect(w, h, at).screen != DungeonScreen.NONE -> ObservedScreen.DUNGEON
             RewardPurchaseDetector.detect(w, h, at).recognized -> ObservedScreen.SUMMON
             farm.field -> ObservedScreen.MEAT_FIELD

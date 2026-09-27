@@ -47,10 +47,10 @@ object FarmHarvestDetector {
             abs((blob.left + blob.width / 2.0) / W - center.x) + abs((blob.top + blob.height / 2.0) / H - center.y)
         }?.index }
         val visiblePlots = matched.count { it != null }
-        // Animated Digimon and the perspective can visually join two neighbouring soil areas.
-        // All six anchors must still hit soil and at least four independent areas must remain;
-        // this accepts the live field but continues to reject a uniform orange screen.
-        if (matched.any { it == null } || matched.filterNotNull().toSet().size < 4)
+        // Large crops/meat and perspective can join all three plots in each column. All six
+        // anchors must still hit soil and both independent columns must remain; a uniform orange
+        // screen is one component and therefore continues to be rejected.
+        if (matched.any { it == null } || matched.filterNotNull().toSet().size < 2)
             return FarmHarvestDetection(false, emptyList(), visiblePlots = visiblePlots)
         val badgeBlobs = ColorComponents.find(badges, W, H).filter { it.pixels.toDouble() / badges.size >= .0012 }
         val fieldBubbleBlobs = ColorComponents.find(ripeBubbles, W, H).filter {
