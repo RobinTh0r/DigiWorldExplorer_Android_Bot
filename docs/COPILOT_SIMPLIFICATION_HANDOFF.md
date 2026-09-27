@@ -488,3 +488,6 @@ erfinde aber keine live getesteten Ergebnisse. Keine Veröffentlichung ohne geso
   Kampf bis zur bestätigten Rückkehr. Ein Ownership-Regressionstest hält diese Trennung fest.
 - Overlay hat nun auch `Home-Belohnungen` als eigenen Beta-Schalter. Digi Co-Pilot startet nur die
   ausgewählten Module Bond, Meat Field, Home-Belohnungen und DWS; bei leerer Auswahl startet er nicht.
+- Overlay-Layout live geprüft: Der Digi-Co-Pilot-Start/Stop-Button und genau diese vier Module stehen
+  gemeinsam in einem gelb umrandeten Beta-Rahmen. Auto Summon, Bond & Friendship und Network Defense
+  bleiben als normale Einzelfunktionen außerhalb; Dungeon Co-Pilot bleibt eine getrennte Beta-Aktion.

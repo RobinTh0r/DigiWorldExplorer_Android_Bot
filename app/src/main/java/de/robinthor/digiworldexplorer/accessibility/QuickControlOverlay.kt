@@ -233,10 +233,6 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         elevation = 10f * density
         addView(featureToggle("Auto Summon", "auto_purchase", AutomationState.autoPurchaseEnabled, density))
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
-        addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
-        addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
-        addView(featureToggle("Home-Belohnungen", "copilot_rewards", AutomationState.copilotRewardsEnabled, density, beta = true))
-        addView(featureToggle("DWS im Digi Co-Pilot (5 min)", "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
         addView(actionButton("Statusanzeige ein / aus") { toggleDirectorCard(); collapse() },
             LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (42 * density).toInt()).apply { bottomMargin = (6 * density).toInt() })
@@ -268,6 +264,25 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             }
             collapse()
         }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
+        addView(buildDigiCopilotSection(density), LinearLayout.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.WRAP_CONTENT,
+        ).apply { topMargin = (7 * density).toInt() })
+        addView(actionButton("Start / Restart Bot") {
+            if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
+            collapse()
+        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (50 * density).toInt()).apply { topMargin = (7 * density).toInt() })
+    }
+
+    private fun buildDigiCopilotSection(density: Float): LinearLayout = LinearLayout(service).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding((7 * density).toInt(), (7 * density).toInt(), (7 * density).toInt(), (5 * density).toInt())
+        background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            setColor(Color.argb(72, 176, 112, 0))
+            cornerRadius = 12 * density
+            setStroke((2 * density).toInt().coerceAtLeast(2), Color.rgb(255, 190, 45))
+        }
         addView(actionButton(if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()) "Digi Co-Pilot stoppen" else "Digi Co-Pilot starten", beta = true) {
             if (SupporterLicenseManager.load(service) == null) {
                 service.showStatusOnly("Beta code required")
@@ -302,11 +317,17 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 }
             }
             collapse()
-        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()).apply { topMargin = (7 * density).toInt() })
-        addView(actionButton("Start / Restart Bot") {
-            if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
-            collapse()
-        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (50 * density).toInt()).apply { topMargin = (7 * density).toInt() })
+        }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (46 * density).toInt()))
+        addView(TextView(service).apply {
+            text = "Digi Co-Pilot Module"
+            textSize = 11f
+            setTextColor(Color.rgb(255, 213, 110))
+            setPadding((4 * density).toInt(), (4 * density).toInt(), 0, 0)
+        })
+        addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
+        addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
+        addView(featureToggle("Home-Belohnungen", "copilot_rewards", AutomationState.copilotRewardsEnabled, density, beta = true))
+        addView(featureToggle("DWS (max. 5 min)", "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
     }
 
     @Suppress("DEPRECATION")
