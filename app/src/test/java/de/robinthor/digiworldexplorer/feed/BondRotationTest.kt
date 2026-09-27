@@ -79,6 +79,25 @@ class BondRotationTest {
             bubbleVisible = false, bubbleCollected = true)?.step)
     }
 
+    @Test fun confirmedBubbleTapAdvancesEvenWhileCollectionAnimationHidesHome() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        tour.tick(true, PartnerGrid(), false, 0)
+        val grid = PartnerGrid(true, true, cells, raised = 0, selected = 0)
+        tour.tick(false, grid, false, 1)
+        tour.tick(false, grid.copy(selected = 1, canRaise = true), false, 2)
+        tour.tick(false, PartnerGrid(confirmation = true), false, 3)
+        tour.tick(false, grid.copy(raised = 1), false, 4)
+        tour.tick(true, PartnerGrid(), false, 5)
+        assertEquals(BondStep.OPEN, tour.tick(
+            home = false,
+            grid = PartnerGrid(),
+            feedBusy = false,
+            now = 1_006,
+            bubbleCollected = true,
+        )?.step)
+    }
+
     @Test fun foreignPromptNeverStartsTourAndFailedSelectionDoesNotConfirm() {
         val tour = BondRotation()
         assertNull(tour.tick(false, PartnerGrid(confirmation = true), false, 0))

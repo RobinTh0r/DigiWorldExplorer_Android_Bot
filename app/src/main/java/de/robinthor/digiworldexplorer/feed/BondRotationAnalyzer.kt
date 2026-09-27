@@ -45,9 +45,10 @@ object BondRotationAnalyzer {
         if (matches < 3) return owns
         val previous = rotation.step
         val bubble = home && BondBubbleDetector.detect(frame) != null
+        val collectedSettled = FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now)
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
             forced || BondCycleTimer.canStartBond(now),
-            FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now))
+            collectedSettled)
         fastPolling = rotation.fastBubblePolling(now)
         if (matches == 3) android.util.Log.i(
             "DigiWorldBond",
@@ -59,6 +60,9 @@ object BondRotationAnalyzer {
         if (rotation.step == BondStep.COLLECT) {
             // This Home boundary was confirmed by the rotation itself. Delegating here avoids the
             // stricter passive Home fingerprint rejecting battle-animation frames with a bubble.
+            // Once a tap has been accepted, freeze collection until its one-second settle period
+            // completes instead of tapping the still-visible animated bubble again.
+            if (FeedFrameAnalyzer.collectedSince(rotation.collectStartedAt)) return true
             return FeedFrameAnalyzer.analyze(image, w, h, homeAlreadyConfirmed = true, rotationOwned = true)
         }
         if (previous != BondStep.REST && rotation.step == BondStep.REST) {
@@ -94,9 +98,10 @@ object BondRotationAnalyzer {
             else -> null
         } ?: return owns
         FeedFrameAnalyzer.pauseForDigiWorld()
-        val tapViewport = if (command.step == BondStep.OPEN)
-            HomeScreenDetector.viewport(w, h, frame::argbAt) ?: return owns
-        else GameViewport.fit(w,h)
+        val tapViewport = if (command.step == BondStep.OPEN) {
+            HomeScreenDetector.viewport(w, h, frame::argbAt)
+                ?: if (previous == BondStep.COLLECT && collectedSettled) GameViewport.fit(w, h) else return owns
+        } else GameViewport.fit(w,h)
         val (x,y) = tapViewport.pixel(target)
         service.showStatusOnly("Bond ${rotation.visited}/15: ${command.step.name.lowercase()}")
         android.util.Log.i("DigiWorldBond", "step=${command.step} cell=${command.cell} original=${rotation.original} visited=${rotation.visited}")

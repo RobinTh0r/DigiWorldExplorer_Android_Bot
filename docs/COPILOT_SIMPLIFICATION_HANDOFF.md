@@ -502,3 +502,8 @@ erfinde aber keine live getesteten Ergebnisse. Keine Veröffentlichung ohne geso
   Rotation-COLLECT vom separaten normalen `Bond & Friendship`-Schalter. `rotationOwned=true`
   autorisiert nun nur in diesem bestätigten Schritt den Bubble-Tap; passives Sammeln bleibt weiter
   vollständig vom normalen Schalter abhängig.
+- Folgefehler nach erfolgreichem Tap: Einsammelanimation verdeckte Home, sodass COLLECT trotz
+  bestätigtem Tap weiter wartete und später parkte; dieselbe noch sichtbare Bubble konnte zweimal
+  getippt werden. Jetzt sperrt der erste akzeptierte Tap weitere Collect-Taps und autorisiert nach
+  exakt einer Sekunde den nächsten OPEN-Schritt auch bei transient `home=false`; nur dieser bewiesene
+  COLLECT-Übergang darf den bekannten Game-Viewport als Bottom-Navigation-Fallback verwenden.

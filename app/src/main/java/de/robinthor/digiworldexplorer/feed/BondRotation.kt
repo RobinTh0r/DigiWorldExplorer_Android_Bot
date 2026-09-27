@@ -50,17 +50,23 @@ class BondRotation {
         if (step == BondStep.COLLECT) {
             // Farm may interrupt only here. Resume on Home without losing the original partner.
             bubbleSeenDuringCollect = bubbleSeenDuringCollect || bubbleVisible
+            // A visually confirmed tap is stronger evidence than the transient Home classifier:
+            // the collection animation can cover the stable Home icons for several seconds.
+            if (bubbleCollected && !feedBusy) {
+                if (visited == 15) {
+                    step = BondStep.REST
+                    nextBubbleArmed = !bubbleVisible
+                    return null
+                }
+                return issue(BondStep.OPEN, now)
+            }
             if (!home || feedBusy) {
                 if (now >= deadline) step = BondStep.PARK
                 return null
             }
             if (!bubbleCollected && now < collectUntil) return null
             if (!bubbleCollected && bubbleSeenDuringCollect) { step = BondStep.PARK; return null }
-            if (visited == 15) {
-                step = BondStep.REST
-                nextBubbleArmed = !bubbleVisible
-                return null
-            }
+            if (visited == 15) { step = BondStep.REST; nextBubbleArmed = !bubbleVisible; return null }
             return issue(BondStep.OPEN, now)
         }
         if (now >= deadline) { step = BondStep.PARK; return null }
