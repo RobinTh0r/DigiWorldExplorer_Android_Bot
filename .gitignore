@@ -19,3 +19,4 @@ android-main/
 .gradle-codex-build/
 .kotlin/
 artifacts/*.apk
+release-apk/
