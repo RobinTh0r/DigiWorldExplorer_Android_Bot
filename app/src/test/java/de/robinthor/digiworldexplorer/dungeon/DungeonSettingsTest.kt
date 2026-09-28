@@ -22,10 +22,11 @@ class DungeonSettingsTest {
         assertEquals(DungeonBudget(1), settings.budget(DungeonKey.APOCALYMON_WALL, true))
         assertEquals(DungeonBudget(1), settings.budget(DungeonKey.DAILY, true))
     }
-    @Test fun `apocalymon is disabled by default but remains configurable`() {
+    @Test fun `defaults enable all cards for three normal attempts without an Ad Skip Pass`() {
         val defaults = DungeonRotationSettings()
-        assertEquals(DungeonBudget(), defaults.budget(DungeonKey.APOCALYMON_WALL, true))
-        assertEquals(DungeonBudget(1), defaults.copy(enabledCards = defaults.enabledCards + DungeonKey.APOCALYMON_WALL).budget(DungeonKey.APOCALYMON_WALL, true))
+        assertEquals(DungeonKey.entries.toSet(), defaults.enabledCards)
+        assertEquals(DungeonBudget(1), defaults.budget(DungeonKey.APOCALYMON_WALL, true))
+        assertEquals(DungeonBudget(3), defaults.budget(DungeonKey.BAKEMON, false))
     }
     @Test fun `completed card has zero budget until daily reset`() {
         val settings = DungeonRotationSettings()

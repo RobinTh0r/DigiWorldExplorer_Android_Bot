@@ -204,7 +204,9 @@ class ScreenCaptureService : Service() {
                 } else {
                     val digiCopilotOwns = DigiCopilotRequest.active()
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
-                    val owner = if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()) {
+                    val owner = if (de.robinthor.digiworldexplorer.purchase.SummonRewardFrameGuard.analyze(image, width, height)) {
+                        FrameOwner.SUMMON
+                    } else if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()) {
                         // The user-started pass owns ALL frames, including settle/park frames.
                         // Only the rotation may delegate its own reward/battle handlers.
                         if (featureFrame && de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active())
@@ -424,6 +426,7 @@ class ScreenCaptureService : Service() {
         lastFrameOwner = FrameOwner.NONE
         passiveScreen = ObservedScreen.UNKNOWN
         RewardPurchaseFrameAnalyzer.reset()
+        de.robinthor.digiworldexplorer.purchase.SummonRewardFrameGuard.reset()
         GameEntryAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         GekkomonRunFrameAnalyzer.reset()

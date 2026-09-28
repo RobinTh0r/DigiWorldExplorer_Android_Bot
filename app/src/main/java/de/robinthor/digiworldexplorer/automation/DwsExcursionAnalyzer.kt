@@ -38,6 +38,7 @@ object DwsExcursionAnalyzer {
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!DwsExcursionRequest.active()) return false
+        if (!DigiCopilotRequest.active()) { reset(); return false }
         val plane = image.planes.firstOrNull() ?: return true
         val w = minOf(width, image.width); val h = minOf(height, image.height)
         // Snapshot plane metadata while the Image is unquestionably open. Reading rowStride or

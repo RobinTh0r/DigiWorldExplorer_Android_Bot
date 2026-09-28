@@ -7,6 +7,10 @@ object DigiCopilotRequest {
         private set
 
     @Synchronized fun start() { enabled = true; reason = "Waiting for verified Home" }
-    @Synchronized fun stop(why: String = "") { enabled = false; reason = why }
+    @Synchronized fun stop(why: String = "") {
+        enabled = false; reason = why
+        // An old timed excursion must never take ownership of a later manually opened DWS page.
+        DwsExcursionAnalyzer.reset()
+    }
     fun active() = enabled
 }

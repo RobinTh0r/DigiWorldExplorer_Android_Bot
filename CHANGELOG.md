@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.0.3 Beta 1 — 28 September 2026
+
+- Improved Digital World Search grid recognition for MuMu's dark-city board layout.
+- Kept highlighted, reachable tiles traversable and prioritized nearby training points over distant energy.
+- Limited the five-minute DWS excursion to Digi Co-Pilot; standalone DWS no longer inherits a stale Co-Pilot timeout.
+- Added a Summon reward-screen guard to stop repeated taps or purchases while cards are revealing; Auto Summon now defaults off for new installs.
+- Made VS/Tower Loop and overlay visibility controls available without Beta access and removed the obsolete fixed corner status panel.
+- Set unset Premium defaults for Bond, Meat Field, rewards and Co-Pilot DWS, while preserving explicit choices; enabled dungeon selections and three normal attempts by default. Ad Skip Pass remains opt-in.
+- Added screenshot-based regression tests. Physical Oppo, MuMu and other device flows still require supervised testing.
+
 ## 5.0.2 Beta 2 — 27 September 2026
 
 - Fixed Touch to Start recognition on OnePlus 8T Pro and current Galaxy tall-screen layouts.

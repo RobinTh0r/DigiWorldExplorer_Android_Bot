@@ -14,7 +14,6 @@ import de.robinthor.digiworldexplorer.detection.Cell
 import de.robinthor.digiworldexplorer.detection.GridBounds
 import de.robinthor.digiworldexplorer.detection.HudCounters
 import de.robinthor.digiworldexplorer.strategy.AutomationState
-import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
 import de.robinthor.digiworldexplorer.automation.DirectorSnapshot
 import de.robinthor.digiworldexplorer.automation.ScreenDirector
 
@@ -22,7 +21,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  @Volatile private var activePackage:String?=null
  private var overlay:GridOverlayView?=null
  private var quickControls:QuickControlOverlay?=null
- override fun onServiceConnected(){instance=this;showOverlay();val prefs=getSharedPreferences("settings",MODE_PRIVATE);if(SupporterLicenseManager.load(this)!=null&&prefs.getBoolean("quick_overlay_enabled",false))setQuickControlsEnabled(true);setOverlayEnabled(AutomationState.overlayEnabled)}
+ override fun onServiceConnected(){instance=this;showOverlay();val prefs=getSharedPreferences("settings",MODE_PRIVATE);if(prefs.getBoolean("quick_overlay_enabled",false))setQuickControlsEnabled(true);setOverlayEnabled(AutomationState.overlayEnabled)}
  override fun onAccessibilityEvent(event:AccessibilityEvent?){event?.packageName?.toString()?.let{activePackage=it}}
  override fun onInterrupt()=Unit
  fun isGameForeground():Boolean {
@@ -49,7 +48,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  fun clearCalibrationOverlay(){overlay?.post{overlay?.bounds=null;overlay?.visibility=View.GONE;overlay?.invalidate()}}
  fun setOverlayEnabled(enabled:Boolean){overlay?.post{overlay?.visibility=if(enabled)View.VISIBLE else View.GONE};quickControls?.refresh()}
  fun setQuickControlsEnabled(enabled:Boolean){
-  if(enabled&&SupporterLicenseManager.load(this)!=null){if(quickControls==null)quickControls=QuickControlOverlay(this).also{it.show()}}
+  if(enabled){if(quickControls==null)quickControls=QuickControlOverlay(this).also{it.show()}}
   else{quickControls?.destroy();quickControls=null}
  }
  fun setQuickStatusVisible(visible:Boolean){
@@ -57,9 +56,9 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   quickControls?.setDirectorCardVisible(visible)
  }
  fun hideForCapture(){overlay?.post{overlay?.captureMode=true;overlay?.invalidate()}}
- fun updateStatusKeepingGrid(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{this.status=status;director=snapshot;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
- fun showStatusOnly(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;director=snapshot;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
- fun updateDirector(snapshot:DirectorSnapshot){quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{director=snapshot;captureMode=false;if(AutomationState.overlayEnabled)visibility=View.VISIBLE;invalidate()}}}
+ fun updateStatusKeepingGrid(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{this.status=status;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
+ fun showStatusOnly(status:String,visible:Boolean=true,sourceScreen:de.robinthor.digiworldexplorer.automation.ObservedScreen?=null){ScreenDirector.noteAction(status,sourceScreen);val snapshot=ScreenDirector.snapshot();quickControls?.updateDirector(snapshot);overlay?.post{overlay?.apply{bounds=null;player=null;items=emptySet();obstacles=emptySet();target=null;this.status=status;captureMode=false;visibility=View.GONE;invalidate()}}}
+ fun updateDirector(snapshot:DirectorSnapshot){quickControls?.updateDirector(snapshot)}
  fun updateOverlay(bounds:GridBounds?,player:Cell?,items:Set<Cell>,obstacles:Set<Cell>,target:Cell?,status:String,visible:Boolean,hud:HudCounters=HudCounters(),dashButton:Pair<Float,Float>?=null){overlay?.post{overlay?.apply{this.bounds=bounds;this.player=player;this.items=items;this.obstacles=obstacles;this.target=target;this.status=status;this.hud=hud;this.dashButton=dashButton;captureMode=false;visibility=if(visible)View.VISIBLE else View.GONE;invalidate()}}}
  // FLAG_LAYOUT_NO_LIMITS und LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS sind noetig, damit das Overlay im
  // selben Koordinatensystem liegt wie der Vollbild-Capture. Ohne beides ist das Fenster um die
@@ -68,7 +67,7 @@ class DigiWorldAccessibilityService:AccessibilityService(){
  // FLAG_SECURE ist hier bewusst NICHT gesetzt: es schwaerzt auf Android 15 die gesamte MediaProjection.
  private fun showOverlay(){if(overlay!=null)return;android.util.Log.i("DigiWorldOverlay","create canDrawOverlays=${Settings.canDrawOverlays(this)}");overlay=GridOverlayView().also{getSystemService(WindowManager::class.java).addView(it,WindowManager.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT,WindowManager.LayoutParams.MATCH_PARENT,if(Settings.canDrawOverlays(this)) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY else WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,PixelFormat.TRANSLUCENT).apply{gravity=Gravity.TOP or Gravity.START;layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS})}}
  private fun removeOverlay(){overlay?.let{runCatching{getSystemService(WindowManager::class.java).removeView(it)}};overlay=null}
- inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status=getString(R.string.overlay_bot_ready);var director=ScreenDirector.snapshot();var hud:HudCounters=HudCounters();var dashButton:Pair<Float,Float>?=null;var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
+ inner class GridOverlayView:View(this){var bounds:GridBounds?=null;var player:Cell?=null;var items:Set<Cell> = emptySet();var obstacles:Set<Cell> = emptySet();var target:Cell?=null;var status=getString(R.string.overlay_bot_ready);var hud:HudCounters=HudCounters();var dashButton:Pair<Float,Float>?=null;var captureMode=false;private val p=Paint(Paint.ANTI_ALIAS_FLAG).apply{style=Paint.Style.STROKE}
   init{background=ColorDrawable(Color.TRANSPARENT)}
   // Alle Maße sind relativ zur Zellgröße, damit nichts in die Abtastfenster der Klassifizierung ragt:
   // CellClassifier und PreviewClassifier lassen an jeder Zellkante 7% Rand aus. Linien liegen auf den

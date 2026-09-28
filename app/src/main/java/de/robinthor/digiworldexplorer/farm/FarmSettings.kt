@@ -14,7 +14,7 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 fun FarmSettings(showEnabled: Boolean = true, showDetails: Boolean = true, betaUnlocked: Boolean = true, onUnlock: () -> Unit = {}) {
     val context = LocalContext.current
     val preferences = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
-    var enabled by remember(betaUnlocked) { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_farm_harvest", false)) }
+    var enabled by remember(betaUnlocked) { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_farm_harvest", true)) }
     var watering by remember { mutableStateOf(preferences.getBoolean("farm_watering", true)) }
     var adSkipPass by remember { mutableStateOf(preferences.getBoolean("ad_skip_pass", false)) }
     Column(Modifier.fillMaxWidth()) {

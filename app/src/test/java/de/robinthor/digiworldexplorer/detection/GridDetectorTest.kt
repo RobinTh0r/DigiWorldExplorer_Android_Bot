@@ -4,6 +4,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GridDetectorTest {
+    @Test fun bottomAnchoredFallbackDoesNotClaimOtherGamePages() {
+        for (name in listOf("home_dark_city.png", "bond_partner_grid.png", "farm_explore_live.png",
+            "dungeon_list_bottom.png", "dungeon_challenge_de.png", "idle_rewards_empty.png",
+            "oppo_summon_reward_grid.jpg")) {
+            val image = javax.imageio.ImageIO.read(javaClass.getResource("/$name"))
+            val pixels = IntArray(image.width * image.height)
+            image.getRGB(0, 0, image.width, image.height, pixels, 0, image.width)
+            assertNull(name, GridDetector.detect(image.width, image.height, pixels))
+        }
+    }
     @Test fun detectsRelativeGridAtArbitraryResolution(){
         val w=1000;val h=1600;val pixels=IntArray(w*h){0xff101820.toInt()}
         val left=120;val top=480;val xStep=140;val yStep=125

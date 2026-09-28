@@ -5,7 +5,7 @@ import de.robinthor.digiworldexplorer.automation.AutomationMode
 object AutomationState {
  @Volatile var enabled=false
  @Volatile var overlayEnabled=true
- @Volatile var autoPurchaseEnabled=true
+ @Volatile var autoPurchaseEnabled=false
  @Volatile var autoDungeonEnabled=true
  @Volatile var autoNetworkDefenseEnabled=false
  @Volatile var autoFeedEnabled=false

@@ -10,7 +10,10 @@ class DigiCopilotRequestTest {
         assertFalse(DigiCopilotRequest.active())
         DigiCopilotRequest.start()
         assertTrue(DigiCopilotRequest.active())
+        DwsExcursionRequest.start()
+        assertTrue(DwsExcursionRequest.active())
         DigiCopilotRequest.stop("test")
         assertFalse(DigiCopilotRequest.active())
+        assertFalse(DwsExcursionRequest.active())
     }
 }

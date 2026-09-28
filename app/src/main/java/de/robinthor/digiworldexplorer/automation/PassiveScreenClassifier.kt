@@ -8,6 +8,7 @@ import de.robinthor.digiworldexplorer.farm.FarmDialogDetector
 import de.robinthor.digiworldexplorer.farm.FarmHarvestDetector
 import de.robinthor.digiworldexplorer.farm.FarmView
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseDetector
+import de.robinthor.digiworldexplorer.purchase.SummonRewardScreenDetector
 import de.robinthor.digiworldexplorer.vision.GameViewport
 import de.robinthor.digiworldexplorer.vision.PixelFrame
 
@@ -35,6 +36,7 @@ object PassiveScreenClassifier {
         val h = frame.height
         val viewport = GameViewport.fit(w, h)
         val at: (Int, Int) -> Int = frame::argbAt
+        if (SummonRewardScreenDetector.detect(w, h, at)) return ObservedScreen.SUMMON
         val entry = GameEntryDetector.detect(frame).screen
         when (entry) {
             EntryScreen.LOGIN_LOADING, EntryScreen.LOGIN_READY -> return ObservedScreen.LOGIN

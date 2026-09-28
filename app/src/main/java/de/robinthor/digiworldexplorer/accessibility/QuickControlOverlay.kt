@@ -409,7 +409,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 RewardPurchaseFrameAnalyzer.reset()
             }
             "auto_dungeon" -> {
-                val allowed = enabled && SupporterLicenseManager.load(service) != null
+                val allowed = enabled
                 AutomationState.autoDungeonEnabled = allowed
                 if (allowed != enabled) preferences.edit().putBoolean(preferenceKey, allowed).apply()
                 DungeonFrameAnalyzer.reset()
@@ -455,14 +455,14 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     private fun refreshFeatureSwitches() {
         syncingFeatureSwitches = true
-        featureSwitches["auto_purchase"]?.isChecked = preferences.getBoolean("auto_purchase", true)
+        featureSwitches["auto_purchase"]?.isChecked = preferences.getBoolean("auto_purchase", false)
         val supporter = SupporterLicenseManager.load(service) != null
-        featureSwitches["auto_dungeon"]?.isChecked = supporter && preferences.getBoolean("auto_dungeon", true)
+        featureSwitches["auto_dungeon"]?.isChecked = preferences.getBoolean("auto_dungeon", true)
         featureSwitches["auto_feed"]?.isChecked = preferences.getBoolean("auto_feed", false)
-        featureSwitches["auto_bond_rotation"]?.isChecked = supporter && preferences.getBoolean("auto_bond_rotation", false)
-        featureSwitches["auto_farm_harvest"]?.isChecked = supporter && preferences.getBoolean("auto_farm_harvest", false)
+        featureSwitches["auto_bond_rotation"]?.isChecked = supporter && preferences.getBoolean("auto_bond_rotation", true)
+        featureSwitches["auto_farm_harvest"]?.isChecked = supporter && preferences.getBoolean("auto_farm_harvest", true)
         featureSwitches["copilot_rewards"]?.isChecked = supporter && preferences.getBoolean("copilot_rewards", true)
-        featureSwitches["copilot_dws"]?.isChecked = supporter && preferences.getBoolean("copilot_dws", false)
+        featureSwitches["copilot_dws"]?.isChecked = supporter && preferences.getBoolean("copilot_dws", true)
         featureSwitches["auto_network_defense"]?.isChecked = preferences.getBoolean("auto_network_defense", false)
         syncingFeatureSwitches = false
     }
@@ -523,14 +523,14 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         AutomationState.adSkipPassEnabled = preferences.getBoolean("ad_skip_pass", false)
         de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
         AutomationState.overlayEnabled = preferences.getBoolean("grid_enabled", true)
-        AutomationState.autoPurchaseEnabled = preferences.getBoolean("auto_purchase", true)
-        AutomationState.autoDungeonEnabled = supporter && preferences.getBoolean("auto_dungeon", true)
+        AutomationState.autoPurchaseEnabled = preferences.getBoolean("auto_purchase", false)
+        AutomationState.autoDungeonEnabled = preferences.getBoolean("auto_dungeon", true)
         AutomationState.autoNetworkDefenseEnabled = preferences.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = preferences.getBoolean("auto_feed", false)
-        AutomationState.autoBondRotationEnabled = supporter && preferences.getBoolean("auto_bond_rotation", false)
+        AutomationState.autoBondRotationEnabled = supporter && preferences.getBoolean("auto_bond_rotation", true)
         AutomationState.copilotRewardsEnabled = supporter && preferences.getBoolean("copilot_rewards", true)
-        AutomationState.copilotDwsEnabled = supporter && preferences.getBoolean("copilot_dws", false)
-        AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", false)
+        AutomationState.copilotDwsEnabled = supporter && preferences.getBoolean("copilot_dws", true)
+        AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", true)
         AutomationState.dwsNavigationSettings = AutomationState.dwsNavigationSettings.copy(blindStageFailedTap = true)
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()

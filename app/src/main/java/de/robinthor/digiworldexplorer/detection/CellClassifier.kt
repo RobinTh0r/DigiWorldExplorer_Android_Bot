@@ -7,7 +7,11 @@ data class CellScores(
  /** Anteil heller, entsaettigter Pixel - praktisch nur Dialogschrift. Diente frueher als
   *  Spielermerkmal und hat dabei jede Fehlermeldung zur Spielfigur erklaert. */
  val text:Double=0.0,
-){fun obstacle():Boolean=pyramid>.30&&item<=.06}
+){
+ // Reachable cyan tiles share the old broad blue/purple pixel score with pyramids. A real
+ // pyramid remains comparatively dark; a strongly highlighted tile must stay traversable.
+ fun obstacle():Boolean=pyramid>.30&&item<=.06&&highlight<.65
+}
 
 object CellClassifier{
  /** Abtastschritt in Pixeln. Alle Kennzahlen sind Flaechenanteile, ein Gitter aus jedem zweiten

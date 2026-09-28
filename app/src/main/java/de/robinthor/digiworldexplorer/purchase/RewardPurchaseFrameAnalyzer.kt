@@ -13,15 +13,13 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 object RewardPurchaseFrameAnalyzer {
     private const val TAP_INTERVAL = 200L
     private const val PENDING_TAP_TIMEOUT = 1_500L
-    private const val SEQUENCE_TIMEOUT = 5_000L
+    private const val SEQUENCE_TIMEOUT = 12_000L
     private const val CREST_REVEAL_TIMEOUT = 10_000L
     @Volatile private var pending = false
     private var pendingSince = 0L
     private var lastTap = 0L
     private var nextTapInterval = TAP_INTERVAL
     private var sequenceUntil = 0L
-    private var sequenceTapX = 0f
-    private var sequenceTapY = 0f
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val plane = image.planes.firstOrNull() ?: return false
@@ -35,6 +33,14 @@ object RewardPurchaseFrameAnalyzer {
         }
         val detection = RewardPurchaseDetector.detect(width, height, argbAt)
         val now = SystemClock.elapsedRealtime()
+        if (SummonRewardScreenDetector.detect(width, height, argbAt)) {
+            // The reward screen still contains the yellow 35x Summon button. Treating it as
+            // another purchase can spend currency repeatedly while cards are being revealed.
+            onRewardScreen()
+            AutoMoveController.pauseForPurchaseScreen()
+            DigiWorldAccessibilityService.instance?.showStatusOnly("Summon reward: close manually")
+            return true
+        }
         // A gesture callback can be missed while a summon animation or screen transition owns
         // the UI. Do not leave Auto Summon permanently waiting for a callback that never comes.
         if (pending && now - pendingSince >= PENDING_TAP_TIMEOUT) {
@@ -64,10 +70,7 @@ object RewardPurchaseFrameAnalyzer {
         if (!detection.recognized) {
             if (sequenceUntil > now && AutomationState.enabled && AutomationState.autoPurchaseEnabled) {
                 AutoMoveController.pauseForPurchaseScreen()
-                DigiWorldAccessibilityService.instance?.let { service ->
-                    service.showStatusOnly(service.getString(R.string.overlay_auto_purchase))
-                    tryTap(service, sequenceTapX, sequenceTapY, now)
-                }
+                DigiWorldAccessibilityService.instance?.showStatusOnly("Waiting for summon result")
                 return true
             }
             if (sequenceUntil != 0L) Log.i("DigiWorldPurchase", "summon sequence timed out or was stopped")
@@ -83,12 +86,11 @@ object RewardPurchaseFrameAnalyzer {
             if (!detection.affordable) Log.i("DigiWorldPurchase", "summon cost is red; summon sequence stopped")
             return true
         }
-        sequenceTapX = detection.tapX
-        sequenceTapY = if (AutomationState.summonTouchCorrection) {
+        val tapY = if (AutomationState.summonTouchCorrection) {
             (detection.tapY + height * .035f).coerceAtMost(height * .99f)
         } else detection.tapY
         sequenceUntil = now + SEQUENCE_TIMEOUT
-        DigiWorldAccessibilityService.instance?.let { tryTap(it, sequenceTapX, sequenceTapY, now) }
+        DigiWorldAccessibilityService.instance?.let { tryTap(it, detection.tapX, tapY, now) }
         return true
     }
 
@@ -106,4 +108,5 @@ object RewardPurchaseFrameAnalyzer {
     }
 
     fun reset() { pending = false; pendingSince = 0L; lastTap = 0L; nextTapInterval = TAP_INTERVAL; sequenceUntil = 0L }
+    fun onRewardScreen() { sequenceUntil = 0L }
 }

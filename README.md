@@ -14,7 +14,7 @@
 
 _Version 5.0.1 is the current public release._
 
-**Device compatibility preview:** [v5.0.2 Beta 2](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v5.0.2-beta.2) adds adaptive 19.5:9/20:9 support for modern Galaxy, Pixel and OnePlus phones. This is a supervised-testing pre-release; 5.0.1 remains the stable download.
+**Latest preview:** [v5.0.3 Beta 1](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v5.0.3-beta.1) improves Digital World Search recognition and training-point collection on varied devices, guards against repeated Summon reward taps, and fixes the Co-Pilot-only DWS time limit. This is a supervised-testing pre-release; 5.0.1 remains the stable download.
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
 

@@ -13,7 +13,7 @@ class DungeonPassPolicyTest {
     @Test fun `second manual pass rechecks regular cards without reopening daily actions`() {
         val locked = DungeonPassPolicy.locked(snapshot(DungeonKey.entries.toSet()))
         assertEquals(setOf(DungeonKey.APOCALYMON_WALL, DungeonKey.DAILY), locked)
-        val settings = DungeonRotationSettings(normalAttempts = 3)
+        val settings = DungeonRotationSettings(normalAttempts = 3, useAdAttempts = true)
         assertEquals(DungeonBudget(5, 2), settings.budget(DungeonKey.BAKEMON, true, DungeonKey.entries.toSet()))
         assertEquals(DungeonBudget(), settings.budget(DungeonKey.DAILY, true, locked))
         val scheduler = DungeonRotationController(DungeonKey.entries.toSet(), locked)

@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
         showReleaseNotes = !settings.getBoolean(releaseNotesKey, false)
         showCommunityIntro = !showReleaseNotes && !settings.getBoolean(communityIntroKey, false)
         grid = settings.getBoolean("grid_enabled", !isHuaweiOrHonor())
-        autoPurchase = settings.getBoolean("auto_purchase", true)
+        autoPurchase = settings.getBoolean("auto_purchase", false)
         autoDungeon = false
         autoNetworkDefense = false
         legacyCapture = settings.getBoolean("legacy_capture", true)
@@ -146,8 +146,8 @@ class MainActivity : ComponentActivity() {
         preReleaseUpdates = settings.getBoolean("pre_release_updates", false)
         darkMode = settings.getBoolean("dark_mode", false)
         supporterLicense = SupporterLicenseManager.load(this)
-        autoDungeon = supporterLicense != null && settings.getBoolean("auto_dungeon", true)
-        quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
+        autoDungeon = settings.getBoolean("auto_dungeon", true)
+        quickOverlayEnabled = settings.getBoolean("quick_overlay_enabled", false)
         quickStatusVisible = settings.getBoolean("director_card_visible", true)
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
         autoFeed = settings.getBoolean("auto_feed", false)
@@ -168,12 +168,11 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoDungeonEnabled = autoDungeon
         AutomationState.autoNetworkDefenseEnabled = autoNetworkDefense
         AutomationState.autoFeedEnabled = autoFeed
-        AutomationState.autoBondRotationEnabled = supporterLicense != null && getSharedPreferences("settings", MODE_PRIVATE).getBoolean("auto_bond_rotation", false)
-        AutomationState.autoBondRotationEnabled = supporterLicense != null && settings.getBoolean("auto_bond_rotation", false)
-        AutomationState.copilotDwsEnabled = supporterLicense != null && settings.getBoolean("copilot_dws", false)
+        AutomationState.autoBondRotationEnabled = supporterLicense != null && settings.getBoolean("auto_bond_rotation", true)
+        AutomationState.copilotDwsEnabled = supporterLicense != null && settings.getBoolean("copilot_dws", true)
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
-        AutomationState.autoFarmEnabled = supporterLicense != null && settings.getBoolean("auto_farm_harvest", false)
+        AutomationState.autoFarmEnabled = supporterLicense != null && settings.getBoolean("auto_farm_harvest", true)
         AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
         AutomationState.adSkipPassEnabled = settings.getBoolean("ad_skip_pass", false)
         AutomationState.dwsNavigationSettings = DwsNavigationSettings(allowLeft = !dwsNeverLeft, forceForwardAttack = dwsForceForwardAttack, dashSpamUntilZero = dwsDashSpam, collectOnlyEnergy = dwsOnlyEnergy, betterEnergyCollect = dwsBetterCollect, blindStageFailedTap = dwsBlindStageTap)
@@ -236,11 +235,10 @@ class MainActivity : ComponentActivity() {
                 onGrid = { grid = !grid; AutomationState.overlayEnabled = grid; DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid); settings.edit().putBoolean("grid_enabled", grid).apply() },
                 onAutoPurchase = { enabled -> autoPurchase = enabled; AutomationState.autoPurchaseEnabled = enabled; getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_purchase", enabled).apply() },
                 onAutoDungeon = { enabled ->
-                    val allowed = enabled && supporterLicense != null
+                    val allowed = enabled
                     autoDungeon = allowed
                     AutomationState.autoDungeonEnabled = allowed
                     getSharedPreferences("settings", MODE_PRIVATE).edit().putBoolean("auto_dungeon", allowed).apply()
-                    if (enabled && !allowed) showLicenseDialog = true
                 },
                 onAutoNetworkDefense = { enabled ->
                     NetworkDefenseFrameAnalyzer.reset()
@@ -308,12 +306,10 @@ class MainActivity : ComponentActivity() {
                 onPreReleaseUpdates = { enabled -> preReleaseUpdates = enabled; settings.edit().putBoolean("pre_release_updates", enabled).apply(); checkForUpdates() },
                 onDarkMode = { enabled -> darkMode = enabled; settings.edit().putBoolean("dark_mode", enabled).apply() },
                 onQuickOverlay = { enabled ->
-                    val allowed = supporterLicense != null
-                    quickOverlayEnabled = enabled && allowed
+                    quickOverlayEnabled = enabled
                     settings.edit().putBoolean("quick_overlay_enabled", quickOverlayEnabled).apply()
                     DigiWorldAccessibilityService.instance?.setQuickControlsEnabled(quickOverlayEnabled)
-                    if (enabled && !allowed) showLicenseDialog = true
-                    else if (enabled && DigiWorldAccessibilityService.instance == null) {
+                    if (enabled && DigiWorldAccessibilityService.instance == null) {
                         Toast.makeText(this, getString(R.string.quick_overlay_reconnect_accessibility), Toast.LENGTH_LONG).show()
                         startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
                     }
@@ -361,12 +357,23 @@ class MainActivity : ComponentActivity() {
                 currentLicense = supporterLicense,
                 onActivate = { code ->
                     val license = SupporterLicenseManager.activate(this, code)
-                    if (license != null) supporterLicense = license
+                    if (license != null) {
+                        supporterLicense = license
+                        AutomationState.autoBondRotationEnabled = settings.getBoolean("auto_bond_rotation", true)
+                        AutomationState.autoFarmEnabled = settings.getBoolean("auto_farm_harvest", true)
+                        AutomationState.copilotRewardsEnabled = settings.getBoolean("copilot_rewards", true)
+                        AutomationState.copilotDwsEnabled = settings.getBoolean("copilot_dws", true)
+                    }
                     license != null
                 },
                 onRemove = {
                     SupporterLicenseManager.remove(this)
                     supporterLicense = null
+                    de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("Beta code removed")
+                    AutomationState.autoBondRotationEnabled = false
+                    AutomationState.autoFarmEnabled = false
+                    AutomationState.copilotRewardsEnabled = false
+                    AutomationState.copilotDwsEnabled = false
                     dwsNeverLeft = false; dwsForceForwardAttack = false; dwsDashSpam = false; dwsOnlyEnergy = false; dwsBetterCollect = true; dwsBlindStageTap = true; AutomationState.dwsNavigationSettings = DwsNavigationSettings(blindStageFailedTap = true)
                     settings.edit().putBoolean("dws_never_left", false).putBoolean("dws_force_forward_attack", false).putBoolean("dws_dash_spam", false).putBoolean("dws_only_energy", false).putBoolean("dws_better_collect", true).putBoolean("dws_blind_stage_tap", true).apply()
                 },
@@ -410,7 +417,7 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoFeedEnabled = autoFeed
         AutomationState.autoRunnerEnabled = autoRunner
         AutomationState.autoFarmEnabled = supporterLicense != null && getSharedPreferences("settings", MODE_PRIVATE)
-            .getBoolean("auto_farm_harvest", false)
+            .getBoolean("auto_farm_harvest", true)
         AutomationState.farmWateringEnabled = getSharedPreferences("settings", MODE_PRIVATE)
             .getBoolean("farm_watering", true)
         AutomationState.adSkipPassEnabled = getSharedPreferences("settings", MODE_PRIVATE)
@@ -506,8 +513,8 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
         supporterLicense = SupporterLicenseManager.load(this)
-        autoPurchase = settings.getBoolean("auto_purchase", true)
-        autoDungeon = supporterLicense != null && settings.getBoolean("auto_dungeon", true)
+        autoPurchase = settings.getBoolean("auto_purchase", false)
+        autoDungeon = settings.getBoolean("auto_dungeon", true)
         autoFeed = settings.getBoolean("auto_feed", false)
         autoRunner = false
         settings.edit().putBoolean("auto_runner", false).apply()
@@ -517,7 +524,7 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
-        quickOverlayEnabled = supporterLicense != null && settings.getBoolean("quick_overlay_enabled", false)
+        quickOverlayEnabled = settings.getBoolean("quick_overlay_enabled", false)
         quickStatusVisible = settings.getBoolean("director_card_visible", true)
         // The service outlives the Activity. Restore transiently hidden overlays when the user
         // opens the main app again, without requiring an Accessibility reconnect.
@@ -642,10 +649,10 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 onClick = { onQuickOverlay(!quickOverlayEnabled) },
                 modifier = Modifier.weight(1.15f).fillMaxHeight(),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = betaContainerColor(),
-                    contentColor = betaContentColor(),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.primary,
                 ),
-                border = BorderStroke(1.5.dp, betaBorderColor()),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
                 contentPadding = PaddingValues(horizontal = 6.dp, vertical = 0.dp),
             ) {
                 Image(
@@ -655,8 +662,6 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 )
                 Spacer(Modifier.width(5.dp))
                 Text(stringResource(if (quickOverlayEnabled) R.string.quick_overlay_disable else R.string.quick_overlay_enable), fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-                Spacer(Modifier.width(3.dp))
-                Text("BETA", fontSize = 7.sp, fontWeight = FontWeight.Bold, color = betaContentColor())
             }
             OutlinedButton(
                 onClick = { onQuickStatus(!quickStatusVisible) },
@@ -830,7 +835,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
 @Composable private fun BondRotationMainSwitch(betaUnlocked: Boolean, onUnlock: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val preferences = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
-    var checked by remember { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_bond_rotation", false)) }
+    var checked by remember(betaUnlocked) { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_bond_rotation", true)) }
     Surface(
         modifier = Modifier.fillMaxWidth().clickable { if (!betaUnlocked) onUnlock() },
         color = betaContainerColor(),

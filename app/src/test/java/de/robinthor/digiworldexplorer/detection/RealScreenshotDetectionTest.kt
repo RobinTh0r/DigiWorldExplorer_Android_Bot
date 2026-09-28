@@ -16,6 +16,33 @@ import javax.imageio.ImageIO
  * von ~20 deutlich weicher als in synthetischen Testbildern.
  */
 class RealScreenshotDetectionTest {
+    @Test fun highlightedTrainingPointWinsOverDistantEnergyWithoutInventingAWall() {
+        val (width, height, pixels) = frame("dws_training_points_highlight.jpg")
+        val bounds = requireNotNull(GridDetector.detect(width, height, pixels)).bounds
+        val cells = CellClassifier.classify(width, height, pixels, bounds)
+        assertTrue(CalibrationValidator.plausible(cells))
+        assertTrue("training points must be visible", cells.getValue(Cell(0, 2)).pink > .06)
+        assertTrue("cyan free tile is not a pyramid", !cells.getValue(Cell(1, 1)).obstacle())
+        assertEquals(Cell(0, 2), MovementPlanner.choose(Cell(0, 1), cells, emptyList())?.target)
+    }
+    @Test fun detectsScaledMumuGridWithWeakHorizontalLines() {
+        val (width, height, pixels) = frame("mumu_dws_dark_city.jpg")
+        for (scale in 1..2) {
+            val w = width * scale; val h = height * scale
+            val scaled = if (scale == 1) pixels else IntArray(w * h) { i ->
+                pixels[(i / w / scale) * width + (i % w / scale)]
+            }
+            val detection = requireNotNull(GridDetector.detect(w, h, scaled))
+            assertTrue("MuMu confidence ${detection.confidence}", detection.confidence >= .55)
+            assertTrue("MuMu left ${detection.bounds.left}", detection.bounds.left / scale in 45..60)
+            assertTrue("MuMu top ${detection.bounds.top}", detection.bounds.top / scale in 260..275)
+            assertTrue("MuMu right ${detection.bounds.right}", detection.bounds.right / scale in 460..475)
+            assertTrue("MuMu bottom ${detection.bounds.bottom}", detection.bounds.bottom / scale in 640..655)
+            val cells = CellClassifier.classify(w, h, scaled, detection.bounds)
+            assertTrue("MuMu board must pass calibration", CalibrationValidator.plausible(cells))
+            assertEquals(Cell(2, 1), cells.maxByOrNull { it.value.player }?.key)
+        }
+    }
 
     private fun frame(name: String): Triple<Int, Int, IntArray> {
         val stream = requireNotNull(javaClass.classLoader.getResourceAsStream(name)) { "missing $name" }
