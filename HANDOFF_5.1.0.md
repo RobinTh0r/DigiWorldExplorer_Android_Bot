@@ -46,3 +46,7 @@ Use Android Studio JBR, Android SDK/build-tools 36.0.0 and Gradle 9.4.1. Run `:a
 ## Working-tree guidance
 
 This release combines the 5.0.3 Beta 2 diagnostics/OnePlus changes with later image-recognition repairs. Treat `HANDOFF_5.0.3_BETA1.md`, `HANDOFF_5.0.3_BETA2.md`, `docs/REPAIR_PLAN_V5_VISION_AND_AUTOMATION.md` and `.local/` diagnostic extracts as historical evidence. Do not develop from older sibling worktrees. Do not publish another release without an explicit user request.
+
+## Unreleased follow-up after 5.1.0
+
+The working tree contains a post-release physical-phone reliability pass that is not part of the published `v5.1.0` APK yet. It stabilizes Digital World player tracking when large Botamon/Botemon-class sprites spill into neighbouring cells, adds bounded evidence-gated retries for Partner selection/confirmation, Farm actions, the Home reward chest and Touch to Start, and replaces the tall-phone title screen's fixed vertical band with a detected Touch-to-Start strip. Copilot collection now uses a five-tap detected bubble/figure burst plus a centre-first fallback sweep after two seconds. Explore navigation accepts a positively isolated Meat Field card without requiring the emulator-specific distance between card illustrations. Unit tests cover these changes. Obtain new phone diagnostics before assigning a new version or publishing them.

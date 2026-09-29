@@ -106,7 +106,13 @@ class BondRotation {
                 target = (original!! + visited + 1) % 15
                 return issue(BondStep.SELECT, now, target)
             }
-            BondStep.SELECT -> if (grid.selected == target && grid.canRaise) return issue(BondStep.RAISE, now)
+            BondStep.SELECT -> {
+                if (grid.selected == target && grid.canRaise) return issue(BondStep.RAISE, now)
+                if (grid.page && grid.expanded && now - issuedAt >= 2_000 && retries < 2) {
+                    retries++; issuedAt = now
+                    return BondCommand(BondStep.SELECT, target)
+                }
+            }
             BondStep.RAISE -> {
                 // The confirmation dialog can appear and disappear between capture frames on
                 // fast phones. A changed active-partner marker is definitive visual proof that
@@ -121,9 +127,15 @@ class BondRotation {
                     return BondCommand(BondStep.RAISE)
                 }
             }
-            BondStep.CONFIRM -> if (grid.page && grid.raised == target) {
-                visited++
-                return issue(BondStep.HOME, now)
+            BondStep.CONFIRM -> {
+                if (grid.page && grid.raised == target) {
+                    visited++
+                    return issue(BondStep.HOME, now)
+                }
+                if (grid.confirmation && now - issuedAt >= 1_500 && retries < 2) {
+                    retries++; issuedAt = now
+                    return BondCommand(BondStep.CONFIRM)
+                }
             }
             else -> Unit
         }

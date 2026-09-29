@@ -111,7 +111,7 @@ object GameEntryAnalyzer {
         }
         ScreenDirector.noteAction(label, observedScreen)
         val target = when (action) {
-            EntryAction.TOUCH_START -> NormalizedPoint(.50, .843)
+            EntryAction.TOUCH_START -> reading.target ?: NormalizedPoint(.50, .843)
             EntryAction.CLAIM_IDLE -> NormalizedPoint(.632, .74)
             EntryAction.CLAIM_AD -> NormalizedPoint(.37, .74)
             EntryAction.CLOSE_RESULT -> NormalizedPoint(.90, .82)

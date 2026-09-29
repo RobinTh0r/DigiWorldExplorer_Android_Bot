@@ -32,11 +32,15 @@ class GameEntryController {
                 // Unity occasionally consumes the accessibility callback without accepting the
                 // visible result/receive tap. Retrying this idempotent close on the still proven
                 // result screen is safer than waiting until the whole reward flow parks.
-                if (pending == EntryAction.CLOSE_RESULT && screen == EntryScreen.RESULT &&
-                    now - issuedAt >= 1_000L && retries < 2) {
+                val retryVisible = (pending == EntryAction.CLOSE_RESULT && screen == EntryScreen.RESULT) ||
+                    (pending == EntryAction.TOUCH_START && screen == EntryScreen.LOGIN_READY) ||
+                    (pending == EntryAction.CLOSE_NOTICE && screen == EntryScreen.NOTICE)
+                val retryDelay = if (pending == EntryAction.TOUCH_START) 2_000L else 1_000L
+                val retryLimit = if (pending == EntryAction.TOUCH_START) 4 else 2
+                if (retryVisible && now - issuedAt >= retryDelay && retries < retryLimit) {
                     issuedAt = now
                     retries++
-                    return EntryAction.CLOSE_RESULT
+                    return pending!!
                 }
                 return EntryAction.WAIT
             }

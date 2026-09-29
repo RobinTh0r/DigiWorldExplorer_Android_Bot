@@ -26,4 +26,17 @@ class ExploreMenuDetectorTest {
         assertNotNull(result.worldSearchTarget)
         assertNotNull(result.meatFieldTarget)
     }
+    @Test fun `phone artwork offset does not hide independently proven meat card`() {
+        val pixels = IntArray(360 * 640) { 0xff101010.toInt() }
+        fun rect(cx: Int, cy: Int, w: Int, h: Int, color: Int) {
+            for (y in cy - h / 2 until cy + h / 2) for (x in cx - w / 2 until cx + w / 2)
+                pixels[y * 360 + x] = color
+        }
+        rect(180, 326, 360, 448, 0xff00556e.toInt())
+        rect(106, 137, 35, 20, 0xffff00ff.toInt())
+        // Still inside the dedicated Meat Field card, but outside the old 3% relation tolerance.
+        rect(155, 310, 35, 20, 0xff80ff00.toInt())
+        val result = ExploreMenuDetector.detect(PixelFrame(360, 640) { x, y -> pixels[y * 360 + x] })
+        assertNotNull(result.meatFieldTarget)
+    }
 }

@@ -5,7 +5,12 @@ import de.robinthor.digiworldexplorer.vision.NormalizedPoint
 import de.robinthor.digiworldexplorer.vision.PixelFrame
 import de.robinthor.digiworldexplorer.vision.ratioInViewportPatch
 
-data class GameEntryReading(val screen: EntryScreen, val adRemaining: Int? = null, val viewport: GameViewport? = null)
+data class GameEntryReading(
+    val screen: EntryScreen,
+    val adRemaining: Int? = null,
+    val viewport: GameViewport? = null,
+    val target: NormalizedPoint? = null,
+)
 
 /** Conservative, language-independent recognition for the game's title and idle-reward flow. */
 object GameEntryDetector {
@@ -40,8 +45,9 @@ object GameEntryDetector {
         val partner = de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame)
         if (partner.page || partner.confirmation) return GameEntryReading(EntryScreen.UNKNOWN)
         val titleViewport = TitleScreenEvidence.viewport(frame) ?: return GameEntryReading(EntryScreen.UNKNOWN)
-        if (TitleScreenEvidence.ready(frame, titleViewport))
-            return GameEntryReading(EntryScreen.LOGIN_READY, viewport = titleViewport)
+        val startTarget = TitleScreenEvidence.touchTarget(frame, titleViewport)
+        if (startTarget != null)
+            return GameEntryReading(EntryScreen.LOGIN_READY, viewport = titleViewport, target = startTarget)
         return GameEntryReading(EntryScreen.LOGIN_LOADING, viewport = titleViewport)
     }
 

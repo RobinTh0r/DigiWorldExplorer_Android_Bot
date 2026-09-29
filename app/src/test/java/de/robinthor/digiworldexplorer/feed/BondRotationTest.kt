@@ -171,4 +171,18 @@ class BondRotationTest {
         tour.tick(false, first.copy(selected = 1, canRaise = true), false, 2)
         assertEquals(BondStep.HOME, tour.tick(false, first.copy(raised = 1, selected = 1, canRaise = false), false, 3)?.step)
     }
+
+    @Test fun `selection and confirmation taps retry only on their proven screens`() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        val grid = PartnerGrid(true, true, cells, raised = 0, selected = 0)
+        tour.tick(true, PartnerGrid(), false, 0)
+        assertEquals(BondStep.SELECT, tour.tick(false, grid, false, 1)?.step)
+        assertNull(tour.tick(false, grid, false, 2_000))
+        assertEquals(BondStep.SELECT, tour.tick(false, grid, false, 2_001)?.step)
+        assertEquals(BondStep.RAISE, tour.tick(false, grid.copy(selected = 1, canRaise = true), false, 2_002)?.step)
+        assertEquals(BondStep.CONFIRM, tour.tick(false, PartnerGrid(confirmation = true), false, 2_003)?.step)
+        assertNull(tour.tick(false, PartnerGrid(confirmation = true), false, 3_502))
+        assertEquals(BondStep.CONFIRM, tour.tick(false, PartnerGrid(confirmation = true), false, 3_503)?.step)
+    }
 }

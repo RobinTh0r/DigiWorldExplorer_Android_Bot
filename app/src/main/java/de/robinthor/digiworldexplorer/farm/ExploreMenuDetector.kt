@@ -67,9 +67,11 @@ object ExploreMenuDetector {
         if (fieldBlob == null) return ExploreMenuDetection(menu = true, worldSearchTarget = worldTarget)
         val fieldCenter = fieldBlob.center()
         val fieldTarget = fieldCenter.copy(y = fieldCenter.y + .073)
-        val anchored = abs((fieldTarget.x - worldTarget.x) - .0715) <= .03 &&
-            abs((fieldTarget.y - worldTarget.y) - .2442) <= .03
-        return ExploreMenuDetection(true, worldTarget, fieldTarget.takeIf { anchored })
+        // Both blobs have already been restricted to their independent card regions, and the
+        // complete dark Explore page plus World Search anchor is proven above. Requiring one
+        // exact distance between the two illustrations made font scaling and tall-phone card
+        // artwork suppress an otherwise safe Meat Field target.
+        return ExploreMenuDetection(true, worldTarget, fieldTarget)
     }
 
     private fun dominant(mask: BooleanArray, minShare: Double): ColorComponent? {

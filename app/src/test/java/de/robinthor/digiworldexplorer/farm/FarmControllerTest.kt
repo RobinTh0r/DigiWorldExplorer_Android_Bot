@@ -135,4 +135,13 @@ class FarmControllerTest {
         assertEquals(FarmOperation.HARVEST, controller.tick(field(PlotState.RIPE), 0).operation)
         assertEquals(FarmOperation.OPEN_SEEDS, controller.tick(field(PlotState.EMPTY), 100).operation)
     }
+
+    @Test fun `visible unchanged farm action gets two bounded retries`() {
+        val controller = FarmController(10_000)
+        assertEquals(FarmOperation.HARVEST, controller.tick(field(PlotState.RIPE), 0).operation)
+        assertEquals(FarmOperation.WAIT, controller.tick(field(PlotState.RIPE), 1_499).operation)
+        assertEquals(FarmOperation.HARVEST, controller.tick(field(PlotState.RIPE), 1_500).operation)
+        assertEquals(FarmOperation.HARVEST, controller.tick(field(PlotState.RIPE), 3_000).operation)
+        assertEquals(FarmOperation.WAIT, controller.tick(field(PlotState.RIPE), 4_500).operation)
+    }
 }

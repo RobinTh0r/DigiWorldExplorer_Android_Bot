@@ -15,8 +15,12 @@ object TitleScreenEvidence {
         "...##..###.####.###.#..#....##.####...####.##.####.#...##.",
         "..........................................................",
         ".........................................................."))
-    fun ready(frame: PixelFrame, viewport: GameViewport) =
-        touchStart.matches(frame, viewport) || adaptiveTouchStart(frame, viewport)
+    fun ready(frame: PixelFrame, viewport: GameViewport) = touchTarget(frame, viewport) != null
+
+    fun touchTarget(frame: PixelFrame, viewport: GameViewport): NormalizedPoint? {
+        if (touchStart.matches(frame, viewport)) return NormalizedPoint(.50, .843)
+        return adaptiveTouchStartTarget(frame, viewport)
+    }
     private val logo = ScreenTextPattern(459, 18, listOf(
         "............................................................",
         "..................##.......................##...............",
@@ -61,15 +65,29 @@ object TitleScreenEvidence {
         return leftLogo > .20 && rightLogo > .12
     }
 
-    private fun adaptiveTouchStart(frame: PixelFrame, v: GameViewport): Boolean {
-        if (!v.usesTallPhoneLayout || !adaptiveTitleChrome(frame, v)) return false
-        val band = ratio(frame, v, .12, .825, .88, .885) {
-            val h = it.hsv(); h.hue in 85..110 && h.saturation > 70 && h.value > 80
+    private fun adaptiveTouchStartTarget(frame: PixelFrame, v: GameViewport): NormalizedPoint? {
+        if (!v.usesTallPhoneLayout || !adaptiveTitleChrome(frame, v)) return null
+        // Phone renderers place the Touch-to-Start strip at different heights depending on
+        // cutout/inset handling. Search the lower title area in narrow horizontal slices instead
+        // of assuming the old 82.5–88.5% band, then tap the detected slice itself.
+        var bestY = 0.0
+        var bestScore = 0.0
+        var y = .68
+        while (y <= .93) {
+            val cyan = ratio(frame, v, .12, y, .88, y + .035) {
+                val h = it.hsv(); h.hue in 82..112 && h.saturation > 60 && h.value > 70
+            }
+            val letters = ratio(frame, v, .30, y + .004, .70, y + .031) {
+                it.red > 170 && it.green > 185 && it.blue > 185
+            }
+            val score = cyan + letters * 4.0
+            if (cyan > .10 && letters > .022 && score > bestScore) {
+                bestScore = score
+                bestY = y + .0175
+            }
+            y += .0125
         }
-        val letters = ratio(frame, v, .32, .835, .68, .865) {
-            it.red > 175 && it.green > 190 && it.blue > 190
-        }
-        return band > .18 && letters > .035
+        return bestY.takeIf { it > 0.0 }?.let { NormalizedPoint(.50, it) }
     }
 
     private inline fun ratio(frame: PixelFrame, v: GameViewport, x0: Double, y0: Double, x1: Double, y1: Double,

@@ -4,11 +4,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GameEntryControllerTest {
-    @Test fun loadingWaitsAndTouchStartIsNotRepeated() {
+    @Test fun loadingWaitsAndTouchStartRetriesOnlyWhileReadyRemainsVisible() {
         val c = GameEntryController()
         assertEquals(EntryAction.WAIT,c.tick(EntryScreen.LOGIN_LOADING,0))
         assertEquals(EntryAction.TOUCH_START,c.tick(EntryScreen.LOGIN_READY,1))
         assertEquals(EntryAction.WAIT,c.tick(EntryScreen.LOGIN_READY,2))
+        assertEquals(EntryAction.TOUCH_START,c.tick(EntryScreen.LOGIN_READY,2_001))
         assertEquals(EntryAction.WAIT,c.tick(EntryScreen.UNKNOWN,80_000))
         assertEquals(EntryAction.PARK,c.tick(EntryScreen.UNKNOWN,90_001))
     }

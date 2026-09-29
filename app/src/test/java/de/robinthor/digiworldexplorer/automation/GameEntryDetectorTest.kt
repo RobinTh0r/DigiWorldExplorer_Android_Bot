@@ -33,6 +33,22 @@ class GameEntryDetectorTest {
         assertEquals(EntryScreen.UNKNOWN, detect(pixels).screen)
     }
 
+    @Test fun `tall title finds touch strip outside legacy fixed band`() {
+        val w = 1080; val h = 2400
+        val pixels = IntArray(w * h) { rgb(90, 30, 130) }
+        fun fillTall(x0: Double, y0: Double, x1: Double, y1: Double, color: Int) {
+            for (y in (h*y0).toInt() until (h*y1).toInt())
+                for (x in (w*x0).toInt() until (w*x1).toInt()) pixels[y*w+x] = color
+        }
+        fillTall(.035, .045, .22, .115, rgb(245,245,245))
+        fillTall(.64, .045, .96, .105, rgb(245,245,245))
+        fillTall(.12, .72, .88, .755, rgb(20,150,205))
+        fillTall(.42, .728, .58, .748, rgb(245,245,245))
+        val reading = GameEntryDetector.detect(PixelFrame(w, h) { x, y -> pixels[y*w+x] })
+        assertEquals(EntryScreen.LOGIN_READY, reading.screen)
+        org.junit.Assert.assertTrue(reading.target!!.y in .72.. .76)
+    }
+
     @Test fun `blue splash is unknown and cannot authorize a tap`() {
         val pixels = IntArray(width * height) { rgb(15, 95, 180) }
         assertEquals(EntryScreen.UNKNOWN, detect(pixels).screen)

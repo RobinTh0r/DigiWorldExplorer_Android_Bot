@@ -101,7 +101,7 @@ object FeedFrameAnalyzer {
                     lastX = cx; lastY = cy
                     rotationBurstRemaining = 0
                     android.util.Log.i("DigiWorldBond", "collect detected bubble=$bubble target=$tapTarget; burst")
-                    dispatchBubbleBurst(service, cx, cy)
+                    dispatchBubbleBurst(service, bubble, tapTarget, width, height)
                 }
             }
             return true
@@ -117,13 +117,24 @@ object FeedFrameAnalyzer {
         return true
     }
 
-    private fun dispatchBubbleBurst(service: DigiWorldAccessibilityService, x: Float, y: Float) {
+    private fun dispatchBubbleBurst(
+        service: DigiWorldAccessibilityService,
+        bubble: de.robinthor.digiworldexplorer.vision.NormalizedPoint,
+        figure: de.robinthor.digiworldexplorer.vision.NormalizedPoint,
+        width: Int,
+        height: Int,
+    ) {
         val generation = ++bubbleBurstGeneration
-        repeat(3) { index ->
+        val viewport = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width, height)
+        // Some stages accept the figure below the speech bubble, others accept the bubble itself.
+        // Cover both proven targets, with the figure first, instead of repeating one possibly
+        // offset coordinate. The complete bounded burst finishes in about 1.2 seconds.
+        val targets = listOf(figure, figure, bubble, figure, bubble).map { viewport.pixel(it) }
+        targets.forEachIndexed { index, (x, y) ->
             bubbleTapHandler.postDelayed({
                 if (generation != bubbleBurstGeneration || !AutomationState.enabled) return@postDelayed
-                service.dispatchValidatedTap(x, y) { }
-            }, index * 250L)
+                service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { }
+            }, index * 280L)
         }
     }
 
@@ -138,7 +149,7 @@ object FeedFrameAnalyzer {
         rotationBurstAt = 0L
         // Prefer visual evidence first. Only sweep the known stage bubble corridor when the
         // rotation has remained on its already verified Home boundary for a short grace period.
-        rotationFallbackAt = SystemClock.elapsedRealtime() + 6_000L
+        rotationFallbackAt = SystemClock.elapsedRealtime() + 2_000L
         rotationFallbackIndex = 0
     }
 
@@ -175,10 +186,14 @@ object FeedFrameAnalyzer {
     }
 
     private val ROTATION_FALLBACK_POINTS = listOf(
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.34, .40),
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.42, .40),
+        // Centre-first, then the normal stage corridor. Repeated centre points intentionally
+        // provide the requested classic friendship-style safety taps when animation hides the
+        // bubble from one or two captured frames.
         de.robinthor.digiworldexplorer.vision.NormalizedPoint(.50, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.50, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.42, .40),
         de.robinthor.digiworldexplorer.vision.NormalizedPoint(.58, .40),
+        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.34, .40),
         de.robinthor.digiworldexplorer.vision.NormalizedPoint(.66, .40),
     )
 

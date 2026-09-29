@@ -7,6 +7,10 @@ class PlayerSelectorTest{
  @Test fun rejectsRememberedPurpleItem(){val real=Cell(3,1);val purple=Cell(4,2);val cells=mapOf(real to s(.12),purple to s(.22));assertEquals(real,PlayerSelector.select(cells,real,null,setOf(purple))?.key)}
  @Test fun rejectsImpossibleDiagonalJump(){val real=Cell(3,1);val fake=Cell(4,2);assertEquals(real,PlayerSelector.select(mapOf(real to s(.11),fake to s(.23)),real,null,emptySet())?.key)}
  @Test fun acceptsExpectedMove(){val target=Cell(3,2);assertEquals(target,PlayerSelector.select(mapOf(target to s(.10)),Cell(3,1),target,emptySet())?.key)}
+ @Test fun largeSpriteDoesNotJumpToStrongerNeighbourWithoutExpectedMove(){
+  val proven=Cell(3,2);val spill=Cell(3,3)
+  assertEquals(proven,PlayerSelector.select(mapOf(proven to s(.14),spill to s(.20)),proven,null,emptySet())?.key)
+ }
 
  /**
   * Regression: das eigene Sprite faerbt die Zelle als Item ein, wodurch die Spielerzelle in

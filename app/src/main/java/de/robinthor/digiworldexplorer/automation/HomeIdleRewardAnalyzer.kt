@@ -25,6 +25,8 @@ object HomeIdleRewardAnalyzer {
     private var stable = 0
     private var absentStable = 0
     private var deadline = 0L
+    private var chestTapAt = 0L
+    private var chestTapRetries = 0
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!HomeIdleRewardRequest.active()) return false
@@ -75,14 +77,28 @@ object HomeIdleRewardAnalyzer {
             val (x, y) = viewport.pixel(target)
             HomeIdleRewardRequest.waitingDialog()
             deadline = now + 20_000L
+            chestTapAt = now
+            chestTapRetries = 0
             DigiWorldAccessibilityService.instance?.dispatchValidatedTap(x.toFloat(), y.toFloat()) { ok ->
-                if (!ok) HomeIdleRewardRequest.park("Reward chest tap failed")
+                if (!ok) android.util.Log.w("DigiWorldRewards", "chest gesture callback cancelled; awaiting visual proof")
             }
             return true
+        }
+        if (HomeIdleRewardRequest.phase == HomeIdleRewardRequest.Phase.WAIT_DIALOG &&
+            entry.screen == EntryScreen.HOME && now - chestTapAt >= 1_500L && chestTapRetries < 2) {
+            val reading = HomeIdleRewardDetector.detect(frame, homeAlreadyConfirmed = true)
+            val viewport = HomeScreenDetector.viewport(w, h, frame::argbAt) ?: de.robinthor.digiworldexplorer.vision.GameViewport.fit(w, h)
+            val target = reading.target
+            if (reading.available && target != null) {
+                val (x, y) = viewport.pixel(target)
+                chestTapAt = now
+                chestTapRetries++
+                DigiWorldAccessibilityService.instance?.dispatchValidatedTap(x.toFloat(), y.toFloat()) { }
+            }
         }
         if (deadline > 0 && now >= deadline) HomeIdleRewardRequest.park("Idle reward screen not confirmed")
         return true
     }
 
-    fun reset() { stable = 0; absentStable = 0; deadline = 0; HomeIdleRewardRequest.reset() }
+    fun reset() { stable = 0; absentStable = 0; deadline = 0; chestTapAt = 0; chestTapRetries = 0; HomeIdleRewardRequest.reset() }
 }

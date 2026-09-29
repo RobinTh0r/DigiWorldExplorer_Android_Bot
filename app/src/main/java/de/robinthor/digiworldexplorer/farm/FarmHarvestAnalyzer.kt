@@ -170,10 +170,10 @@ object FarmHarvestAnalyzer {
         service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { success ->
             synchronized(this) {
                 if (epoch == dispatchEpoch && !success) {
-                    controller.cancel()
-                    parked = true
-                    flowActive = false
-                    AutomationEventLog.record(AutomationEventKind.PARKED, "FARM_GESTURE_REJECTED")
+                    // Unity often replaces the window before Android reports gesture completion.
+                    // Keep the bounded controller transaction alive; the following field/dialog
+                    // frame is the proof, and its deadline still parks a genuinely missed tap.
+                    android.util.Log.w("DigiWorldFarm", "gesture callback cancelled for $action; awaiting visual proof")
                 }
             }
         }

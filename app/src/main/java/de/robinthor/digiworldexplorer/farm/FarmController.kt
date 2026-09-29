@@ -29,6 +29,8 @@ data class FarmObservation(
 class FarmController(private val timeoutMillis: Long = 30_000) {
     private var pending: FarmCommand? = null
     private var deadline = 0L
+    private var issuedAt = 0L
+    private var retries = 0
     private var seedCountBefore: Int? = null
     private var plantingPlot: Int? = null
     private var terminal: FarmOperation? = null
@@ -45,6 +47,28 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
         val waiting = pending
         val expired = waiting != null && now >= deadline
         if (!frame.stable) return if (expired) park() else FarmCommand(FarmOperation.WAIT)
+
+        // Re-send only when the exact safe source screen is still positively visible. This
+        // covers swallowed real-device taps without turning Farm into coordinate spam.
+        if (waiting != null && now - issuedAt >= 1_500L && retries < 2) {
+            val stillNeedsTap = when (waiting.operation) {
+                FarmOperation.HARVEST -> frame.view == FarmView.FIELD &&
+                    frame.plots.getOrNull(waiting.plot ?: -1) == PlotState.RIPE
+                FarmOperation.OPEN_SEEDS -> frame.view == FarmView.FIELD &&
+                    frame.plots.getOrNull(waiting.plot ?: -1) == PlotState.EMPTY
+                FarmOperation.CONFIRM_SEED -> frame.view == FarmView.SEEDS
+                FarmOperation.OPEN_WATER, FarmOperation.CONFIRM_WATER -> frame.view == FarmView.FIELD
+                FarmOperation.SELECT_WATER -> frame.view == FarmView.WATER
+                FarmOperation.CLOSE_WATER -> frame.view == FarmView.WATER
+                FarmOperation.CLOSE_ERROR -> frame.view == FarmView.ERROR
+                else -> false
+            }
+            if (stillNeedsTap) {
+                issuedAt = now
+                retries++
+                return waiting
+            }
+        }
 
         // Water is never an alternative planting option. Close once, then verify the field.
         if (frame.view == FarmView.WATER && waiting?.operation !in setOf(FarmOperation.OPEN_WATER, FarmOperation.SELECT_WATER, FarmOperation.CONFIRM_WATER, FarmOperation.CLOSE_WATER)) {
@@ -155,6 +179,8 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
     private fun issue(command: FarmCommand, now: Long): FarmCommand {
         pending = command
         deadline = now + timeoutMillis
+        issuedAt = now
+        retries = 0
         return command
     }
 
