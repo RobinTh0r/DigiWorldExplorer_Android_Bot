@@ -19,6 +19,17 @@ class DungeonPanelDetectorTest {
         check("dungeon_vs_zero",DungeonKey.DAILY,"destroy",0)
         check("dungeon_network_confirm",DungeonKey.NETWORK_DEFENSE,"network_confirm",null)
         check("dungeon_network_leave",DungeonKey.NETWORK_DEFENSE,"network_leave",null)
-        check("dungeon_network_entry",DungeonKey.NETWORK_DEFENSE,"network_challenge",2)
+        check("dungeon_network_entry",DungeonKey.NETWORK_DEFENSE,"network_matching",2)
+    }
+    @Test fun networkNoticeTargetsFollowTheirVisibleButtonRows() {
+        fun panel(file: String): DungeonPanel {
+            val img = ImageIO.read(javaClass.getResource("/$file.png"))
+            return requireNotNull(DungeonPanelDetector.detect(PixelFrame(img.width,img.height,img::getRGB),DungeonKey.NETWORK_DEFENSE))
+        }
+        val confirm = panel("dungeon_network_confirm")
+        val leave = panel("dungeon_network_leave")
+        assertEquals(.59, confirm.target.y, .04)
+        assertEquals(.59, leave.target.y, .04)
+        assertTrue(leave.target.x > confirm.target.x)
     }
 }

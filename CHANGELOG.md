@@ -1,5 +1,24 @@
 # Changelog
 
+## 5.1.0 — 29 September 2026
+
+- Added image-driven Dungeon rotation for tall phones, including dynamic list/card targets, Network Defense Matching, Digi-Factory reward handling and safer result transitions.
+- Improved Digi Co-Pilot Bond rotation with OnePlus 5×3 roster recognition, verified active-partner changes, safer lower-right selection and more tolerant Bond-bubble collection.
+- Improved Meat Field recognition and planting: unknown plots no longer count as finished, changing OCR counters no longer block a verified empty field, and unresolved fields create diagnostic evidence.
+- Restored the proven 4.0.0 classic Auto-Summon detector and click cadence after physical-device diagnostics exposed false ticket-header matches and card taps in the experimental replacement.
+- Added opt-in offline diagnostics with event logs, up to 50 compressed screenshots per session, individual/all-session ZIP sharing and deletion from the app.
+- Added OnePlus regression captures for Dungeon rewards, Partner grids, Summon ticket/Crest results and false-positive screens.
+- Kept Ad Skip Pass opt-in and continued to block actions when a required counter cannot be read.
+
+## 5.0.3 Beta 2 — 28 September 2026
+
+- Added an opt-in offline diagnostic mode for physical-device testing without ADB, with bounded event logs and targeted compressed screenshots.
+- Added an in-app diagnostic-session list with ZIP sharing through Android's share sheet and individual deletion.
+- Recognized the tall translucent Digi-Factory Ad-Skip reward sheet and closed it before resuming Dungeon Co-Pilot.
+- Corrected the expanded 5×3 Partner roster geometry for OnePlus 1080×2376 captures so Digi Co-Pilot can select and rotate partners.
+- Reduced repetitive diagnostic status entries and prevented rapid `BOND`/`NONE` ownership changes from consuming all screenshot slots.
+- Added regression fixtures from supervised OnePlus 8 Pro Dungeon and Partner runs.
+
 ## 5.0.3 Beta 1 — 28 September 2026
 
 - Improved Digital World Search grid recognition for MuMu's dark-city board layout.

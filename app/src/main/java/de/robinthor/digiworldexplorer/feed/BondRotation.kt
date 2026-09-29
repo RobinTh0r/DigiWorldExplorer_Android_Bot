@@ -27,13 +27,23 @@ class BondRotation {
         fallbackFinished: Boolean = false): BondCommand? {
         if (step == BondStep.PARK) return null
         if (step in setOf(BondStep.IDLE, BondStep.REST)) {
-            if (!home || feedBusy || !cycleReady) return null
+            if (feedBusy || !cycleReady) return null
             if (step == BondStep.REST) {
+                if (!home) return null
                 nextBubbleArmed = true
             }
             nextBubbleArmed = false
             original = null; visited = 0; target = null
-            return issue(BondStep.OPEN, now)
+            if (!grid.page) {
+                if (!home) return null
+                return issue(BondStep.OPEN, now)
+            }
+            // A stopped/restarted Co-Pilot can already be on the Partner page. Resume from
+            // visible page evidence instead of blindly tapping the Home navigation button.
+            step = BondStep.OPEN
+            deadline = now + 25_000
+            issuedAt = now
+            retries = 0
         }
         if (step == BondStep.HOME && home) {
             collectStartedAt = now
@@ -85,13 +95,14 @@ class BondRotation {
                     return null
                 }
                 if (!grid.expanded) return if (step == BondStep.OPEN) issue(BondStep.EXPAND, now) else null
-                if (grid.cells.size != 15 || grid.raised == null) return null
-                if (original == null) original = grid.raised
+                val visibleActive = grid.raised
+                if (grid.cells.size != 15 || visibleActive == null) return null
+                if (original == null) original = visibleActive
                 // The yellow border/green check animate while the partner sheet opens. A sampled
                 // frame can therefore briefly report the previous/wrong raised cell. Keep the
                 // current command pending and let the existing deadline guard a genuinely wrong
                 // screen instead of aborting the complete tour on that transient frame.
-                if (target != null && grid.raised != target) return null
+                if (target != null && visibleActive != target) return null
                 target = (original!! + visited + 1) % 15
                 return issue(BondStep.SELECT, now, target)
             }

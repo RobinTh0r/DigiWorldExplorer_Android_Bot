@@ -18,6 +18,7 @@ object AutomationEventLog {
         require(code.all { it.isLetterOrDigit() || it in "_:-." }) { "Diagnostic code contains unsafe characters" }
         if (events.size == CAPACITY) events.removeFirst()
         events.addLast(AutomationEvent(elapsedMillis, kind, code))
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("EVENT.${kind.name}", code)
     }
 
     @Synchronized fun snapshot(): List<AutomationEvent> = events.toList()

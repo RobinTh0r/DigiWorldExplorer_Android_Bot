@@ -40,4 +40,11 @@ class PartnerGridDetectorTest {
         assertFalse(read("bond_home_food.png").page)
         assertFalse(read("farm_explore_live.png").page)
     }
+    @Test fun recognizesExpandedOnePlusRoster() {
+        val grid = read("oneplus_partner_grid_expanded.jpg")
+        assertTrue(grid.page)
+        assertTrue(grid.expanded)
+        assertEquals(15, grid.cells.size)
+        assertEquals("The green active-partner check is on the first row, fourth cell", 3, grid.raised)
+    }
 }

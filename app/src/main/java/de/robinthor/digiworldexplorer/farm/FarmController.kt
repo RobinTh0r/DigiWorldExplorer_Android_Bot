@@ -32,7 +32,6 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
     private var seedCountBefore: Int? = null
     private var plantingPlot: Int? = null
     private var terminal: FarmOperation? = null
-    private var unresolvedSince: Long? = null
     var harvested = 0
         private set
     var planted = 0
@@ -142,29 +141,12 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
                 .maxWithOrNull(compareBy<Map.Entry<Int, Int>> { it.value }.thenBy { -it.key })?.key else null
             if (target != null) return issue(FarmCommand(FarmOperation.OPEN_WATER, target), now)
         }
-        // Never tap an unknown plot, but do not let an animated Digimon covering one plot block
-        // a separately verified neighbour. If unknown plots are all that remain, wait for a clear
-        // frame instead of declaring the field complete.
+        // Never tap an unknown plot and never call it complete. A later clear frame can reveal an
+        // empty badge; treating UNKNOWN as finished left real empty fields unplanted on tall phones.
         val unresolvedUnknown = frame.plots.indices.any {
             frame.plots[it] == PlotState.UNKNOWN && it !in plantedPlots
         }
-        if (unresolvedUnknown) {
-            // Moving Palmon sprites can cover a timer forever. When every readable plot is
-            // already growing or locked, wait a bounded period for a clear frame and then finish
-            // this check; the next scheduled field visit will inspect it again.
-            val onlySafeKnownStates = frame.plots.all {
-                it in setOf(PlotState.UNKNOWN, PlotState.GROWING, PlotState.LOCKED)
-            }
-            if (onlySafeKnownStates) {
-                val since = unresolvedSince ?: now.also { unresolvedSince = it }
-                if (now - since >= 8_000L) {
-                    unresolvedSince = null
-                    return FarmCommand(FarmOperation.COMPLETE)
-                }
-            }
-            return FarmCommand(FarmOperation.WAIT)
-        }
-        unresolvedSince = null
+        if (unresolvedUnknown) return FarmCommand(FarmOperation.WAIT)
         return FarmCommand(FarmOperation.COMPLETE)
     }
 

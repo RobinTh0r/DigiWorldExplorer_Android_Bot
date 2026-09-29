@@ -3,6 +3,8 @@ package de.robinthor.digiworldexplorer.feed
 import android.graphics.Color
 import android.media.Image
 import android.os.SystemClock
+import android.os.Handler
+import android.os.Looper
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.input.SafeTapRandomizer
@@ -10,6 +12,8 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 /** Conservative detector for the small white food bubble on the main battle screen. */
 object FeedFrameAnalyzer {
+    private val bubbleTapHandler = Handler(Looper.getMainLooper())
+    @Volatile private var bubbleBurstGeneration = 0L
     fun isBusy(): Boolean = tapsLeft > 0
     private var stableFrames = 0
     private var mainScreenFrames = 0
@@ -24,8 +28,10 @@ object FeedFrameAnalyzer {
     private var rotationFallbackIndex = 0
     @Volatile private var lastCollectedAt = 0L
     private var fallbackFinishedAt = 0L
+    private var rotationBurstRemaining = 0
+    private var rotationBurstAt = 0L
 
-    fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; rotationFallbackAt = 0L; rotationFallbackIndex = 0; lastCollectedAt = 0L }
+    fun reset() { bubbleBurstGeneration++; stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; rotationFallbackAt = 0L; rotationFallbackIndex = 0; lastCollectedAt = 0L; rotationBurstRemaining = 0; rotationBurstAt = 0L }
     fun collectedSince(since: Long): Boolean = lastCollectedAt >= since && since > 0L
     fun fallbackSettledSince(since: Long, now: Long): Boolean =
         since > 0L && fallbackFinishedAt >= since && now - fallbackFinishedAt >= 1_500L
@@ -52,6 +58,12 @@ object FeedFrameAnalyzer {
         }
         mainScreenFrames++
 
+        if (rotationOwned && rotationBurstRemaining > 0 && now >= rotationBurstAt) {
+            DigiWorldAccessibilityService.instance?.dispatchValidatedTap(lastX, lastY) { }
+            rotationBurstRemaining--
+            rotationBurstAt = now + 220L
+        }
+
         val frame = de.robinthor.digiworldexplorer.vision.PixelFrame(width, height) { x,y -> rgb(x,y) }
         val bubble = BondBubbleDetector.detect(frame)
         if (bubble == null) {
@@ -73,7 +85,8 @@ object FeedFrameAnalyzer {
             }
             return true
         }
-        val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(bubble)
+        val tapTarget = BondBubbleDetector.tapTarget(bubble) ?: return true
+        val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(tapTarget)
         val cx = px.toFloat(); val cy = py.toFloat()
         val recentConfirmedBubble = homeAlreadyConfirmed && now - lastBubbleSeenAt <= 1_500L
         if (recentConfirmedBubble ||
@@ -85,8 +98,10 @@ object FeedFrameAnalyzer {
             if (lastCollectedAt == 0L) {
                 DigiWorldAccessibilityService.instance?.let { service ->
                     lastCollectedAt = now
-                    android.util.Log.i("DigiWorldBond", "collect detected bubble=$cx,$cy; settling 1500ms")
-                    service.dispatchSafeRandomizedTap(cx, cy) { }
+                    lastX = cx; lastY = cy
+                    rotationBurstRemaining = 0
+                    android.util.Log.i("DigiWorldBond", "collect detected bubble=$bubble target=$tapTarget; burst")
+                    dispatchBubbleBurst(service, cx, cy)
                 }
             }
             return true
@@ -102,6 +117,16 @@ object FeedFrameAnalyzer {
         return true
     }
 
+    private fun dispatchBubbleBurst(service: DigiWorldAccessibilityService, x: Float, y: Float) {
+        val generation = ++bubbleBurstGeneration
+        repeat(3) { index ->
+            bubbleTapHandler.postDelayed({
+                if (generation != bubbleBurstGeneration || !AutomationState.enabled) return@postDelayed
+                service.dispatchValidatedTap(x, y) { }
+            }, index * 250L)
+        }
+    }
+
     fun allowImmediateScan() {
         fallbackFinishedAt = 0L
         lastCollectedAt = 0L
@@ -109,6 +134,8 @@ object FeedFrameAnalyzer {
         mainScreenFrames = 0
         cooldownUntil = 0L
         lastBubbleSeenAt = 0L
+        rotationBurstRemaining = 0
+        rotationBurstAt = 0L
         // Prefer visual evidence first. Only sweep the known stage bubble corridor when the
         // rotation has remained on its already verified Home boundary for a short grace period.
         rotationFallbackAt = SystemClock.elapsedRealtime() + 6_000L

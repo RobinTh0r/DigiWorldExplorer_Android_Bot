@@ -49,7 +49,7 @@ object BondRotationAnalyzer {
         // Evidence belongs to the current COLLECT only. On HOME entry the timestamp still
         // belongs to the previous partner until tick() starts the new collection window.
         val collectedSettled = previous == BondStep.COLLECT &&
-            FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now)
+            FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now, settleMillis = 2_500L)
         val fallbackSettled = previous == BondStep.COLLECT &&
             FeedFrameAnalyzer.fallbackSettledSince(rotation.collectStartedAt, now)
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
@@ -102,7 +102,12 @@ object BondRotationAnalyzer {
         val target = when (command.step) {
             BondStep.OPEN -> if (tapViewportIsTall(w, h)) NormalizedPoint(.205, .956) else NormalizedPoint(.254, .956)
             BondStep.EXPAND -> if (tapViewportIsTall(w, h)) NormalizedPoint(.883, .827) else NormalizedPoint(.823, .818)
-            BondStep.SELECT -> grid.cells.getOrNull(command.cell ?: -1)
+            BondStep.SELECT -> grid.cells.getOrNull(command.cell ?: -1)?.let { point ->
+                // The expand/collapse control overlaps the lower-right portrait on tall phones.
+                // Tap safely inside that portrait's upper-left quadrant instead of its centre.
+                if (command.cell == 14 && tapViewportIsTall(w, h))
+                    NormalizedPoint(point.x - .035, point.y - .025) else point
+            }
             BondStep.RAISE -> grid.raiseTarget
             BondStep.CONFIRM -> NormalizedPoint(.634, .59)
             BondStep.HOME -> NormalizedPoint(.5, .947)
@@ -115,6 +120,13 @@ object BondRotationAnalyzer {
         } else GameViewport.fit(w,h)
         val (x,y) = tapViewport.pixel(target)
         service.showStatusOnly("Bond ${rotation.visited}/15: ${command.step.name.lowercase()}")
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+            "BOND.ACTION",
+            "step=${command.step} cell=${command.cell} original=${rotation.original} visited=${rotation.visited} " +
+                "page=${grid.page} expanded=${grid.expanded} raised=${grid.raised} selected=${grid.selected} " +
+                "canRaise=${grid.canRaise} confirmation=${grid.confirmation} target=$target",
+        )
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("bond-${command.step.name.lowercase()}")
         android.util.Log.i("DigiWorldBond", "step=${command.step} cell=${command.cell} original=${rotation.original} visited=${rotation.visited}")
         service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { success ->
             // Gesture callbacks can be cancelled by the game's immediate window transition even

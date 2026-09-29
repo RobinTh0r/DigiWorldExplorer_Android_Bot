@@ -5,6 +5,20 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class BondRotationTest {
+    @Test fun restartOnOpenPartnerPageResumesWithoutBlindHomeOpenTap() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        val command = tour.tick(false, PartnerGrid(true, true, cells, raised = 4), false, 0)
+        assertEquals(BondStep.SELECT, command?.step)
+        assertEquals(5, command?.cell)
+        assertEquals(4, tour.original)
+    }
+
+    @Test fun restartOnCollapsedPartnerPageRequestsExpand() {
+        val tour = BondRotation()
+        assertEquals(BondStep.EXPAND, tour.tick(false, PartnerGrid(page = true), false, 0)?.step)
+    }
+
     @Test fun fallbackOnlyAdvancesAfterSweepOnHomeWithoutVisibleBubble() {
         val tour = BondRotation()
         val grid = PartnerGrid(true, true, List(15) { NormalizedPoint(.2, .6) }, raised = 0, selected = 0)
@@ -41,6 +55,16 @@ class BondRotationTest {
         assertEquals(BondStep.SELECT, select?.step)
         assertEquals(0, select?.cell)
         assertEquals(14, tour.original)
+    }
+
+    @Test fun yellowSelectionAloneCannotPretendToBeTheActivePartner() {
+        val tour = BondRotation()
+        val cells = List(15) { NormalizedPoint(.2, .6) }
+        tour.tick(true, PartnerGrid(), false, 0)
+        val select = tour.tick(false,
+            PartnerGrid(true, true, cells, raised = null, selected = 10, canRaise = false), false, 1)
+        assertNull(select)
+        assertNull(tour.original)
     }
 
     @Test fun allFifteenPartnersEndWithOriginalGreenCheck() {

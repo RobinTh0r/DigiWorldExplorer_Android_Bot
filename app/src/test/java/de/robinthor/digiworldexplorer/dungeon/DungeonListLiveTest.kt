@@ -11,7 +11,7 @@ class DungeonListLiveTest {
     @Test fun networkEntryIsNotTheTeamNotice() {
         val image = ImageIO.read(javaClass.getResource("/dungeon_network_entry.png"))
         val frame = PixelFrame(image.width, image.height, image::getRGB)
-        assertEquals("network_challenge", DungeonRotationAnalyzer.panelKind(
+        assertEquals("network_matching", DungeonRotationAnalyzer.panelKind(
             frame, GameViewport.fit(frame.width, frame.height), DungeonKey.NETWORK_DEFENSE))
     }
     @Test fun networkNoticeTakesPriorityOverBackgroundChallenge() {

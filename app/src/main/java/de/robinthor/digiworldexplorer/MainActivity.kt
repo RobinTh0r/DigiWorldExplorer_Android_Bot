@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
@@ -737,7 +738,10 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
         Text(stringResource(R.string.safety_note), style = MaterialTheme.typography.labelSmall)
-        de.robinthor.digiworldexplorer.support.SupportExportButton()
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            de.robinthor.digiworldexplorer.support.SupportExportButton(Modifier.weight(1.05f))
+            de.robinthor.digiworldexplorer.diagnostics.DiagnosticQuickControls(Modifier.weight(1.45f))
+        }
         if (supporterLicense == null) {
             OutlinedButton(
                 onClick = onDonate,
@@ -1448,11 +1452,46 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     onPreReleaseUpdates: (Boolean) -> Unit,
     onClose: () -> Unit,
 ) {
+    val context = LocalContext.current
+    var diagnosticsEnabled by remember { mutableStateOf(de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.isEnabled(context)) }
+    var diagnosticSessions by remember { mutableStateOf(de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.sessions(context)) }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(R.string.experimental_settings)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.heightIn(max = 590.dp).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Diagnosemodus")
+                        Text("Speichert Zustände und gezielte, verkleinerte Screenshots. Maximal 6 Sitzungen mit je 24 Bildern.", style = MaterialTheme.typography.labelSmall)
+                    }
+                    Switch(checked = diagnosticsEnabled, onCheckedChange = {
+                        diagnosticsEnabled = it
+                        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.setEnabled(context, it)
+                        diagnosticSessions = de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.sessions(context)
+                    }, colors = appSwitchColors())
+                }
+                if (diagnosticSessions.isNotEmpty()) {
+                    HorizontalDivider()
+                    Text("Gespeicherte Diagnosen", fontWeight = FontWeight.Bold)
+                    diagnosticSessions.forEach { session ->
+                        Column(Modifier.fillMaxWidth()) {
+                            Text(session.name.removePrefix("diagnostic-"), style = MaterialTheme.typography.labelMedium)
+                            Text("${(session.bytes / 1024).coerceAtLeast(1)} KB", style = MaterialTheme.typography.labelSmall)
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                OutlinedButton(onClick = {
+                                    val share = de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.shareIntent(context, session)
+                                    context.startActivity(Intent.createChooser(share, "Diagnose-ZIP teilen"))
+                                }) { Text("ZIP teilen") }
+                                TextButton(onClick = {
+                                    de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.delete(session)
+                                    diagnosticSessions = de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.sessions(context)
+                                }) { Text("Löschen", color = MaterialTheme.colorScheme.error) }
+                            }
+                        }
+                    }
+                    HorizontalDivider()
+                }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text(stringResource(R.string.legacy_capture))

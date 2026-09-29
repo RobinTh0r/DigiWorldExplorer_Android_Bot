@@ -45,7 +45,9 @@ object PartnerGridDetector {
         } else cyan(.159, .642, .003, .025) > .45
         if (!expanded) return PartnerGrid(page = true)
         val cells = (0 until 15).map { i ->
-            if (tallPhone) NormalizedPoint(.158 + (i % 5) * .172, .663 + (i / 5) * .086)
+            // Real 1080x2376 OnePlus captures use a tighter roster than the earlier Oppo
+            // fixture: row centres are roughly 66.0%, 73.5% and 81.0% of the game viewport.
+            if (tallPhone) NormalizedPoint(.158 + (i % 5) * .172, .660 + (i / 5) * .075)
             else NormalizedPoint(.214 + (i % 5) * .143, .644 + (i / 5) * .0825)
         }
         // Each cell must have its blue/cyan left frame; no guessed empty or off-screen cell taps.
@@ -54,16 +56,24 @@ object PartnerGridDetector {
             else cells.count { cyan(it.x - cellFrameOffset, it.y, .003, .024) > .30 }
         if (provedCells < 14)
             return PartnerGrid(page = true)
-        val raised = cells.indices.filter { i ->
+        val raised = if (tallPhone) {
+            // Read the small dark check badge, not a broad portrait area. Green parts of a
+            // Digimon used to compete with the real marker and could leave `raised` ambiguous.
+            val scores = cells.indices.map { i ->
+                val p=cells[i]
+                val green = ratio(p.x-.044,p.y-.022,.020,.015) {
+                    it.hue in 35..80 && it.saturation>125 && it.value>135
+                }
+                val dark = ratio(p.x-.044,p.y-.022,.020,.015) { it.value < 125 }
+                i to if (dark > .25) green else 0.0
+            }.sortedByDescending { it.second }
+            scores.firstOrNull()?.takeIf { best ->
+                best.second > .035 && best.second-(scores.getOrNull(1)?.second ?: 0.0) > .015
+            }?.first
+        } else cells.indices.filter { i ->
             val p = cells[i]
-            if (tallPhone) {
-                ratio(p.x - .039, p.y - .030, .014, .010) {
-                    it.hue in 35..85 && it.saturation > 80 && it.value > 90
-                } > .12
-            } else {
                 ratio(p.x - .039, p.y - .021, .012, .008) { it.hue in 35..80 && it.saturation > 140 && it.value > 160 } > .12 &&
                     ratio(p.x - .039, p.y - .021, .012, .008) { it.value < 130 } > .45
-            }
         }.singleOrNull()
         val selected = cells.indices.filter { i ->
             val p = cells[i]

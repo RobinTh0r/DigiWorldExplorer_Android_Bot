@@ -30,6 +30,7 @@ object FarmHarvestAnalyzer {
     private var parked = false
     private var parkedUntil = 0L
     private var epoch = 0L
+    private var unresolvedFieldSince = 0L
 
     @Synchronized
     fun analyze(image: Image, width: Int, height: Int): Boolean {
@@ -99,6 +100,18 @@ object FarmHarvestAnalyzer {
         service.showStatusOnly(service.getString(if (parked) R.string.farm_parked else R.string.farm_harvest_status), sourceScreen = de.robinthor.digiworldexplorer.automation.ObservedScreen.MEAT_FIELD)
         if (parked) return ownsFrame
 
+        // UNKNOWN is not proof that the field is finished: on a real phone an empty-plot badge
+        // can be hidden for a frame by animation. Keep scanning, and preserve one useful frame in
+        // diagnostics so a new device layout can be measured instead of guessed at.
+        val unresolvedField = field.field && observation.plots.any { it == PlotState.UNKNOWN }
+        if (unresolvedField) {
+            if (unresolvedFieldSince == 0L) unresolvedFieldSince = now
+            if (now - unresolvedFieldSince >= 2_000L) {
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("farm-field-unresolved")
+                unresolvedFieldSince = now + 28_000L
+            }
+        } else unresolvedFieldSince = 0L
+
         val nextSignature = if (recognized) observation.signature() else null
         if (nextSignature != null && nextSignature == signature) confirmations++ else {
             signature = nextSignature
@@ -167,16 +180,32 @@ object FarmHarvestAnalyzer {
         return true
     }
 
-    private fun FarmObservation.signature() = listOf(
-        view.name,
-        plots.joinToString(",") { it.name },
-        freeSeeds?.toString() ?: "?",
-        freeSlot?.toString() ?: "?",
-        selectedSlot?.toString() ?: "?",
-        blockedPlots.sorted().joinToString(","),
-        wateringCans?.toString() ?: "?",
-        wateringPriorities.toSortedMap().entries.joinToString(",") { "${it.key}:${it.value}" },
-    ).joinToString("|")
+    private fun FarmObservation.signature(): String {
+        // Exact counters are OCR hints, not screen identity. Animation can make 15 alternate with
+        // 12 on adjacent frames. The controller only needs to know whether a free seed exists;
+        // retaining exact values here used to prevent an otherwise proven empty field from ever
+        // reaching OPEN_SEEDS.
+        val seedAvailability = when {
+            freeSeeds == null -> "?"
+            freeSeeds == 0 -> "0"
+            else -> "+"
+        }
+        val waterAvailability = when {
+            wateringCans == null -> "?"
+            wateringCans == 0 -> "0"
+            else -> "+"
+        }
+        return listOf(
+            view.name,
+            plots.joinToString(",") { it.name },
+            seedAvailability,
+            freeSlot?.toString() ?: "?",
+            selectedSlot?.toString() ?: "?",
+            blockedPlots.sorted().joinToString(","),
+            waterAvailability,
+            wateringPriorities.keys.sorted().joinToString(","),
+        ).joinToString("|")
+    }
 
     private fun FarmCommand.target(dialog: FarmDialogDetection): NormalizedPoint? = when (operation) {
         FarmOperation.HARVEST, FarmOperation.OPEN_SEEDS -> plot?.let(FarmHarvestDetector::target)
@@ -209,5 +238,6 @@ object FarmHarvestAnalyzer {
         lastDispatched = null
         parked = false
         parkedUntil = 0L
+        unresolvedFieldSince = 0L
     }
 }

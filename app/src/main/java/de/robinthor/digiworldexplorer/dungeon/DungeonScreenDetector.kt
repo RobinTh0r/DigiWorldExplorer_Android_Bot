@@ -1,5 +1,8 @@
 package de.robinthor.digiworldexplorer.dungeon
 
+import de.robinthor.digiworldexplorer.purchase.RewardPurchaseDetector
+import de.robinthor.digiworldexplorer.purchase.SummonRewardScreenDetector
+
 enum class DungeonScreen { NONE, CHALLENGE, REWARD }
 
 data class DungeonDetection(
@@ -12,6 +15,12 @@ data class DungeonDetection(
 /** Language-independent detector using large colour/layout regions, never translated labels. */
 object DungeonScreenDetector {
     fun detect(width: Int, height: Int, argbAt: (Int, Int) -> Int): DungeonDetection {
+        // Summon results share the blue overlay/navy-tile palette with the old Tower reward
+        // template. A verified summon grid or purchase surface is explicit negative evidence:
+        // it must never be promoted to VS/Tower merely because that analyzer runs first.
+        if (SummonRewardScreenDetector.detect(width, height, argbAt) ||
+            RewardPurchaseDetector.detect(width, height, argbAt).recognized)
+            return DungeonDetection(DungeonScreen.NONE, 0f, 0f, 0.0)
         // VS has its action button on the right, Tower has one centered action button. Scan the
         // complete safe button band so both layouts contribute equally to recognition.
         val challengeButton = ratio(width, height, .20, .735, .90, .835, argbAt, ::cyan)
@@ -40,11 +49,17 @@ object DungeonScreenDetector {
         val rewardCloseText = ratio(width, height, .20, .78, .80, .85, argbAt, ::neutralBright)
         val rewardFooter = ratio(width, height, .10, .76, .90, .96, argbAt, ::navy)
         val structuralReward = rewardBody >= .80 && rewardCloseText >= .015 && rewardFooter >= .12
+        // Ad-Skip tickets use a taller translucent reward sheet than battle rewards. The game
+        // dialog remains visible behind it, so the old template/body threshold rejects it.
+        // Require the distinctive full-width blue sheet plus the bright close prompt instead.
+        val adRewardSheet = ratio(width, height, .02, .34, .98, .68, argbAt, ::blueOverlay)
+        val adRewardTitle = ratio(width, height, .20, .25, .80, .34, argbAt, ::neutralBright)
+        val adSkipReward = adRewardSheet >= .54 && adRewardTitle >= .008 && rewardCloseText >= .012
 
         return when {
             challengeButton >= .08 && challengeHeader >= .08 && challengePanel >= .28 && challengeFrame >= .025 && hologramWarning < .012 && challengeDistance <= CHALLENGE_TEMPLATE_MAX_DISTANCE ->
                 DungeonDetection(DungeonScreen.CHALLENGE, challengeTapX, height * .78f, challengeScore)
-            (rewardBlue >= .55 && rewardTiles >= .45 && rewardDistance <= REWARD_TEMPLATE_MAX_DISTANCE) || structuralReward ->
+            (rewardBlue >= .55 && rewardTiles >= .45 && rewardDistance <= REWARD_TEMPLATE_MAX_DISTANCE) || structuralReward || adSkipReward ->
                 DungeonDetection(DungeonScreen.REWARD, width * .50f, height * .66f, rewardScore)
             else -> DungeonDetection(DungeonScreen.NONE, 0f, 0f, maxOf(challengeScore, rewardScore))
         }

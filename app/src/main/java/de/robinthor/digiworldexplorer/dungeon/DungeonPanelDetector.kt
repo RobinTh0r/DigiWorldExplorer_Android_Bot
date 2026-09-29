@@ -7,7 +7,7 @@ data class DungeonPanel(val kind: String, val target: NormalizedPoint, val remai
 /** Reads the foreground action and its counter, independently of the list behind the modal. */
 object DungeonPanelDetector {
     fun detect(frame: PixelFrame, key: DungeonKey, v: GameViewport = GameViewport.fit(frame.width, frame.height)): DungeonPanel? {
-        fun color(x: Double, y: Double, purple: Boolean = false): Double = frame.ratioInViewportPatch(v, NormalizedPoint(x,y), .018,.010) {
+        fun color(x: Double, y: Double, purple: Boolean = false, rx: Double = .018, ry: Double = .010): Double = frame.ratioInViewportPatch(v, NormalizedPoint(x,y), rx,ry) {
             val h = it.hsv()
             h.value >= 150 && h.saturation >= 100 && if (purple) h.hue in 120..155 else h.hue in 90..115
         }
@@ -27,9 +27,39 @@ object DungeonPanelDetector {
         }
         if(title < .35) return null
         if (key == DungeonKey.NETWORK_DEFENSE) {
-            if (color(.45,.59) > .45) return DungeonPanel("network_confirm", NormalizedPoint(.50,.59))
-            if (color(.61,.59) > .45 && color(.34,.59, true) > .45)
-                return DungeonPanel("network_leave", NormalizedPoint(.64,.59))
+            fun cyanButton(rgb: Rgb): Boolean = rgb.blue > 120 && rgb.green > 75 &&
+                rgb.blue > rgb.red * 1.15 && rgb.green > rgb.red * .90
+            fun purpleButton(rgb: Rgb): Boolean { val h=rgb.hsv(); return h.hue in 120..170 && h.saturation>=90 && h.value>=120 }
+            val area = NormalizedRect(.12,.30,.88,.86)
+            val cyanButtons = ColorRegionLocator.find(frame,v,area,predicate=::cyanButton)
+                .filter { it.width in .05..0.45 && it.height in .010..0.11 }
+            val purpleButtons = ColorRegionLocator.find(frame,v,area,predicate=::purpleButton)
+                .filter { it.width in .05..0.45 && it.height in .010..0.11 }
+            fun pairedPurple(button: NormalizedRect) = purpleButtons.any {
+                it.center.x < button.center.x && kotlin.math.abs(it.center.y-button.center.y) < .045
+            }
+            val dimmed = frame.ratioInViewportPatch(v,NormalizedPoint(.75,.14),.20,.04) {
+                it.hsv().value < 100
+            } > .88
+            if (dimmed) {
+                // The leave question has two side-by-side actions on the same row.  Do
+                // not infer it from an absolute row: the row moves with dialog height.
+                val leave = cyanButtons.filter { it.center.x > .50 && it.center.y in .48..0.70 && pairedPurple(it) }
+                    .maxByOrNull { it.width*it.height }
+                if (leave != null) return DungeonPanel("network_leave", leave.center)
+                val confirm = cyanButtons.filter { it.center.x in .38..0.62 && it.center.y in .48..0.70 && !pairedPurple(it) }
+                    .maxByOrNull { it.width*it.height }
+                if (confirm != null) return DungeonPanel("network_confirm", confirm.center)
+                return null
+            }
+            val tickets = number(frame,v,if(v.usesTallPhoneLayout).80 else .802,
+                if(v.usesTallPhoneLayout).955 else .880,if(v.usesTallPhoneLayout).181 else .145)
+            val matching = cyanButtons.filter { it.center.x in .35..0.65 && it.center.y > .70 }
+                .maxByOrNull { it.width*it.height }
+            if (matching != null) return DungeonPanel("network_matching", matching.center, tickets)
+            val challenge = cyanButtons.filter { it.center.x > .50 && it.center.y in .48..0.68 && pairedPurple(it) }
+                .maxByOrNull { it.width*it.height }
+            if (challenge != null) return DungeonPanel("network_challenge", challenge.center, tickets)
         }
         val y = if (v.usesTallPhoneLayout) when(key) {
             DungeonKey.APOCALYMON_WALL -> .766
@@ -68,9 +98,7 @@ object DungeonPanelDetector {
         if (color(adLeftX,y,true) > .45 && color(.58,y,true) > .45)
             return DungeonPanel("ad", NormalizedPoint(.5,y), number(frame,v,.514,.582,y))
         if (key == DungeonKey.NETWORK_DEFENSE) {
-            if (color(.59,.570) > .45)
-                return DungeonPanel("network_challenge", NormalizedPoint(.65,.57), tickets)
-            if (color(.41,.79) > .45) return DungeonPanel("network_matching", NormalizedPoint(.5,.79), tickets)
+            return null
         } else if (color(.59,y) > .45) return DungeonPanel(
             "challenge",
             if (key == DungeonKey.APOCALYMON_WALL) NormalizedPoint(.50, y) else NormalizedPoint(.66, y),

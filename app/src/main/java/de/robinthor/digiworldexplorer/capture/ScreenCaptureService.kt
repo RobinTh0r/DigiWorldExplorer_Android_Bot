@@ -77,6 +77,8 @@ class ScreenCaptureService : Service() {
 
     override fun onCreate() {
         super.onCreate()
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.initialize(this)
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("CAPTURE", "service created")
         de.robinthor.digiworldexplorer.automation.BondCycleTimer.initialize(this)
         createNotificationChannel()
     }
@@ -204,7 +206,14 @@ class ScreenCaptureService : Service() {
                 } else {
                     val digiCopilotOwns = DigiCopilotRequest.active()
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
-                    val owner = if (de.robinthor.digiworldexplorer.purchase.SummonRewardFrameGuard.analyze(image, width, height)) {
+                    // Classic V4 Summon must get the frame before the V5 entry/reveal guards.
+                    // Otherwise those guards either tap cards as notices or swallow animation taps.
+                    val classicSummon = !digiCopilotOwns && AutomationState.autoPurchaseEnabled &&
+                        !de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()
+                    val owner = if (classicSummon &&
+                        RewardPurchaseFrameAnalyzer.analyze(image, width, height)) {
+                        FrameOwner.SUMMON
+                    } else if (de.robinthor.digiworldexplorer.purchase.SummonRewardFrameGuard.analyze(image, width, height)) {
                         FrameOwner.SUMMON
                     } else if (de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()) {
                         // The user-started pass owns ALL frames, including settle/park frames.
@@ -221,7 +230,8 @@ class ScreenCaptureService : Service() {
                         },
                         // Login and idle rewards are blocking entry screens and outrank feature tasks.
                         FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame &&
-                            (!digiCopilotOwns || !BondCycleTimer.awaitingFarm())) {
+                            (!digiCopilotOwns || !BondCycleTimer.awaitingFarm()) &&
+                            !de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer.isSequenceActive()) {
                             GameEntryAnalyzer.analyze(image, width, height)
                         },
                         // Persistent failure dialogs outrank every task. Network Defense is excluded
@@ -253,6 +263,12 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.GEKKOMON_RUN, enabled = AutomationState.autoRunnerEnabled && !digiCopilotOwns) {
                             GekkomonRunFrameAnalyzer.analyze(image, width, height)
                         },
+                        // A summon transaction is one visual sequence (menu -> optional prompt ->
+                        // reveal -> result). Keep it ahead of generic blue dungeon/reward probes;
+                        // otherwise the result grid can alternate between SUMMON and DUNGEON.
+                        FrameProbe(FrameOwner.SUMMON, enabled = featureFrame && !digiCopilotOwns && !classicSummon) {
+                            RewardPurchaseFrameAnalyzer.analyze(image, width, height)
+                        },
                         FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
                             de.robinthor.digiworldexplorer.automation.BondFarmAnalyzer.analyze(image, width, height)
                         },
@@ -273,9 +289,6 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.BOND, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive()) {
                             FeedFrameAnalyzer.analyze(image, width, height)
                         },
-                        FrameProbe(FrameOwner.SUMMON, enabled = featureFrame && !digiCopilotOwns) {
-                            RewardPurchaseFrameAnalyzer.analyze(image, width, height)
-                        },
                         // Initial calibration runs only after no specialized task claimed the frame.
                         FrameProbe(FrameOwner.WORLD_SEARCH, enabled = !CaptureFrameAnalyzer.isCalibrated && framesSeen % 10 == 0) {
                             val found = CaptureFrameAnalyzer.analyze(this, image, width, height)?.detected == true
@@ -285,6 +298,8 @@ class ScreenCaptureService : Service() {
                     ))
                     if (owner != lastFrameOwner) {
                         AutomationEventLog.record(AutomationEventKind.OWNER_CHANGED, "${lastFrameOwner.name}:${owner.name}")
+                        if (owner == FrameOwner.DUNGEON || lastFrameOwner == FrameOwner.DUNGEON || owner == FrameOwner.CAPTURE_BLOCKED)
+                            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("owner-${lastFrameOwner.name}-${owner.name}")
                         lastFrameOwner = owner
                     }
                     // Publish only a classification from this frame. The old independent
@@ -304,6 +319,7 @@ class ScreenCaptureService : Service() {
                     }
                     recognized = owner != FrameOwner.NONE || passiveScreen != ObservedScreen.UNKNOWN
                 }
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.captureIfRequested(image, width, height)
                 if (recognized) markContentRecognized() else checkRecognitionTimeouts()
             }
         }, Handler(thread.looper))

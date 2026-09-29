@@ -27,6 +27,8 @@ object DungeonRotationAnalyzer {
     private var retryAt = 0L
     private var rewardFallbackAt = 0L
     private var waitingSawTransition = false
+    private var noticeKind = ""
+    private var noticeActions = 0
     private var passUsage = DungeonPassUsage()
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
@@ -99,7 +101,7 @@ object DungeonRotationAnalyzer {
             val returnedToPanel = retryPanel?.kind in setOf("challenge", "network_challenge", "network_matching", "destroy", "ad")
             if(retryPanel == null) waitingSawTransition = true
             val returnDelay = if(waiting == "ad") 2_500L else 15_000L
-            if(returnedToPanel && now-waitingAt > returnDelay && (waiting != "ad" || waitingSawTransition)) {
+            if(returnedToPanel && now-waitingAt > returnDelay && waitingSawTransition) {
                 val completed = waiting
                 waiting=""; startRetries=0; retryAt=0; unknownAt=0; waitingSawTransition=false
                 if(completed=="battle") confirmBattle(service, key!!, won = true)
@@ -121,7 +123,7 @@ object DungeonRotationAnalyzer {
             if(waiting == "battle" && now-waitingAt > 4_000L && now-retryAt > 4_000L &&
                 retryPanel?.kind in setOf("challenge", "network_challenge", "network_matching", "destroy") && retryPanel?.remaining == 1 && startRetries < 3) {
                 startRetries++; retryAt=now
-                tap(service,v,if(key==DungeonKey.NETWORK_DEFENSE) NormalizedPoint(.5,.79) else retryPanel!!.target,now,"Retrying unaccepted Start ($startRetries)")
+                tap(service,v,retryPanel!!.target,now,"Retrying unaccepted Start ($startRetries)")
                 return true
             }
             status(service, if(waiting == "ad") "Ad-Skip: waiting for ticket" else "${key?.name}: battle / matching")
@@ -133,6 +135,20 @@ object DungeonRotationAnalyzer {
         if(panel != null) {
             unknownAt=0L
             if(!stable("${key}:${panel.kind}:${panel.remaining}")) return true
+            if (panel.kind == "network_leave" || panel.kind == "network_confirm") {
+                if (noticeKind == panel.kind) noticeActions++ else {
+                    noticeKind = panel.kind
+                    noticeActions = 1
+                }
+                if (noticeActions > 3) {
+                    de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("network-dialog-stuck")
+                    park(service, "Network dialog did not react: ${panel.kind}")
+                    return true
+                }
+            } else {
+                noticeKind = ""
+                noticeActions = 0
+            }
             if(panel.kind == "network_leave") {
                 tap(service,v,panel.target,now,"Leaving network team")
                 return true
@@ -175,7 +191,7 @@ object DungeonRotationAnalyzer {
                     if(panel.remaining == null && key != DungeonKey.APOCALYMON_WALL) {
                         park(service,"Ticket counter unreadable: ${key!!.name}"); return true
                     }
-                    val target = if(key==DungeonKey.NETWORK_DEFENSE) NormalizedPoint(.5,.79) else panel.target
+                    val target = panel.target
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
                     // Daily actions are persisted only after visual proof of a battle/result. This
@@ -195,6 +211,7 @@ object DungeonRotationAnalyzer {
         }
         val reading = if(header > .5) DungeonListDetector.detect(frame,v) else DungeonListReading(DungeonListPosition.NONE,emptyList())
         if(reading.position != DungeonListPosition.NONE) {
+            noticeKind=""; noticeActions=0
             unknownAt=0L
             if(!stable("list:${reading.position}")) return true
             DungeonRotationRequest.listVerified()
@@ -206,6 +223,7 @@ object DungeonRotationAnalyzer {
             (scheduler.completed()-daily.completed).filter { it !in DungeonPassPolicy.dailyLimited }
                 .forEach { DungeonDailyStore.markComplete(service,it) }
             Log.i("DigiWorldDungeonRotation","list=${reading.position} decision=$decision")
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON.DECISION", "list=${reading.position} decision=$decision active=$activeKey")
             when(decision.command) {
                 DungeonRotationCommand.SELECT_CARD -> {
                     activeKey=decision.card!!.key
@@ -262,11 +280,13 @@ object DungeonRotationAnalyzer {
     private fun park(service: DigiWorldAccessibilityService,reason: String) {
         DungeonRotationRequest.park(reason); status(service,reason)
         Log.w("DigiWorldDungeonRotation","PARK $reason")
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON.PARK", reason)
     }
     private fun tap(service: DigiWorldAccessibilityService,v: GameViewport,p: NormalizedPoint,now: Long,label: String) {
         settleUntil=now+1_300; matches=0
         status(service,label)
         Log.i("DigiWorldDungeonRotation","$label target=$p waiting=$waiting")
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON.ACTION", "$label target=$p waiting=$waiting key=$activeKey")
         val (x,y)=v.pixel(p)
         service.dispatchValidatedTap(x.toFloat(),y.toFloat()) { ok -> if(!ok) park(service,"Tap failed: $label") }
     }
@@ -324,6 +344,7 @@ object DungeonRotationAnalyzer {
         controller=null; settings=null; activeKey=null; waiting=""; waitingAt=0; settleUntil=0
         candidate=""; matches=0; returning=false; returningHome=false; unknownAt=0
         startRetries=0; retryAt=0; waitingSawTransition=false
+        noticeKind=""; noticeActions=0
         rewardFallbackAt=0L
         passUsage= DungeonPassUsage()
     }

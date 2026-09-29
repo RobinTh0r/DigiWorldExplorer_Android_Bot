@@ -21,6 +21,8 @@ object DungeonRotationRequest {
     private var suspendedNetworkDefense = false
 
     @Synchronized fun start(context: Context) {
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.initialize(context)
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON", "start requested")
         if (de.robinthor.digiworldexplorer.license.SupporterLicenseManager.load(context) == null ||
             !de.robinthor.digiworldexplorer.strategy.AutomationState.enabled) return
         DungeonRotationAnalyzer.reset()
@@ -53,6 +55,7 @@ object DungeonRotationRequest {
         if (phase == Phase.REQUESTED) {
             phase = Phase.OPENING_LIST
             reason = "Opening dungeon list"
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON", "phase=$phase reason=$reason")
         }
     }
 
@@ -60,15 +63,18 @@ object DungeonRotationRequest {
         if (phase == Phase.REQUESTED || phase == Phase.OPENING_LIST) {
             phase = Phase.SURVEYING
             reason = "Dungeon list verified"
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON", "phase=$phase reason=$reason")
         }
     }
 
-    @Synchronized fun park(why: String) { phase = Phase.PARKED; reason = why }
+    @Synchronized fun park(why: String) { phase = Phase.PARKED; reason = why; de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON", "phase=$phase reason=$reason") }
     @Synchronized fun complete() {
         phase = Phase.COMPLETE; reason = "Daily pass complete"
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON", "phase=$phase reason=$reason")
         restoreNetworkDefense()
     }
     @Synchronized fun cancel() {
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DUNGEON", "cancel phase=$phase reason=$reason")
         phase = Phase.IDLE; reason = ""; requestedAt = 0L; completedToday = emptySet(); apocalymonStatus = "Apocalymon disabled"
         restoreNetworkDefense()
     }

@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 import java.util.TimeZone
 
 @Composable
-fun SupportExportButton() {
+fun SupportExportButton(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var report by rememberSaveable { mutableStateOf<String?>(null) }
@@ -52,7 +52,7 @@ fun SupportExportButton() {
             }
         }
     }
-    OutlinedButton(enabled = !exporting, onClick = {
+    OutlinedButton(modifier = modifier, enabled = !exporting, onClick = {
         val metrics = context.resources.displayMetrics
         report = SupportBundle.report(mapOf(
             "appVersion" to BuildConfig.VERSION_NAME,

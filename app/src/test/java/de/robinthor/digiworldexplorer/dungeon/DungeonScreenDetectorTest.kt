@@ -25,6 +25,16 @@ class DungeonScreenDetectorTest {
         assertEquals(DungeonScreen.NONE, detect("samsung_1080x2400.png").screen)
     }
 
+    @Test fun onePlusAdSkipRewardIsRecognized() {
+        assertEquals(DungeonScreen.REWARD, detect("oneplus_dungeon_ad_reward.jpg").screen)
+    }
+
+    @Test fun summonResultsNeverMasqueradeAsVsOrTower() {
+        listOf("oneplus_summon_ticket_result.jpg", "oneplus_summon_crest_result.jpg").forEach { name ->
+            assertEquals(name, DungeonScreen.NONE, detect(name).screen)
+        }
+    }
+
     private fun detect(name: String): DungeonDetection {
         val image: BufferedImage = ImageIO.read(javaClass.classLoader!!.getResourceAsStream(name))
         return DungeonScreenDetector.detect(image.width, image.height) { x, y -> image.getRGB(x, y) }

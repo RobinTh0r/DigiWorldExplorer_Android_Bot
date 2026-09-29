@@ -20,6 +20,15 @@ class SummonRewardScreenDetectorTest {
         }
     }
 
+    @Test fun `OnePlus ticket and compact Crest results stay owned by Summon`() {
+        for (name in listOf("oneplus_summon_ticket_result.jpg", "oneplus_summon_crest_result.jpg")) {
+            val image = ImageIO.read(javaClass.getResource("/$name"))
+            assertTrue(name, RewardPurchaseDetector.detect(image.width, image.height, image::getRGB).recognized)
+            assertEquals(name, SummonRewardState.RESULT,
+                SummonRewardScreenDetector.detectState(image.width, image.height, image::getRGB))
+        }
+    }
+
     @Test fun `reward guard does not claim other recorded pages`() {
         for (name in listOf("home_dark_city.png", "bond_partner_grid.png", "farm_explore_live.png",
             "dungeon_list_bottom.png", "dungeon_challenge_de.png", "idle_rewards_empty.png")) {

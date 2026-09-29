@@ -4,17 +4,17 @@
 
 **Native, local grid-navigation automation for Android 9+**
 
-[![Version](https://img.shields.io/badge/version-5.0.1-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-5.1.0-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v5.0.1/DigiWorldExplorer-Bot-v5.0.1.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v5.1.0/DigiWorldExplorer-Bot-v5.1.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-_Version 5.0.1 is the current public release._
+_Version 5.1.0 is the current public release._
 
-**Latest preview:** [v5.0.3 Beta 1](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v5.0.3-beta.1) improves Digital World Search recognition and training-point collection on varied devices, guards against repeated Summon reward taps, and fixes the Co-Pilot-only DWS time limit. This is a supervised-testing pre-release; 5.0.1 remains the stable download.
+Version 5.1.0 adds image-driven Dungeon and Digi Co-Pilot reliability work, offline diagnostic ZIPs for real-phone testing, tall-phone Partner/Farm fixes, and restores the proven classic Auto-Summon behavior from 4.0.0.
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
 
