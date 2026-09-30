@@ -47,6 +47,6 @@ enum class DwsNavigationProfile {
 
     companion object {
         fun fromPreference(value: String?): DwsNavigationProfile =
-            entries.firstOrNull { it.name == value } ?: V3_CLASSIC
+            entries.firstOrNull { it.name == value } ?: V4_DASH
     }
 }

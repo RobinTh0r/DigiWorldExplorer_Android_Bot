@@ -1,5 +1,14 @@
 # Changelog
 
+## 5.2.0 Beta 1 — 30 September 2026
+
+- Replaced independently combinable Digital World switches with three mutually exclusive profiles: V3 Classic, V4 Dash and V5 All Sprites + Dash.
+- Made V4 Dash the default profile, retaining Botamon detection, all three V4 rules and the original three-tap movement rhythm.
+- Added the V5 test profile with all-sprite recognition, Dash and the latest physical-phone reliability fixes.
+- Applied Samsung S22 diagnostics globally: a zero or unreadable Dash counter never authorizes Dash, preventing accidental World Search entry.
+- Included post-5.1.0 Co-Pilot, Partner, Bond bubble, Meat Field, Home reward and title-screen reliability fixes.
+- Added regression coverage for profile mapping, legacy versus all-sprite recognition and safe Dash handling.
+
 ## 5.1.0 — 29 September 2026
 
 - Added image-driven Dungeon rotation for tall phones, including dynamic list/card targets, Network Defense Matching, Digi-Factory reward handling and safer result transitions.

@@ -36,9 +36,9 @@ class DwsNavigationProfileTest {
         assertTrue(settings.phoneSafeMovement)
     }
 
-    @Test fun preferenceDefaultsSafelyToClassic() {
+    @Test fun preferenceDefaultsToV4Dash() {
         assertEquals(DwsNavigationProfile.V4_DASH, DwsNavigationProfile.fromPreference("V4_DASH"))
-        assertEquals(DwsNavigationProfile.V3_CLASSIC, DwsNavigationProfile.fromPreference(null))
-        assertEquals(DwsNavigationProfile.V3_CLASSIC, DwsNavigationProfile.fromPreference("unknown"))
+        assertEquals(DwsNavigationProfile.V4_DASH, DwsNavigationProfile.fromPreference(null))
+        assertEquals(DwsNavigationProfile.V4_DASH, DwsNavigationProfile.fromPreference("unknown"))
     }
 }

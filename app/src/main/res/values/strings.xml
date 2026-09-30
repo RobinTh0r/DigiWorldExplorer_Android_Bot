@@ -123,7 +123,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">5.1.0 · PHONE AUTOMATION RELIABILITY\n\nDUNGEON &amp; DIGI CO-PILOT\n• Image-driven dungeon targets, Network Matching and reward handling\n• Improved tall-phone Partner rotation, Bond bubbles and Meat Field planting\n\nAUTO SUMMON\n• Restored the proven classic 4.0.0 recognition and click behavior\n• Removed experimental matching that could tap cards or the wrong summon menu\n\nOFFLINE DIAGNOSTICS\n• Share individual sessions or all sessions as ZIP\n• Up to 50 compressed screenshots per session\n\nSAFETY\nAd Skip Pass remains opt-in. Unreadable counters never authorize spending.</string>
+    <string name="release_notes_body">5.2.0 BETA 1 · DIGITAL WORLD PROFILES\n\nTHREE EXCLUSIVE MODES\n• V3 Classic restores the original rules without Dash\n• V4 Dash is the default with Botamon detection and the proven V4 rhythm\n• V5 All Sprites + Dash combines wider sprite detection with the latest phone fixes\n\nPHONE RELIABILITY\n• Samsung S22 diagnostics prevent Dash when the HUD counter is zero or unreadable\n• V5 uses a safer two-step movement rhythm; V4 retains its original three-step rhythm\n• Includes the latest Co-Pilot, Bond, Meat Field, reward and title-screen fixes\n\nSAFETY\nUnknown counters never authorize Dash or spending.</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>

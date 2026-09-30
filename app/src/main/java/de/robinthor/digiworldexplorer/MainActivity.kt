@@ -76,7 +76,7 @@ class MainActivity : ComponentActivity() {
     private var autoFeed by mutableStateOf(false)
     private var autoRunner by mutableStateOf(false)
     private var automationMode by mutableStateOf(AutomationMode.SEMI_AUTO)
-    private var dwsProfile by mutableStateOf(DwsNavigationProfile.V3_CLASSIC)
+    private var dwsProfile by mutableStateOf(DwsNavigationProfile.V4_DASH)
     private var showSupportPrompt by mutableStateOf(false)
     private var legacyCapture by mutableStateOf(false)
     private var summonTouchCorrection by mutableStateOf(false)
