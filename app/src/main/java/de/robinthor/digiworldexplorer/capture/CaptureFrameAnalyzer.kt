@@ -60,7 +60,8 @@ object CaptureFrameAnalyzer {
         val pixels=IntArray(width*height)
         frame.getPixels(pixels,0,width,0,0,width,height)
         var detection=calibrated ?: GridDetector.detect(width,height,pixels)?.takeIf { it.confidence>=CANDIDATE_MIN }
-        var cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds) }
+        var cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds,
+            de.robinthor.digiworldexplorer.strategy.AutomationState.dwsNavigationSettings.trackAllSprites) }
         if(calibrated==null&&detection!=null){
             val geometryStable=stable(detection)
             if(cells!=null&&CalibrationValidator.plausible(cells)&&geometryStable){

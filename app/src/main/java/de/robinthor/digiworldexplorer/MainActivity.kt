@@ -51,7 +51,7 @@ import de.robinthor.digiworldexplorer.license.SupporterLicense
 import de.robinthor.digiworldexplorer.license.SupporterLicenseManager
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
-import de.robinthor.digiworldexplorer.strategy.DwsNavigationSettings
+import de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile
 import de.robinthor.digiworldexplorer.update.UpdateChecker
 import de.robinthor.digiworldexplorer.update.UpdateResult
 import java.util.Locale
@@ -76,12 +76,7 @@ class MainActivity : ComponentActivity() {
     private var autoFeed by mutableStateOf(false)
     private var autoRunner by mutableStateOf(false)
     private var automationMode by mutableStateOf(AutomationMode.SEMI_AUTO)
-    private var dwsNeverLeft by mutableStateOf(false)
-    private var dwsForceForwardAttack by mutableStateOf(false)
-    private var dwsDashSpam by mutableStateOf(false)
-    private var dwsOnlyEnergy by mutableStateOf(false)
-    private var dwsBetterCollect by mutableStateOf(false)
-    private var dwsBlindStageTap by mutableStateOf(true)
+    private var dwsProfile by mutableStateOf(DwsNavigationProfile.V3_CLASSIC)
     private var showSupportPrompt by mutableStateOf(false)
     private var legacyCapture by mutableStateOf(false)
     private var summonTouchCorrection by mutableStateOf(false)
@@ -157,13 +152,9 @@ class MainActivity : ComponentActivity() {
         automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
             .takeIf { it != AutomationMode.FULL_AUTOPILOT || supporterLicense != null }
             ?: AutomationMode.SEMI_AUTO
-        dwsNeverLeft = supporterLicense != null && settings.getBoolean("dws_never_left", false)
-        dwsForceForwardAttack = dwsNeverLeft
-        dwsDashSpam = supporterLicense != null && settings.getBoolean("dws_dash_spam", false)
-        dwsOnlyEnergy = supporterLicense != null && settings.getBoolean("dws_only_energy", false)
-        dwsBetterCollect = true
-        dwsBlindStageTap = true
-        settings.edit().putBoolean("dws_blind_stage_tap", true).apply()
+        dwsProfile = if (supporterLicense != null)
+            DwsNavigationProfile.fromPreference(settings.getString("dws_profile", null))
+        else DwsNavigationProfile.V3_CLASSIC
         AutomationState.overlayEnabled = grid
         AutomationState.autoPurchaseEnabled = autoPurchase
         AutomationState.autoDungeonEnabled = autoDungeon
@@ -176,7 +167,7 @@ class MainActivity : ComponentActivity() {
         AutomationState.autoFarmEnabled = supporterLicense != null && settings.getBoolean("auto_farm_harvest", true)
         AutomationState.farmWateringEnabled = settings.getBoolean("farm_watering", true)
         AutomationState.adSkipPassEnabled = settings.getBoolean("ad_skip_pass", false)
-        AutomationState.dwsNavigationSettings = DwsNavigationSettings(allowLeft = !dwsNeverLeft, forceForwardAttack = dwsForceForwardAttack, dashSpamUntilZero = dwsDashSpam, collectOnlyEnergy = dwsOnlyEnergy, betterEnergyCollect = dwsBetterCollect, blindStageFailedTap = dwsBlindStageTap)
+        AutomationState.dwsNavigationSettings = dwsProfile.settings()
         AutomationState.forceLegacyCaptureMetrics = legacyCapture
         AutomationState.summonTouchCorrection = summonTouchCorrection
         DigiWorldAccessibilityService.instance?.setOverlayEnabled(grid)
@@ -229,7 +220,7 @@ class MainActivity : ComponentActivity() {
             )
             MaterialTheme(colorScheme = colors) { Surface(Modifier.fillMaxSize(), color = colors.background) {
             ControlScreen(
-                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, autoRunner, automationMode, dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, legacyCapture, summonTouchCorrection, preReleaseUpdates, darkMode, quickOverlayEnabled, quickStatusVisible, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
+                status, capture, auto, grid, autoPurchase, autoDungeon, autoNetworkDefense, autoFeed, autoRunner, automationMode, dwsProfile, legacyCapture, summonTouchCorrection, preReleaseUpdates, darkMode, quickOverlayEnabled, quickStatusVisible, supporterLicense, access, overlay, batteryExempt, updateStatus, updateVersion,
                 onAccess = { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) },
                 onOverlay = { startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))) },
                 onBattery = ::requestBatteryOptimizationExemption,
@@ -276,30 +267,12 @@ class MainActivity : ComponentActivity() {
                         settings.edit().putString("automation_mode", selected.name).apply()
                     }
                 },
-                onDwsSettings = { neverLeft, _, dashSpam, onlyEnergy, betterCollect, _ ->
-                    val allowed = supporterLicense != null
-                    dwsNeverLeft = allowed && neverLeft
-                    dwsForceForwardAttack = dwsNeverLeft
-                    dwsDashSpam = allowed && dashSpam
-                    dwsOnlyEnergy = allowed && onlyEnergy
-                    dwsBetterCollect = true
-                    dwsBlindStageTap = true
-                    AutomationState.dwsNavigationSettings = DwsNavigationSettings(
-                        allowLeft = !dwsNeverLeft,
-                        forceForwardAttack = dwsForceForwardAttack,
-                        dashSpamUntilZero = dwsDashSpam,
-                        collectOnlyEnergy = dwsOnlyEnergy,
-                        betterEnergyCollect = dwsBetterCollect,
-                        blindStageFailedTap = dwsBlindStageTap,
-                    )
+                onDwsSettings = { selected ->
+                    dwsProfile = if (supporterLicense != null) selected else DwsNavigationProfile.V3_CLASSIC
+                    AutomationState.dwsNavigationSettings = dwsProfile.settings()
                     AutoMoveController.reset()
                     settings.edit()
-                        .putBoolean("dws_never_left", dwsNeverLeft)
-                        .putBoolean("dws_force_forward_attack", dwsForceForwardAttack)
-                        .putBoolean("dws_dash_spam", dwsDashSpam)
-                        .putBoolean("dws_only_energy", dwsOnlyEnergy)
-                        .putBoolean("dws_better_collect", dwsBetterCollect)
-                        .putBoolean("dws_blind_stage_tap", dwsBlindStageTap)
+                        .putString("dws_profile", dwsProfile.name)
                         .apply()
                 },
                 onLegacyCapture = { enabled -> ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED; legacyCapture = enabled; AutomationState.forceLegacyCaptureMetrics = enabled; settings.edit().putBoolean("legacy_capture", enabled).apply() },
@@ -375,8 +348,9 @@ class MainActivity : ComponentActivity() {
                     AutomationState.autoFarmEnabled = false
                     AutomationState.copilotRewardsEnabled = false
                     AutomationState.copilotDwsEnabled = false
-                    dwsNeverLeft = false; dwsForceForwardAttack = false; dwsDashSpam = false; dwsOnlyEnergy = false; dwsBetterCollect = true; dwsBlindStageTap = true; AutomationState.dwsNavigationSettings = DwsNavigationSettings(blindStageFailedTap = true)
-                    settings.edit().putBoolean("dws_never_left", false).putBoolean("dws_force_forward_attack", false).putBoolean("dws_dash_spam", false).putBoolean("dws_only_energy", false).putBoolean("dws_better_collect", true).putBoolean("dws_blind_stage_tap", true).apply()
+                    dwsProfile = DwsNavigationProfile.V3_CLASSIC
+                    AutomationState.dwsNavigationSettings = dwsProfile.settings()
+                    settings.edit().putString("dws_profile", dwsProfile.name).apply()
                 },
                 onDonate = { openUrl(getString(R.string.supporter_purchase_url)) },
                 onRequestDiscord = { openUrl(getString(R.string.discord_url)) },
@@ -539,7 +513,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, autoRunner: Boolean, automationMode: AutomationMode, dwsNeverLeft: Boolean, dwsForceForwardAttack: Boolean, dwsDashSpam: Boolean, dwsOnlyEnergy: Boolean, dwsBetterCollect: Boolean, dwsBlindStageTap: Boolean, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, darkMode: Boolean, quickOverlayEnabled: Boolean, quickStatusVisible: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onAutoRunner: (Boolean) -> Unit, onAutomationMode: (AutomationMode) -> Unit, onDwsSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onDarkMode: (Boolean) -> Unit, onQuickOverlay: (Boolean) -> Unit, onQuickStatus: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
+@Composable private fun ControlScreen(status: UiStatus, capture: Boolean, auto: Boolean, grid: Boolean, autoPurchase: Boolean, autoDungeon: Boolean, autoNetworkDefense: Boolean, autoFeed: Boolean, autoRunner: Boolean, automationMode: AutomationMode, dwsProfile: DwsNavigationProfile, legacyCapture: Boolean, summonTouchCorrection: Boolean, preReleaseUpdates: Boolean, darkMode: Boolean, quickOverlayEnabled: Boolean, quickStatusVisible: Boolean, supporterLicense: SupporterLicense?, access: Boolean, overlay: Boolean, batteryExempt: Boolean, update: UpdateStatus, updateVersion: String, onAccess: () -> Unit, onOverlay: () -> Unit, onBattery: () -> Unit, onGrid: () -> Unit, onAutoPurchase: (Boolean) -> Unit, onAutoDungeon: (Boolean) -> Unit, onAutoNetworkDefense: (Boolean) -> Unit, onAutoFeed: (Boolean) -> Unit, onAutoRunner: (Boolean) -> Unit, onAutomationMode: (AutomationMode) -> Unit, onDwsSettings: (DwsNavigationProfile) -> Unit, onLegacyCapture: (Boolean) -> Unit, onSummonTouchCorrection: (Boolean) -> Unit, onPreReleaseUpdates: (Boolean) -> Unit, onDarkMode: (Boolean) -> Unit, onQuickOverlay: (Boolean) -> Unit, onQuickStatus: (Boolean) -> Unit, onStart: () -> Unit, onReturnToGame: () -> Unit, onStop: () -> Unit, onLanguage: (String) -> Unit, onCheckUpdate: () -> Unit, onOpenUpdate: () -> Unit, onDonate: () -> Unit, onLicense: () -> Unit, onRepo: () -> Unit, onContact: () -> Unit, onCommunity: () -> Unit) {
     var showAccessHelp by remember { mutableStateOf(false) }
     var setupExpanded by remember { mutableStateOf(!(access && overlay && batteryExempt)) }
     var featureHelp by remember { mutableStateOf<Int?>(null) }
@@ -566,7 +540,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         onClose = { showAccessHelp = false },
     )
     featureHelp?.let { FeatureHelpDialog(it, onClose = { featureHelp = null }) }
-    if (showDwsSettings) DwsSettingsDialog(dwsNeverLeft, dwsForceForwardAttack, dwsDashSpam, dwsOnlyEnergy, dwsBetterCollect, dwsBlindStageTap, supporterLicense != null, onDwsSettings, onUnlock = onLicense, onClose = { showDwsSettings = false })
+    if (showDwsSettings) DwsSettingsDialog(dwsProfile, supporterLicense != null, onDwsSettings, onUnlock = onLicense, onClose = { showDwsSettings = false })
     if (showExperimental) ExperimentalSettingsDialog(legacyCapture, summonTouchCorrection, preReleaseUpdates, onLegacyCapture, onSummonTouchCorrection, onPreReleaseUpdates, onClose = { showExperimental = false })
     if (showGlobalSettings) GlobalSettingsDialog(
         grid = grid,
@@ -1087,52 +1061,33 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
     }
 }
 @Composable private fun DwsSettingsDialog(
-    neverLeft: Boolean,
-    forceForwardAttack: Boolean,
-    dashSpam: Boolean,
-    onlyEnergy: Boolean,
-    betterCollect: Boolean,
-    blindStageTap: Boolean,
+    profile: DwsNavigationProfile,
     supporterUnlocked: Boolean,
-    onSettings: (Boolean, Boolean, Boolean, Boolean, Boolean, Boolean) -> Unit,
+    onSettings: (DwsNavigationProfile) -> Unit,
     onUnlock: () -> Unit,
     onClose: () -> Unit,
 ) {
-    var helpKind by remember { mutableStateOf<Int?>(null) }
-    helpKind?.let { kind ->
-        AlertDialog(
-            onDismissRequest = { helpKind = null },
-            title = { Text(stringResource(when (kind) { 0 -> R.string.dws_force_attack; 1 -> R.string.dws_dash_spam; 2 -> R.string.dws_only_energy; 3 -> R.string.dws_better_collect; else -> R.string.dws_blind_stage_tap })) },
-            text = { Text(stringResource(when (kind) { 0 -> R.string.dws_force_attack_hint; 1 -> R.string.dws_dash_spam_hint; 2 -> R.string.dws_only_energy_hint; 3 -> R.string.dws_better_collect_hint; else -> R.string.dws_blind_stage_tap_hint })) },
-            confirmButton = { TextButton(onClick = { helpKind = null }) { Text(stringResource(R.string.close)) } },
-        )
-    }
     AlertDialog(
         onDismissRequest = onClose,
         title = { Text(stringResource(R.string.dws_settings_title)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Text(stringResource(R.string.dws_settings_body), style = MaterialTheme.typography.bodySmall)
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.dws_force_attack), modifier = Modifier.weight(1f))
-                    IconButton(onClick = { helpKind = 0 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = neverLeft && forceForwardAttack, enabled = supporterUnlocked, onCheckedChange = { onSettings(it, it, dashSpam, onlyEnergy, betterCollect, blindStageTap) }, colors = appSwitchColors())
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.dws_dash_spam), modifier = Modifier.weight(1f))
-                    IconButton(onClick = { helpKind = 1 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = dashSpam, enabled = supporterUnlocked, onCheckedChange = { onSettings(neverLeft, neverLeft, it, onlyEnergy, betterCollect, blindStageTap) }, colors = appSwitchColors())
-                }
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.dws_only_energy), modifier = Modifier.weight(1f))
-                    IconButton(onClick = { helpKind = 2 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = onlyEnergy, enabled = supporterUnlocked, onCheckedChange = { onSettings(neverLeft, neverLeft, dashSpam, it, betterCollect, blindStageTap) }, colors = appSwitchColors())
-                }
-
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    Text(stringResource(R.string.dws_blind_stage_tap), modifier = Modifier.weight(1f))
-                    IconButton(onClick = { helpKind = 4 }, modifier = Modifier.size(34.dp)) { Text("?", fontWeight = FontWeight.Bold) }
-                    Switch(checked = true, enabled = false, onCheckedChange = null, colors = appSwitchColors())
+                Text(stringResource(R.string.dws_profile_body), style = MaterialTheme.typography.bodySmall)
+                listOf(
+                    Triple(DwsNavigationProfile.V3_CLASSIC, R.string.dws_profile_v3, R.string.dws_profile_v3_hint),
+                    Triple(DwsNavigationProfile.V4_DASH, R.string.dws_profile_v4, R.string.dws_profile_v4_hint),
+                    Triple(DwsNavigationProfile.V5_ALL_SPRITES, R.string.dws_profile_v5, R.string.dws_profile_v5_hint),
+                ).forEach { (choice, title, hint) ->
+                    Row(
+                        Modifier.fillMaxWidth().clickable(enabled = supporterUnlocked) { onSettings(choice) },
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        RadioButton(selected = profile == choice, onClick = { onSettings(choice) }, enabled = supporterUnlocked)
+                        Column(Modifier.weight(1f)) {
+                            Text(stringResource(title), fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
                 }
                 if (!supporterUnlocked) {
                     OutlinedButton(onClick = onUnlock, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.dws_unlock_options)) }

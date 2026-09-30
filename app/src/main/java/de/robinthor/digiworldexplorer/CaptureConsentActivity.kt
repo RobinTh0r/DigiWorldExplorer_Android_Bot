@@ -20,7 +20,6 @@ import de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer
 import de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import de.robinthor.digiworldexplorer.strategy.AutomationState
-import de.robinthor.digiworldexplorer.strategy.DwsNavigationSettings
 
 /** Requests MediaProjection without bringing the full settings UI in front of the game. */
 class CaptureConsentActivity : ComponentActivity() {
@@ -64,7 +63,10 @@ class CaptureConsentActivity : ComponentActivity() {
         val supporter = SupporterLicenseManager.load(this) != null
         AutomationState.mode = de.robinthor.digiworldexplorer.automation.AutomationMode.fromPreference(
             settings.getString("automation_mode", null))
-        val neverLeft = supporter && settings.getBoolean("dws_never_left", false)
+        val dwsProfile = if (supporter)
+            de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.fromPreference(
+                settings.getString("dws_profile", null))
+        else de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.V3_CLASSIC
         AutomationState.overlayEnabled = settings.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = settings.getBoolean("auto_purchase", false)
         AutomationState.autoDungeonEnabled = settings.getBoolean("auto_dungeon", true)
@@ -79,14 +81,7 @@ class CaptureConsentActivity : ComponentActivity() {
         AutomationState.autoRunnerEnabled = false
         AutomationState.forceLegacyCaptureMetrics = settings.getBoolean("legacy_capture", true)
         AutomationState.summonTouchCorrection = settings.getBoolean("summon_touch_correction", false)
-        AutomationState.dwsNavigationSettings = DwsNavigationSettings(
-            allowLeft = !neverLeft,
-            forceForwardAttack = neverLeft,
-            dashSpamUntilZero = supporter && settings.getBoolean("dws_dash_spam", false),
-            collectOnlyEnergy = supporter && settings.getBoolean("dws_only_energy", false),
-            betterEnergyCollect = true,
-            blindStageFailedTap = true,
-        )
+        AutomationState.dwsNavigationSettings = dwsProfile.settings()
         settings.edit().putBoolean("dws_blind_stage_tap", true).apply()
         RewardPurchaseFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.automation.GameEntryAnalyzer.reset()

@@ -60,6 +60,13 @@
     <string name="dws_settings_button">⚙️ Advanced Settings</string>
     <string name="dws_settings_title">Advanced DigiWorld Mode</string>
     <string name="dws_settings_body">For testing, it is best to enable all options.</string>
+    <string name="dws_profile_body">Choose exactly one complete rule profile. Changing profiles restarts grid tracking.</string>
+    <string name="dws_profile_v3">V3 Classic</string>
+    <string name="dws_profile_v3_hint">Original Botamon detection; Force Forward, Dash spam and Collect Only Energy are disabled.</string>
+    <string name="dws_profile_v4">V4 Dash</string>
+    <string name="dws_profile_v4_hint">Original Botamon detection with all three V4 rules and the original three-step movement rhythm.</string>
+    <string name="dws_profile_v5">V5 All Sprites + Dash (Test)</string>
+    <string name="dws_profile_v5_hint">All three Dash rules, all-sprite detection and Samsung/phone fixes with the safer two-step movement rhythm.</string>
     <string name="dws_never_left">Never walk left (experimental)</string>
     <string name="dws_force_attack">Force Forward &amp; Attack</string>
     <string name="dws_force_attack_hint">Never walks left. Visible energy is targeted directly; otherwise the bot stays horizontal and attacks an obstacle directly ahead. Disable this profile to restore the unchanged v3.1 planner.</string>

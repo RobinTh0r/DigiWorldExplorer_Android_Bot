@@ -6,6 +6,9 @@ import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityServic
 import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.input.SafeTapRandomizer
 import de.robinthor.digiworldexplorer.detection.*
+
+internal fun safeDashCharges(read:Int?):Int=read?.coerceAtLeast(0)?:0
+
 object AutoMoveController{
  private const val MIN_GRID=.82;private const val MIN_PLAYER=.08
  /** Mindestabstand zwischen zwei Taps. 800 ms geben dem Spiel Zeit fuer Animation + Dialog
@@ -41,11 +44,13 @@ object AutoMoveController{
  /** So viele Schritte werden am Stueck getippt, wenn ein Collectable das Ziel ist. */
  private const val BURST_ITEM=2
  /** Ohne Collectable zaehlt nur Strecke - dann laufen wir gleich so weit am Stueck. */
- private const val BURST_RIGHT=2
+ private const val BURST_RIGHT_V4=3
+ private const val BURST_RIGHT_PHONE_SAFE=2
  /** Abstand der Taps innerhalb eines Buendels. Muss die Laufanimation abdecken. */
  /** Abstand zwischen Burst-Taps - gleich wie TAP_DELAY, damit jeder Tap
   *  im selben 0,8-s-Rhythmus landet und die Analyse dazwischen sauber lesen kann. */
- private const val BURST_DELAY=1_100L
+ private const val BURST_DELAY_V4=800L
+ private const val BURST_DELAY_PHONE_SAFE=1_100L
  /** Ab diesem Schriftanteil gilt eine Zelle als von einer Meldung ueberdeckt. */
  private const val DIALOG_TEXT=.08
  /** So viele ueberdeckte Zellen gelten als Dialog - eine Meldung zieht sich ueber das ganze Brett. */
@@ -204,7 +209,8 @@ object AutoMoveController{
   }
   // Gebuendelt wird nur, wenn die Verfolgung sitzt und das Scrollverhalten gemessen ist.
   val burst=if(!trackingConfirmed||rightScrolls==null||(AutomationState.dwsNavigationSettings.betterEnergyCollect&&energyVisible))1
-   else if(cells.any{(c,s)->c!=player&&s.item>.06&&(!onlyEnergy||s.orange>.06)})BURST_ITEM else BURST_RIGHT
+   else if(cells.any{(c,s)->c!=player&&s.item>.06&&(!onlyEnergy||s.orange>.06)})BURST_ITEM
+   else if(AutomationState.dwsNavigationSettings.phoneSafeMovement)BURST_RIGHT_PHONE_SAFE else BURST_RIGHT_V4
   // Bringt ein Dash nach mehreren Versuchen nie echten Fortschritt (0 Ladungen oder Knopf falsch
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
   val safeDash=safeDashCharges(hud.dash)
@@ -279,10 +285,10 @@ object AutoMoveController{
    } else main.postDelayed({
     if(dialogActive){Log.i("DigiWorldAuto","Burst abgebrochen: Meldung im Bild");lastTap=SystemClock.elapsedRealtime();nextTapDelay=SafeTapRandomizer.delay(TAP_DELAY,60L);pending=false}
     else dispatchBurst(service,taps,index+1,info)
-   },SafeTapRandomizer.delay(BURST_DELAY,60L))
+   },SafeTapRandomizer.delay(
+    if(AutomationState.dwsNavigationSettings.phoneSafeMovement)BURST_DELAY_PHONE_SAFE else BURST_DELAY_V4,60L))
   }
  }
  fun pauseForPurchaseScreen(){dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
- internal fun safeDashCharges(read:Int?):Int=read?.coerceAtLeast(0)?:0
  fun reset(){candidate=null;stable=0;pending=false;nextTapDelay=TAP_DELAY;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0;lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0;attackUnavailable=false;dashUnavailable=false;dashBlockedUntil=0L;lastDwsGridSeen=0L;lastBlindStageTap=0L}
 }

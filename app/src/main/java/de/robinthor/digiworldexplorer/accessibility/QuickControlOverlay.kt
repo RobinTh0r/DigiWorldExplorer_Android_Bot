@@ -531,7 +531,10 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         AutomationState.copilotRewardsEnabled = supporter && preferences.getBoolean("copilot_rewards", true)
         AutomationState.copilotDwsEnabled = supporter && preferences.getBoolean("copilot_dws", true)
         AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", true)
-        AutomationState.dwsNavigationSettings = AutomationState.dwsNavigationSettings.copy(blindStageFailedTap = true)
+        AutomationState.dwsNavigationSettings = if (supporter)
+            de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.fromPreference(
+                preferences.getString("dws_profile", null)).settings()
+        else de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.V3_CLASSIC.settings()
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()

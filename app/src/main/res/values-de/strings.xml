@@ -60,6 +60,13 @@
     <string name="dws_settings_button">⚙️ Advanced Settings</string>
     <string name="dws_settings_title">Erweiterter DigiWorld-Modus</string>
     <string name="dws_settings_body">Zum Testen am besten alle Optionen aktivieren.</string>
+    <string name="dws_profile_body">Wähle genau ein vollständiges Regelprofil. Beim Wechsel wird die Rasterverfolgung neu gestartet.</string>
+    <string name="dws_profile_v3">V3 Classic</string>
+    <string name="dws_profile_v3_hint">Alte Botamon-Erkennung; Vorwärtszwang, Dash-Spam und Nur-Energie sind aus.</string>
+    <string name="dws_profile_v4">V4 Dash</string>
+    <string name="dws_profile_v4_hint">Alte Botamon-Erkennung mit allen drei V4-Regeln und dem ursprünglichen 3er-Laufrhythmus.</string>
+    <string name="dws_profile_v5">V5 Alle Sprites + Dash (Test)</string>
+    <string name="dws_profile_v5_hint">Alle drei Dash-Regeln, allgemeine Sprite-Erkennung sowie Samsung-/Handy-Fixes mit sicherem 2er-Laufrhythmus.</string>
     <string name="dws_never_left">Nie nach links laufen (experimentell)</string>
     <string name="dws_force_attack">Force Forward &amp; Attack</string>
     <string name="dws_force_attack_hint">Läuft niemals nach links. Sichtbare Energie wird direkt angesteuert; sonst bleibt der Bot horizontal und greift ein Hindernis direkt vor ihm an. Deaktivieren stellt den unveränderten v3.1-Planner wieder her.</string>

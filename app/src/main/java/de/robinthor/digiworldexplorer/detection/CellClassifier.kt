@@ -18,7 +18,7 @@ object CellClassifier{
   *  Pixel liefert dieselben Werte bei einem Viertel der Arbeit. Bei rund 32000 Pixeln je Zelle
   *  war das Vollbild-Abtasten der teuerste Schritt der gesamten Analyse. */
  private const val STEP=2
- fun classify(width:Int,height:Int,argb:IntArray,b:GridBounds):Map<Cell,CellScores>{
+ fun classify(width:Int,height:Int,argb:IntArray,b:GridBounds,allSprites:Boolean=true):Map<Cell,CellScores>{
   require(argb.size==width*height)
   val out=mutableMapOf<Cell,CellScores>()
   val cw=(b.right-b.left)/5.0;val ch=(b.bottom-b.top)/5.0
@@ -49,7 +49,7 @@ object CellClassifier{
    // auf die Fehlermeldung gezogen, statt auf die Figur.
    val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
    val bodyFraction=q(body)
-   val genericBody=if(bodyFraction>=.05)(.08+(bodyFraction-.05)*2.0).coerceAtMost(.60) else 0.0
+   val genericBody=if(allSprites&&bodyFraction>=.05)(.08+(bodyFraction-.05)*2.0).coerceAtMost(.60) else 0.0
    // Die Krallen-Aufsammelbelohnung ist ein satt rotes Symbol, kein orangenes wie die
    // Energiekugel - ohne den eigenen Rotanteil wurde sie nie als Item erkannt und die Figur
    // ist einfach daran vorbeigelaufen.
@@ -66,16 +66,16 @@ object CellClassifier{
    // Nur in der untersten Reihe weicht das Spielerfenster vom Abtastfenster ab (42% statt 11%
    // Rand unten). Fuer alle anderen Reihen ist der zweite Durchlauf Wort fuer Wort derselbe
    // Bereich und damit reine Doppelarbeit.
-   val extra=if(row==4)playerScore(width,argb,x0,x1,y0,playerY1) else 0.0
+   val extra=if(row==4)playerScore(width,argb,x0,x1,y0,playerY1,allSprites) else 0.0
    out[Cell(row,col)]=CellScores(maxOf(shadow,genericBody,extra),os,ps,gs,item,q(pyramid),q(hi),q(neutral))
   }
   return out
  }
- private fun playerScore(width:Int,argb:IntArray,x0:Int,x1:Int,y0:Int,y1:Int):Double{
+ private fun playerScore(width:Int,argb:IntArray,x0:Int,x1:Int,y0:Int,y1:Int,allSprites:Boolean):Double{
   var n=0;var yellow=0;var dark=0;var body=0;var hi=0;var orange=0
   for(y in y0 until y1 step STEP)for(x in x0 until x1 step STEP){val p=argb[y*width+x];val r=p shr 16 and 255;val g=p shr 8 and 255;val b=p and 255;n++;if(r>180&&g>55&&g<190&&b<100)orange++;if(r>190&&g>140&&b<80)yellow++;if(r<65&&g<65&&b<75)dark++;val max=maxOf(r,g,b);val min=minOf(r,g,b);val delta=max-min;if(max<90&&(max==0||delta*255<max*120))body++;if(b>120&&g>90&&b>r+25)hi++}
   fun q(v:Int):Double{return v/n.coerceAtLeast(1).toDouble()}
   val shadow=if(q(dark)>.20&&q(yellow)>.008&&q(hi)>.20&&q(orange)<.04)q(yellow)*8 else 0.0
-  val bodyFraction=q(body);val genericBody=if(bodyFraction>=.05)(.08+(bodyFraction-.05)*2.0).coerceAtMost(.60) else 0.0
+  val bodyFraction=q(body);val genericBody=if(allSprites&&bodyFraction>=.05)(.08+(bodyFraction-.05)*2.0).coerceAtMost(.60) else 0.0
   return maxOf(shadow,genericBody)
  }}

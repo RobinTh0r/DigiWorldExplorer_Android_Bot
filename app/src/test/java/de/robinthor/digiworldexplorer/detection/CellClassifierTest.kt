@@ -38,6 +38,13 @@ class CellClassifierTest{
   assertTrue("generic player=${cells.getValue(partner).player}",cells.getValue(partner).player>=.08)
   assertEquals(partner, de.robinthor.digiworldexplorer.strategy.PlayerSelector.select(cells,null,null,emptySet())?.key)
  }
+ @Test fun v4DetectionIgnoresGenericPartnerSpriteWithoutBotamonEyes(){
+  val p=canvas();val partner=Cell(1,2)
+  p.fill(partner,0xff2090d0.toInt())
+  p.blob(partner,0xff34383a.toInt(),.30)
+  val cells=CellClassifier.classify(w,h,p,b,allSprites=false)
+  assertTrue("legacy player=${cells.getValue(partner).player}",cells.getValue(partner).player<.08)
+ }
 
  /**
   * Blendet das Spiel "Bewegung zum ausgewaehlten Ort ist nicht moeglich." ein, deckt weisse
