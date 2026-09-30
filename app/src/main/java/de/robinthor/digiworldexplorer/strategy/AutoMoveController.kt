@@ -15,7 +15,6 @@ object AutoMoveController{
  private const val STUCK_FRAMES=10
  /** HUD-Ziffern sind auf manchen Aufloesungen nicht sicher lesbar. Drei ist der begrenzte
   * Fallback fuer den bestaetigten Testvorrat; drei Fehlversuche sperren weitere Dashes. */
- private const val UNKNOWN_DASH_FALLBACK=3
  private const val UNKNOWN_CLAW_FALLBACK=4
  /** So viele Analysen ohne echten Rechts-Fortschritt (Brett scrollt nicht) gelten ebenfalls als
   *  festgefahren. Reines Stillstehen (STUCK_FRAMES) erkennt keine Einkesselung, in der die Figur
@@ -42,11 +41,11 @@ object AutoMoveController{
  /** So viele Schritte werden am Stueck getippt, wenn ein Collectable das Ziel ist. */
  private const val BURST_ITEM=2
  /** Ohne Collectable zaehlt nur Strecke - dann laufen wir gleich so weit am Stueck. */
- private const val BURST_RIGHT=3
+ private const val BURST_RIGHT=2
  /** Abstand der Taps innerhalb eines Buendels. Muss die Laufanimation abdecken. */
  /** Abstand zwischen Burst-Taps - gleich wie TAP_DELAY, damit jeder Tap
   *  im selben 0,8-s-Rhythmus landet und die Analyse dazwischen sauber lesen kann. */
- private const val BURST_DELAY=800L
+ private const val BURST_DELAY=1_100L
  /** Ab diesem Schriftanteil gilt eine Zelle als von einer Meldung ueberdeckt. */
  private const val DIALOG_TEXT=.08
  /** So viele ueberdeckte Zellen gelten als Dialog - eine Meldung zieht sich ueber das ganze Brett. */
@@ -208,7 +207,8 @@ object AutoMoveController{
    else if(cells.any{(c,s)->c!=player&&s.item>.06&&(!onlyEnergy||s.orange>.06)})BURST_ITEM else BURST_RIGHT
   // Bringt ein Dash nach mehreren Versuchen nie echten Fortschritt (0 Ladungen oder Knopf falsch
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
-  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&dashFailures<3&&!dashUnavailable&&SystemClock.elapsedRealtime()>=dashBlockedUntil,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=if(dashUnavailable)0 else hud.dash?:UNKNOWN_DASH_FALLBACK,stuck=stuck,claws=if(attackUnavailable)0 else hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst,settings=AutomationState.dwsNavigationSettings)
+  val safeDash=safeDashCharges(hud.dash)
+  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&safeDash>0&&dashFailures<3&&!dashUnavailable&&SystemClock.elapsedRealtime()>=dashBlockedUntil,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=if(dashUnavailable)0 else safeDash,stuck=stuck,claws=if(attackUnavailable)0 else hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst,settings=AutomationState.dwsNavigationSettings)
   val action=plan.firstOrNull()
   val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
   service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud,dashButton)
@@ -283,5 +283,6 @@ object AutoMoveController{
   }
  }
  fun pauseForPurchaseScreen(){dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
+ internal fun safeDashCharges(read:Int?):Int=read?.coerceAtLeast(0)?:0
  fun reset(){candidate=null;stable=0;pending=false;nextTapDelay=TAP_DELAY;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0;lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0;attackUnavailable=false;dashUnavailable=false;dashBlockedUntil=0L;lastDwsGridSeen=0L;lastBlindStageTap=0L}
 }

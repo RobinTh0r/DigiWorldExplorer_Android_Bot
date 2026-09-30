@@ -25,4 +25,9 @@ class PlayerSelectorTest{
   val evolved=Cell(2,1)
   assertEquals(evolved,PlayerSelector.select(mapOf(evolved to s(.14,item=.11)),null,null,emptySet())?.key)
  }
+ @Test fun unknownOrZeroDashNeverAuthorizesADash(){
+  assertEquals(0,AutoMoveController.safeDashCharges(null))
+  assertEquals(0,AutoMoveController.safeDashCharges(0))
+  assertEquals(2,AutoMoveController.safeDashCharges(2))
+ }
 }

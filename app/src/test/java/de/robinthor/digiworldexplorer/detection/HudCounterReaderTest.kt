@@ -65,4 +65,11 @@ class HudCounterReaderTest {
         assertNotNull(paws)
         assertEquals(null, paws!!.first)
     }
+
+    @Test
+    fun S22DisabledDashIsUnknownRatherThanInventedAsPositive() {
+        val (w, h, px) = frame("s22_world_search_dash_zero.jpg")
+        val grid = requireNotNull(GridDetector.detect(w, h, px))
+        assertEquals(null, HudCounterReader.read(w, h, px, grid.bounds).dash)
+    }
 }
