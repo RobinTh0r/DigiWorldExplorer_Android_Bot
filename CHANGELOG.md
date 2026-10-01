@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.2.0 Beta 2 — 1 October 2026
+
+- Fixed Bond Rotation on physical phones by tapping only positively detected Bond bubbles and advancing only after the tapped bubble disappears.
+- Removed blind centre and figure-offset Bond taps that could open a Partner detail popup or skip an uncollected partner.
+- Fixed the translucent Meat Field seed dialog remaining hidden behind the still-visible field detector on OnePlus-class layouts.
+- Located seed counters from the detected dialog slots so planting adapts to device-specific dialog padding while preserving harvesting and watering.
+- Made Stop fully release automation, MediaProjection and every app overlay; a later start restores the saved overlay choices.
+- Streamlined diagnostics with a solid green active state, larger list/export controls, readable timestamps and Share All in both session lists.
+- Added OnePlus diagnostic regression fixtures for Bond bubbles, the false Partner popup and the seed-selection dialog.
+
 ## 5.2.0 Beta 1 — 30 September 2026
 
 - Replaced independently combinable Digital World switches with three mutually exclusive profiles: V3 Classic, V4 Dash and V5 All Sprites + Dash.
