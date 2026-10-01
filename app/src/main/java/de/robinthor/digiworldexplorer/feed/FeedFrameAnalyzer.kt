@@ -3,8 +3,6 @@ package de.robinthor.digiworldexplorer.feed
 import android.graphics.Color
 import android.media.Image
 import android.os.SystemClock
-import android.os.Handler
-import android.os.Looper
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.input.SafeTapRandomizer
@@ -12,8 +10,6 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 /** Conservative detector for the small white food bubble on the main battle screen. */
 object FeedFrameAnalyzer {
-    private val bubbleTapHandler = Handler(Looper.getMainLooper())
-    @Volatile private var bubbleBurstGeneration = 0L
     fun isBusy(): Boolean = tapsLeft > 0
     private var stableFrames = 0
     private var mainScreenFrames = 0
@@ -24,17 +20,13 @@ object FeedFrameAnalyzer {
     private var tapsLeft = 0
     private var cooldownUntil = 0L
     private var lastBubbleSeenAt = 0L
-    private var rotationFallbackAt = 0L
-    private var rotationFallbackIndex = 0
     @Volatile private var lastCollectedAt = 0L
-    private var fallbackFinishedAt = 0L
-    private var rotationBurstRemaining = 0
-    private var rotationBurstAt = 0L
+    private var rotationTapAt = 0L
+    private var rotationTapAttempts = 0
+    private var rotationBubbleAbsentSince = 0L
 
-    fun reset() { bubbleBurstGeneration++; stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; rotationFallbackAt = 0L; rotationFallbackIndex = 0; lastCollectedAt = 0L; rotationBurstRemaining = 0; rotationBurstAt = 0L }
+    fun reset() { stableFrames = 0; mainScreenFrames = 0; tappingUntil = 0L; nextTapAt = 0L; tapsLeft = 0; cooldownUntil = 0L; lastBubbleSeenAt = 0L; lastCollectedAt = 0L; rotationTapAt = 0L; rotationTapAttempts = 0; rotationBubbleAbsentSince = 0L }
     fun collectedSince(since: Long): Boolean = lastCollectedAt >= since && since > 0L
-    fun fallbackSettledSince(since: Long, now: Long): Boolean =
-        since > 0L && fallbackFinishedAt >= since && now - fallbackFinishedAt >= 1_500L
     fun collectionSettledSince(since: Long, now: Long, settleMillis: Long = 1_500L): Boolean =
         collectedSince(since) && now - lastCollectedAt >= settleMillis
 
@@ -58,12 +50,6 @@ object FeedFrameAnalyzer {
         }
         mainScreenFrames++
 
-        if (rotationOwned && rotationBurstRemaining > 0 && now >= rotationBurstAt) {
-            DigiWorldAccessibilityService.instance?.dispatchValidatedTap(lastX, lastY) { }
-            rotationBurstRemaining--
-            rotationBurstAt = now + 220L
-        }
-
         val frame = de.robinthor.digiworldexplorer.vision.PixelFrame(width, height) { x,y -> rgb(x,y) }
         val bubble = BondBubbleDetector.detect(frame)
         if (bubble == null) {
@@ -72,19 +58,16 @@ object FeedFrameAnalyzer {
             // requiring an impossible uninterrupted run of detections.
             if (!homeAlreadyConfirmed || now - lastBubbleSeenAt > 1_500L) stableFrames = 0
             tapsLeft = 0
-            if (rotationOwned && homeAlreadyConfirmed && now >= rotationFallbackAt &&
-                rotationFallbackIndex < ROTATION_FALLBACK_POINTS.size) {
-                val service = DigiWorldAccessibilityService.instance ?: return true
-                val target = ROTATION_FALLBACK_POINTS[rotationFallbackIndex++]
-                rotationFallbackAt = now + 420L
-                val (x, y) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width, height).pixel(target)
-                android.util.Log.i("DigiWorldBond", "collect fallback ${rotationFallbackIndex}/${ROTATION_FALLBACK_POINTS.size} at=$x,$y")
-                service.dispatchSafeRandomizedTap(x.toFloat(), y.toFloat()) { }
-                if (rotationFallbackIndex == ROTATION_FALLBACK_POINTS.size) fallbackFinishedAt = now
-                // A blind fallback never proves that a token was collected.
+            if (rotationOwned && rotationTapAttempts > 0) {
+                if (rotationBubbleAbsentSince == 0L) rotationBubbleAbsentSince = now
+                if (now - rotationBubbleAbsentSince >= 700L && lastCollectedAt == 0L) {
+                    lastCollectedAt = now
+                    android.util.Log.i("DigiWorldBond", "collect verified: tapped bubble disappeared")
+                }
             }
             return true
         }
+        rotationBubbleAbsentSince = 0L
         val tapTarget = BondBubbleDetector.tapTarget(bubble) ?: return true
         val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(tapTarget)
         val cx = px.toFloat(); val cy = py.toFloat()
@@ -95,13 +78,13 @@ object FeedFrameAnalyzer {
         lastX=cx; lastY=cy
         lastBubbleSeenAt=now
         if (rotationOwned) {
-            if (lastCollectedAt == 0L) {
+            if (lastCollectedAt == 0L && rotationTapAttempts < 4 && now - rotationTapAt >= 750L) {
                 DigiWorldAccessibilityService.instance?.let { service ->
-                    lastCollectedAt = now
+                    rotationTapAt = now
+                    rotationTapAttempts++
                     lastX = cx; lastY = cy
-                    rotationBurstRemaining = 0
-                    android.util.Log.i("DigiWorldBond", "collect detected bubble=$bubble target=$tapTarget; burst")
-                    dispatchBubbleBurst(service, bubble, tapTarget, width, height)
+                    android.util.Log.i("DigiWorldBond", "collect detected bubble=$bubble target=$tapTarget attempt=$rotationTapAttempts")
+                    service.dispatchValidatedTap(cx, cy) { }
                 }
             }
             return true
@@ -117,40 +100,15 @@ object FeedFrameAnalyzer {
         return true
     }
 
-    private fun dispatchBubbleBurst(
-        service: DigiWorldAccessibilityService,
-        bubble: de.robinthor.digiworldexplorer.vision.NormalizedPoint,
-        figure: de.robinthor.digiworldexplorer.vision.NormalizedPoint,
-        width: Int,
-        height: Int,
-    ) {
-        val generation = ++bubbleBurstGeneration
-        val viewport = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width, height)
-        // Some stages accept the figure below the speech bubble, others accept the bubble itself.
-        // Cover both proven targets, with the figure first, instead of repeating one possibly
-        // offset coordinate. The complete bounded burst finishes in about 1.2 seconds.
-        val targets = listOf(figure, figure, bubble, figure, bubble).map { viewport.pixel(it) }
-        targets.forEachIndexed { index, (x, y) ->
-            bubbleTapHandler.postDelayed({
-                if (generation != bubbleBurstGeneration || !AutomationState.enabled) return@postDelayed
-                service.dispatchValidatedTap(x.toFloat(), y.toFloat()) { }
-            }, index * 280L)
-        }
-    }
-
     fun allowImmediateScan() {
-        fallbackFinishedAt = 0L
         lastCollectedAt = 0L
         stableFrames = 0
         mainScreenFrames = 0
         cooldownUntil = 0L
         lastBubbleSeenAt = 0L
-        rotationBurstRemaining = 0
-        rotationBurstAt = 0L
-        // Prefer visual evidence first. Only sweep the known stage bubble corridor when the
-        // rotation has remained on its already verified Home boundary for a short grace period.
-        rotationFallbackAt = SystemClock.elapsedRealtime() + 2_000L
-        rotationFallbackIndex = 0
+        rotationTapAt = 0L
+        rotationTapAttempts = 0
+        rotationBubbleAbsentSince = 0L
     }
 
     fun pauseForDigiWorld() {
@@ -184,17 +142,4 @@ object FeedFrameAnalyzer {
         }
         return false
     }
-
-    private val ROTATION_FALLBACK_POINTS = listOf(
-        // Centre-first, then the normal stage corridor. Repeated centre points intentionally
-        // provide the requested classic friendship-style safety taps when animation hides the
-        // bubble from one or two captured frames.
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.50, .40),
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.50, .40),
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.42, .40),
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.58, .40),
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.34, .40),
-        de.robinthor.digiworldexplorer.vision.NormalizedPoint(.66, .40),
-    )
-
 }

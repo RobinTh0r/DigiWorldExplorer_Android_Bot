@@ -28,11 +28,12 @@ object BondBubbleDetector {
         }
         val panel = panels.maxByOrNull { it.pixels } ?: return null
         return NormalizedPoint((panel.left+panel.width/2.0)/w, (panel.top+panel.height/2.0)/h)
+            .takeIf { it.y in .35.. .48 }
     }
 
-    /** The collectible belongs to the figure below-left of its floating bubble. */
+    /** Tap the verified bubble itself. Tapping the figure underneath opens its Partner popup on
+     * physical phones once the bubble disappears between scheduled taps. */
     fun tapTarget(bubble: NormalizedPoint): NormalizedPoint? {
-        val target = NormalizedPoint(bubble.x - .071, bubble.y + .076)
-        return target.takeIf { it.x in .30.. .60 && it.y in .32.. .54 }
+        return bubble.takeIf { it.x in .30.. .72 && it.y in .25.. .52 }
     }
 }

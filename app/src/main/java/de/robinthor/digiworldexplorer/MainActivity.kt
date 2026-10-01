@@ -295,7 +295,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onStart = ::requestAutomationStart,
                 onReturnToGame = ::bringGameToForeground,
-                onStop = { ScreenCaptureService.stop(this); capture = false; auto = false; status = UiStatus.STOPPED },
+                onStop = ::stopEverything,
                 onLanguage = ::setLanguage,
                 onCheckUpdate = ::checkForUpdates,
                 onOpenUpdate = { if (updateUrl.isNotBlank()) openUrl(updateUrl) },
@@ -401,9 +401,28 @@ class MainActivity : ComponentActivity() {
         DungeonFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
         ScreenCaptureService.setAutomation(this, true)
+        DigiWorldAccessibilityService.instance?.apply {
+            setQuickControlsEnabled(quickOverlayEnabled)
+            setQuickStatusVisible(quickStatusVisible)
+            setOverlayEnabled(grid)
+        }
         auto = true
         status = UiStatus.AUTOMATIC
         bringGameToForeground()
+    }
+
+    private fun stopEverything() {
+        AutomationState.stop()
+        ScreenCaptureService.stop(this)
+        DigiWorldAccessibilityService.instance?.apply {
+            setQuickControlsEnabled(false)
+            clearCalibrationOverlay()
+            setOverlayEnabled(false)
+            showStatusOnly("", false)
+        }
+        capture = false
+        auto = false
+        status = UiStatus.STOPPED
     }
     private fun syncSessionUi(automationEnabled: Boolean = AutomationState.enabled) {
         val session = CaptureSessionState.snapshot(automationEnabled)
@@ -712,10 +731,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         Button(onClick = onStop, enabled = capture || auto, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)) { Text(stringResource(R.string.auto_stop)) }
 
         Text(stringResource(R.string.safety_note), style = MaterialTheme.typography.labelSmall)
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            de.robinthor.digiworldexplorer.support.SupportExportButton(Modifier.weight(1.05f))
-            de.robinthor.digiworldexplorer.diagnostics.DiagnosticQuickControls(Modifier.weight(1.45f))
-        }
+        de.robinthor.digiworldexplorer.diagnostics.DiagnosticQuickControls(Modifier.fillMaxWidth())
         if (supporterLicense == null) {
             OutlinedButton(
                 onClick = onDonate,
@@ -1418,7 +1434,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {
                         Text("Diagnosemodus")
-                        Text("Speichert Zustände und gezielte, verkleinerte Screenshots. Maximal 6 Sitzungen mit je 24 Bildern.", style = MaterialTheme.typography.labelSmall)
+                        Text("Speichert Zustände und gezielte, verkleinerte Screenshots. Maximal 6 Sitzungen mit je 50 Bildern.", style = MaterialTheme.typography.labelSmall)
                     }
                     Switch(checked = diagnosticsEnabled, onCheckedChange = {
                         diagnosticsEnabled = it
@@ -1431,7 +1447,7 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                     Text("Gespeicherte Diagnosen", fontWeight = FontWeight.Bold)
                     diagnosticSessions.forEach { session ->
                         Column(Modifier.fillMaxWidth()) {
-                            Text(session.name.removePrefix("diagnostic-"), style = MaterialTheme.typography.labelMedium)
+                            Text(de.robinthor.digiworldexplorer.diagnostics.diagnosticSessionLabel(session.name), style = MaterialTheme.typography.labelMedium)
                             Text("${(session.bytes / 1024).coerceAtLeast(1)} KB", style = MaterialTheme.typography.labelSmall)
                             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 OutlinedButton(onClick = {
@@ -1445,6 +1461,10 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                             }
                         }
                     }
+                    OutlinedButton(onClick = {
+                        val share = de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.shareAllIntent(context)
+                        if (share != null) context.startActivity(Intent.createChooser(share, "Alle Diagnose-ZIPs teilen"))
+                    }, modifier = Modifier.fillMaxWidth()) { Text("Alle Diagnosen teilen") }
                     HorizontalDivider()
                 }
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {

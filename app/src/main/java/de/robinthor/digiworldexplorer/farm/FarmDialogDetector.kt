@@ -59,6 +59,7 @@ object FarmDialogDetector {
         }
         val select = greenButtons.maxByOrNull { it.pixels }
         if (seedSlots.size == 3 && select != null) {
+            val slotCenters = seedSlots.map(::center)
             val bracketCounts = seedSlots.map { slot ->
                 val left = slot.left; val right = slot.right; val top = slot.top; val bottom = slot.bottom
                 (top - 8..bottom + 8).sumOf { y ->
@@ -75,8 +76,8 @@ object FarmDialogDetector {
             val selected = best?.takeIf { bracketCounts[it] >= 40 && bracketCounts[it] >= runnerUp * 2 }
             return FarmDialogDetection(
                 view = FarmView.SEEDS,
-                slots = seedSlots.map(::center),
-                seedCounts = FarmResourceReaders.dialogSeeds(frame, viewport),
+                slots = slotCenters,
+                seedCounts = FarmResourceReaders.dialogSeeds(frame, viewport, slotCenters),
                 selectedSlot = selected,
                 selectButton = center(select),
             )

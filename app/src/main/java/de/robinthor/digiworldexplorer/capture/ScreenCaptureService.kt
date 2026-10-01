@@ -85,9 +85,20 @@ class ScreenCaptureService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_STOP -> { AutomationState.stop(); CaptureSessionState.markCaptureStopped(); releaseCapture(); stopSelf(); return START_NOT_STICKY }
+            ACTION_STOP, ACTION_AUTO_OFF -> {
+                AutomationState.stop()
+                CaptureSessionState.markCaptureStopped()
+                DigiWorldAccessibilityService.instance?.apply {
+                    setQuickControlsEnabled(false)
+                    clearCalibrationOverlay()
+                    setOverlayEnabled(false)
+                    showStatusOnly("", false)
+                }
+                releaseCapture()
+                stopSelf()
+                return START_NOT_STICKY
+            }
             ACTION_AUTO_ON -> { AutomationState.enabled=true; startCaptureForeground(); return START_NOT_STICKY }
-            ACTION_AUTO_OFF -> { AutomationState.stop(); startCaptureForeground(); return START_NOT_STICKY }
             ACTION_STUCK -> {
                 AutomationState.enabled = false
                 AutomationState.overlayEnabled = false

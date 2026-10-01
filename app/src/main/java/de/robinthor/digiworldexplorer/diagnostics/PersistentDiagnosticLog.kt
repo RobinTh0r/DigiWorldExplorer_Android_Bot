@@ -11,12 +11,19 @@ import de.robinthor.digiworldexplorer.BuildConfig
 import java.io.File
 import java.io.FileOutputStream
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 data class DiagnosticSession(val directory: File, val name: String, val bytes: Long)
+
+internal fun diagnosticSessionLabel(name: String): String = runCatching {
+    val raw = name.removePrefix("diagnostic-")
+    val parsed = LocalDateTime.parse(raw, DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"))
+    parsed.format(DateTimeFormatter.ofPattern("dd.MM.yyyy · HH:mm:ss"))
+}.getOrElse { name.removePrefix("diagnostic-") }
 
 /** Opt-in, bounded diagnostics for physical-device runs without USB debugging. */
 object PersistentDiagnosticLog {

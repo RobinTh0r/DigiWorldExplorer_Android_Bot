@@ -60,9 +60,20 @@ object FarmHarvestAnalyzer {
         }
         val viewport = GameViewport.fit(w, h)
         val field = FarmHarvestDetector.detect(pixels, viewport)
-        val dialog = if (!field.field)
-            FarmDialogDetector.detect(pixels, field.visiblePlots, viewport, trustedFarmFlow = flowActive) else FarmDialogDetection()
+        // The translucent seed/water dialog leaves the six plots visible behind it on real
+        // phones. Detect it on every active farm transaction and give that foreground evidence
+        // precedence over the background field.
+        val dialog = FarmDialogDetector.detect(pixels, field.visiblePlots, viewport, trustedFarmFlow = flowActive)
         val observation = when {
+            flowActive && dialog.view == FarmView.SEEDS -> FarmObservation(
+                view = FarmView.SEEDS,
+                // Unknown is not inventory. Only a positively read value may spend a seed.
+                freeSlot = dialog.seedCounts.indices.reversed().firstOrNull { (dialog.seedCounts[it] ?: 0) > 0 },
+                seedCounts = dialog.seedCounts,
+                selectedSlot = dialog.selectedSlot,
+            )
+            flowActive && dialog.view == FarmView.WATER -> FarmObservation(FarmView.WATER)
+            flowActive && dialog.view == FarmView.ERROR -> FarmObservation(FarmView.ERROR)
             field.field -> {
                 val seedCounts = FarmResourceReaders.hudSeeds(pixels, viewport)
                 FarmObservation(
@@ -77,15 +88,6 @@ object FarmHarvestAnalyzer {
                     adSkipPass = AutomationState.adSkipPassEnabled,
                 )
             }
-            dialog.view == FarmView.SEEDS -> FarmObservation(
-                view = FarmView.SEEDS,
-                // Unknown is not inventory. Only a positively read value may spend a seed.
-                freeSlot = dialog.seedCounts.indices.reversed().firstOrNull { (dialog.seedCounts[it] ?: 0) > 0 },
-                seedCounts = dialog.seedCounts,
-                selectedSlot = dialog.selectedSlot,
-            )
-            dialog.view == FarmView.WATER -> FarmObservation(FarmView.WATER)
-            dialog.view == FarmView.ERROR -> FarmObservation(FarmView.ERROR)
             else -> FarmObservation(FarmView.UNKNOWN, stable = false)
         }
         // A dialog is only trusted after this analyzer has positively recognized the field and

@@ -23,8 +23,7 @@ class BondRotation {
     private var bubbleSeenDuringCollect = false
 
     fun tick(home: Boolean, grid: PartnerGrid, feedBusy: Boolean, now: Long, bubbleVisible: Boolean = false,
-        cycleReady: Boolean = true, bubbleCollected: Boolean = false,
-        fallbackFinished: Boolean = false): BondCommand? {
+        cycleReady: Boolean = true, bubbleCollected: Boolean = false): BondCommand? {
         if (step == BondStep.PARK) return null
         if (step in setOf(BondStep.IDLE, BondStep.REST)) {
             if (feedBusy || !cycleReady) return null
@@ -67,7 +66,7 @@ class BondRotation {
             bubbleSeenDuringCollect = bubbleSeenDuringCollect || bubbleVisible
             // A visually confirmed tap is stronger evidence than the transient Home classifier:
             // the collection animation can cover the stable Home icons for several seconds.
-            if ((bubbleCollected || (fallbackFinished && home && !bubbleVisible)) && !feedBusy) {
+            if (bubbleCollected && !feedBusy) {
                 if (visited == 15) {
                     step = BondStep.REST
                     nextBubbleArmed = !bubbleVisible

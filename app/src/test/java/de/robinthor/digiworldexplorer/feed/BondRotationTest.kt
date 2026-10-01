@@ -19,7 +19,7 @@ class BondRotationTest {
         assertEquals(BondStep.EXPAND, tour.tick(false, PartnerGrid(page = true), false, 0)?.step)
     }
 
-    @Test fun fallbackOnlyAdvancesAfterSweepOnHomeWithoutVisibleBubble() {
+    @Test fun blindFallbackNeverAdvancesCollection() {
         val tour = BondRotation()
         val grid = PartnerGrid(true, true, List(15) { NormalizedPoint(.2, .6) }, raised = 0, selected = 0)
         tour.tick(true, PartnerGrid(), false, 0)
@@ -29,9 +29,10 @@ class BondRotationTest {
         tour.tick(false, grid.copy(raised = 1), false, 4)
         tour.tick(true, PartnerGrid(), false, 5)
         assertNull(tour.tick(true, PartnerGrid(), false, 5_999))
-        assertNull(tour.tick(true, PartnerGrid(), false, 8_000, bubbleVisible = true, fallbackFinished = true))
-        assertNull(tour.tick(false, PartnerGrid(), false, 8_100, fallbackFinished = true))
-        assertEquals(BondStep.OPEN, tour.tick(true, PartnerGrid(), false, 9_000, fallbackFinished = true)?.step)
+        assertNull(tour.tick(true, PartnerGrid(), false, 8_000, bubbleVisible = true))
+        assertNull(tour.tick(false, PartnerGrid(), false, 8_100))
+        assertNull(tour.tick(true, PartnerGrid(), false, 9_000))
+        assertEquals(BondStep.COLLECT, tour.step)
     }
 
     @Test fun droppedOpenRetriesOnlyOnHomeAndKeepsOriginalDeadline() {

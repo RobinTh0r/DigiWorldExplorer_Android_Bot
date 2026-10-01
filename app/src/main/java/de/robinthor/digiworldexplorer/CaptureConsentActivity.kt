@@ -36,7 +36,7 @@ class CaptureConsentActivity : ComponentActivity() {
             AutomationState.stop()
             ScreenCaptureService.start(this, result.resultCode, result.data!!)
             ScreenCaptureService.setAutomation(this, true)
-            DigiWorldAccessibilityService.instance?.setOverlayEnabled(AutomationState.overlayEnabled)
+            restoreOverlays()
             runRequestedMode()
             returnToGame()
         } else {
@@ -50,6 +50,7 @@ class CaptureConsentActivity : ComponentActivity() {
         if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) {
             applyRuntimeSettings()
             ScreenCaptureService.setAutomation(this, true)
+            restoreOverlays()
             runRequestedMode()
             finishWithoutAnimation()
             return
@@ -118,6 +119,15 @@ class CaptureConsentActivity : ComponentActivity() {
                 }
                 DigiWorldAccessibilityService.instance?.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
             }
+        }
+    }
+
+    private fun restoreOverlays() {
+        val settings = getSharedPreferences("settings", Context.MODE_PRIVATE)
+        DigiWorldAccessibilityService.instance?.apply {
+            setQuickControlsEnabled(settings.getBoolean("quick_overlay_enabled", false))
+            setQuickStatusVisible(settings.getBoolean("director_card_visible", true))
+            setOverlayEnabled(AutomationState.overlayEnabled)
         }
     }
 

@@ -50,11 +50,9 @@ object BondRotationAnalyzer {
         // belongs to the previous partner until tick() starts the new collection window.
         val collectedSettled = previous == BondStep.COLLECT &&
             FeedFrameAnalyzer.collectionSettledSince(rotation.collectStartedAt, now, settleMillis = 2_500L)
-        val fallbackSettled = previous == BondStep.COLLECT &&
-            FeedFrameAnalyzer.fallbackSettledSince(rotation.collectStartedAt, now)
         val command = rotation.tick(home, grid, FeedFrameAnalyzer.isBusy(), now, bubble,
             forced || BondCycleTimer.canStartBond(now),
-            collectedSettled, fallbackSettled)
+            collectedSettled)
         fastPolling = rotation.fastBubblePolling(now)
         if (matches == 3) android.util.Log.i(
             "DigiWorldBond",

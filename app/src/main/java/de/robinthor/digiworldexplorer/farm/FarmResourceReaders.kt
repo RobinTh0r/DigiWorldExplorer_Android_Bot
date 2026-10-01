@@ -12,8 +12,19 @@ object FarmResourceReaders {
     fun wateringCans(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): Int? =
         readNumber(frame, viewport, .54, .61, .087, .105)
 
-    fun dialogSeeds(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): List<Int?> =
-        listOf(.306, .500, .694).map { readNumber(frame, viewport, it - .022, it + .022, .485, .501) }
+    fun dialogSeeds(
+        frame: PixelFrame,
+        viewport: GameViewport = GameViewport.fit(frame.width, frame.height),
+        slotCenters: List<NormalizedPoint> = emptyList(),
+    ): List<Int?> {
+        // Emulator and tall-phone dialogs use different outer padding. The brown slot panels are
+        // already detected, so read each counter relative to its actual centre instead of fixed X.
+        if (slotCenters.size != 3)
+            return listOf(.306, .500, .694).map { readNumber(frame, viewport, it - .022, it + .022, .485, .501) }
+        return slotCenters.map { center ->
+            readNumber(frame, viewport, center.x - .030, center.x + .030, center.y + .006, center.y + .035)
+        }
+    }
 
     private fun readNumber(
         frame: PixelFrame,

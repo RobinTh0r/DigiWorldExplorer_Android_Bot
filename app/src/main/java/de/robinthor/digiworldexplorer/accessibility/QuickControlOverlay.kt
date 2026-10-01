@@ -271,8 +271,9 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             AutomationState.stop()
             ScreenCaptureService.stop(service)
             service.showStatusOnly("", false)
-            refresh()
-            collapse()
+            service.clearCalibrationOverlay()
+            service.setOverlayEnabled(false)
+            service.setQuickControlsEnabled(false)
         }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginStart = (3 * density).toInt() })
         addView(topRow)
         addView(statefulAutomationButton("dungeon", density) {

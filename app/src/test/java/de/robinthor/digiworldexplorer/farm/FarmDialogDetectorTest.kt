@@ -3,6 +3,7 @@ package de.robinthor.digiworldexplorer.farm
 import de.robinthor.digiworldexplorer.vision.PixelFrame
 import org.junit.Assert.*
 import org.junit.Test
+import javax.imageio.ImageIO
 
 class FarmDialogDetectorTest {
     private val pixels = IntArray(360 * 640) { 0xff202840.toInt() }
@@ -28,5 +29,16 @@ class FarmDialogDetectorTest {
         assertNotNull(detected.selectButton)
         assertNotNull(detected.closeTarget)
         assertEquals(FarmView.UNKNOWN, FarmDialogDetector.detect(frame(), 0).view)
+    }
+
+    @Test fun `oneplus translucent seed dialog wins over visible field background`() {
+        val image = ImageIO.read(requireNotNull(javaClass.getResource("/oneplus_farm_seed_dialog.jpg")))
+        val frame = PixelFrame(image.width, image.height) { x, y -> image.getRGB(x, y) }
+        val detected = FarmDialogDetector.detect(frame, visiblePlots = 6, trustedFarmFlow = true)
+        assertEquals(FarmView.SEEDS, detected.view)
+        assertEquals(3, detected.slots.size)
+        assertTrue("counts=${detected.seedCounts}", detected.seedCounts.all { (it ?: 0) > 0 })
+        assertEquals(0, detected.selectedSlot)
+        assertNotNull(detected.selectButton)
     }
 }

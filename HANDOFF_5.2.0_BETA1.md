@@ -32,3 +32,11 @@ This beta includes the post-5.1.0 physical-device pass for large partner sprites
 ## Build and release verification
 
 Use Android Studio JBR, Android SDK/build-tools 36.0.0 and Gradle 9.4.1. Run `:app:testDebugUnitTest :app:assembleRelease`, verify the APK certificate and SHA-256, and run `git diff --check`. Preserve app ID, signing identity, settings and installed user data. Future releases still require explicit user authorization.
+
+## Unreleased OnePlus follow-up — 2026-10-01
+
+Two OnePlus IN2023 offline sessions proved that the Bond collector's figure-offset burst and blind centre fallback could open a Partner detail popup and could advance without a confirmed collection. The follow-up taps only a positively detected bubble, retries while it remains visible and accepts success only after the tapped bubble disappears. There are no blind figure or centre taps. Diagnostic fixtures cover the live bubble and the false Partner popup.
+
+The same sessions showed the seed dialog remaining over a still-recognizable Meat Field. Active farm dialogs now take foreground priority over the visible background field, and seed counters are located from the detected slot panels so phone-specific outer padding does not matter. The OnePlus seed dialog is retained as a regression fixture.
+
+Explicit Stop now stops automation and MediaProjection and removes the grid, status and touchable quick-control overlays. Starting again restores the user's saved overlay choices. The Home diagnostic controls no longer include the old support-report button, use larger file/export controls, show a solid green active state, format session dates, and expose Share All inside both diagnostic lists.
