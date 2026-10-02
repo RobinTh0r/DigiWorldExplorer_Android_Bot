@@ -286,7 +286,8 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame && de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active()) {
                             de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.analyze(image, width, height)
                         },
-                        FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame && !digiCopilotOwns) {
+                        FrameProbe(FrameOwner.DUNGEON, enabled = featureFrame && !digiCopilotOwns &&
+                            AutomationState.autoDungeonEnabled) {
                             DungeonFrameAnalyzer.analyze(image, width, height)
                         },
                         FrameProbe(FrameOwner.FARM, enabled = featureFrame && !DungeonFrameAnalyzer.isSessionActive() &&

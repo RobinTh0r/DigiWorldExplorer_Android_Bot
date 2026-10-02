@@ -70,7 +70,7 @@ class CaptureConsentActivity : ComponentActivity() {
         else de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.V3_CLASSIC
         AutomationState.overlayEnabled = settings.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = settings.getBoolean("auto_purchase", false)
-        AutomationState.autoDungeonEnabled = settings.getBoolean("auto_dungeon", true)
+        AutomationState.autoDungeonEnabled = settings.getBoolean("auto_dungeon", false)
         AutomationState.autoNetworkDefenseEnabled = settings.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = settings.getBoolean("auto_feed", false)
         AutomationState.autoBondRotationEnabled = supporter && settings.getBoolean("auto_bond_rotation", true)

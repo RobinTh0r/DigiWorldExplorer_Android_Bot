@@ -7,8 +7,16 @@ import java.util.zip.ZipInputStream
 
 class SupportBundleTest {
     @Test fun `export excludes unknown and sensitive preference keys`() {
-        val report = SupportBundle.report(mapOf("model" to "Test Device", "license" to "SECRET", "email" to "PRIVATE"), emptyList())
+        val report = SupportBundle.report(mapOf(
+            "model" to "Test Device",
+            "copilotDwsEnabled" to "false",
+            "bondCooldownSeconds" to "1200",
+            "license" to "SECRET",
+            "email" to "PRIVATE",
+        ), emptyList())
         assertTrue(report.contains("model=Test Device"))
+        assertTrue(report.contains("copilotDwsEnabled=false"))
+        assertTrue(report.contains("bondCooldownSeconds=1200"))
         assertFalse(report.contains("SECRET"))
         assertFalse(report.contains("PRIVATE"))
     }

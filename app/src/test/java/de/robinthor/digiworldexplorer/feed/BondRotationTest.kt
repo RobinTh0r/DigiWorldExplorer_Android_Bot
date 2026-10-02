@@ -186,4 +186,22 @@ class BondRotationTest {
         assertNull(tour.tick(false, PartnerGrid(confirmation = true), false, 3_502))
         assertEquals(BondStep.CONFIRM, tour.tick(false, PartnerGrid(confirmation = true), false, 3_503)?.step)
     }
+
+    @Test fun `wrong Digimon subtab is corrected before roster expansion`() {
+        val tour = BondRotation()
+        val partnerTarget = NormalizedPoint(.115, .875)
+        assertEquals(BondStep.OPEN, tour.tick(true, PartnerGrid(), false, 0)?.step)
+        val buddyTab = PartnerGrid(digimonSection = true, partnerTabTarget = partnerTarget)
+        assertEquals(BondStep.PARTNER_TAB, tour.tick(false, buddyTab, false, 1)?.step)
+        assertNull(tour.tick(false, buddyTab, false, 1_500))
+        assertEquals(BondStep.PARTNER_TAB, tour.tick(false, buddyTab, false, 1_501)?.step)
+        assertEquals(BondStep.EXPAND, tour.tick(false, PartnerGrid(page = true), false, 1_502)?.step)
+    }
+
+    @Test fun `unknown screen never authorizes Partner tab tap`() {
+        val tour = BondRotation()
+        tour.tick(true, PartnerGrid(), false, 0)
+        assertNull(tour.tick(false, PartnerGrid(), false, 5_000))
+        assertEquals(BondStep.OPEN, tour.step)
+    }
 }

@@ -29,6 +29,12 @@ object DungeonFrameAnalyzer {
     private var rewardDetectedSince = 0L
 
     fun analyze(image: Image, width: Int, height: Int, resultsOnly: Boolean = false): Boolean {
+        // OFF is a hard gate: do not even classify a VS/Tower screen or publish its status.
+        // A user-started Dungeon rotation may still delegate only its own reward result.
+        if (!resultsOnly && !AutomationState.autoDungeonEnabled) {
+            if (sessionActive || pending) reset()
+            return false
+        }
         if (!resultsOnly && DungeonRotationRequest.phase == DungeonRotationRequest.Phase.PARKED) return true
         val plane = image.planes.firstOrNull() ?: return false
         if (plane.pixelStride < 3) return false

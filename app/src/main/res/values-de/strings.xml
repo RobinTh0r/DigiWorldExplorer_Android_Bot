@@ -93,6 +93,15 @@
     <string name="quick_reload">Erkennung neu laden</string>
     <string name="quick_open_app">DigiWorldExplorer öffnen</string>
     <string name="quick_stop_all">Alles stoppen</string>
+    <string name="quick_bond_running">Bond-Rotation läuft</string>
+    <string name="quick_bond_ready">Nächster Bond bereit</string>
+    <string name="quick_wait_next_rotation">Warten auf nächste Rotation</string>
+    <string name="quick_status_toggle">Statusanzeige ein / aus</string>
+    <string name="quick_home_rewards">Home-Belohnungen</string>
+    <string name="quick_dungeon_start">Dungeon starten · BETA</string>
+    <string name="quick_dungeon_stop">Dungeon stoppen · BETA</string>
+    <string name="quick_copilot_start">Digi Co-Pilot starten · BETA</string>
+    <string name="quick_copilot_stop">Digi Co-Pilot stoppen · BETA</string>
     <string name="quick_reloaded">Erkennung neu geladen</string>
     <string name="quick_overlay_enable">Overlay-Icon anzeigen</string>
     <string name="quick_overlay_disable">Overlay-Icon ausblenden</string>

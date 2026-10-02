@@ -142,7 +142,7 @@ class MainActivity : ComponentActivity() {
         preReleaseUpdates = settings.getBoolean("pre_release_updates", false)
         darkMode = settings.getBoolean("dark_mode", false)
         supporterLicense = SupporterLicenseManager.load(this)
-        autoDungeon = settings.getBoolean("auto_dungeon", true)
+        autoDungeon = settings.getBoolean("auto_dungeon", false)
         quickOverlayEnabled = settings.getBoolean("quick_overlay_enabled", false)
         quickStatusVisible = settings.getBoolean("director_card_visible", true)
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
@@ -508,7 +508,7 @@ class MainActivity : ComponentActivity() {
         val settings = getSharedPreferences("settings", MODE_PRIVATE)
         supporterLicense = SupporterLicenseManager.load(this)
         autoPurchase = settings.getBoolean("auto_purchase", false)
-        autoDungeon = settings.getBoolean("auto_dungeon", true)
+        autoDungeon = settings.getBoolean("auto_dungeon", false)
         autoFeed = settings.getBoolean("auto_feed", false)
         autoRunner = false
         settings.edit().putBoolean("auto_runner", false).apply()

@@ -36,3 +36,11 @@ Explicit Stop now stops automation and MediaProjection and removes the grid, sta
 ## Build and release verification
 
 Use Android Studio JBR, Android SDK/build-tools 36.0.0 and Gradle 9.4.1. Run `:app:testDebugUnitTest :app:assembleRelease`, verify the APK certificate and SHA-256, and run `git diff --check`. Preserve app ID, signing identity, settings and installed user data. Future releases still require explicit user authorization.
+
+## Unreleased emulator and cycle follow-up — 2026-10-02
+
+MSI App Player and another community report showed that a red notification marker can open the Digimon section on Buddy or Support Digimon instead of Partner. Bond Rotation now requires the shared Digimon header plus the selected Digimon bottom-navigation tile, then selects the Partner subtab with bounded retries before expanding the roster. Home, Explore and Dungeon fixtures explicitly fail this recovery gate.
+
+VS / Tower Loop is now default-off for an unset preference and has hard gates in both frame orchestration and its analyzer. When disabled, it cannot classify, publish VS status or tap; a user-started Dungeon Co-Pilot can still delegate its own reward result. The quick overlay's remaining German-only labels now use localized resources.
+
+The supplied support ZIP was from 5.1.0 and contained no diagnostic screenshots. Support schema 2 fixes the previously reversed Manual/Co-Pilot label and records the Co-Pilot module switches, cooldown/farm state, DWS phase and explicit Dungeon rotation state for future timer reports.

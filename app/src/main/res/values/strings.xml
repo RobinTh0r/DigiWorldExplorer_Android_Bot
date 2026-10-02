@@ -93,6 +93,15 @@
     <string name="quick_reload">Reload detection</string>
     <string name="quick_open_app">Open DigiWorldExplorer</string>
     <string name="quick_stop_all">Stop everything</string>
+    <string name="quick_bond_running">Bond rotation running</string>
+    <string name="quick_bond_ready">Next Bond ready</string>
+    <string name="quick_wait_next_rotation">Waiting for next rotation</string>
+    <string name="quick_status_toggle">Show / hide status</string>
+    <string name="quick_home_rewards">Home rewards</string>
+    <string name="quick_dungeon_start">Start Dungeon · BETA</string>
+    <string name="quick_dungeon_stop">Stop Dungeon · BETA</string>
+    <string name="quick_copilot_start">Start Digi Co-Pilot · BETA</string>
+    <string name="quick_copilot_stop">Stop Digi Co-Pilot · BETA</string>
     <string name="quick_reloaded">Detection reloaded</string>
     <string name="quick_overlay_enable">Show Overlay Icon</string>
     <string name="quick_overlay_disable">Disable Overlay Icon</string>

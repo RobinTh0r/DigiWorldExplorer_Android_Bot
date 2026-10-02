@@ -62,9 +62,9 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         val remaining = de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis()
         val seconds = (remaining + 999) / 1000
         directorTimer?.text = when {
-            de.robinthor.digiworldexplorer.feed.BondRotationRequest.active() -> "Bond-Rotation läuft"
+            de.robinthor.digiworldexplorer.feed.BondRotationRequest.active() -> service.getString(R.string.quick_bond_running)
             seconds > 0 -> "Bond %02d:%02d".format(seconds / 60, seconds % 60)
-            else -> "Nächster Bond bereit"
+            else -> service.getString(R.string.quick_bond_ready)
         }
     }
     private var directorCard: View? = null
@@ -242,7 +242,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             val idle = snapshot.action.isBlank() || snapshot.action == "No action"
             val value = when {
                 !captureActive -> "Start / Restart Bot"
-                idle && de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() -> "Warten auf nächste Rotation"
+                idle && de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() -> service.getString(R.string.quick_wait_next_rotation)
                 else -> snapshot.action.ifBlank { "No action" }
             }
             directorAction?.text = if (value.length > 20) value.take(19) + "…" else value
@@ -260,7 +260,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
         addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
         addView(featureToggle("VS / Tower Loop", "auto_dungeon", AutomationState.autoDungeonEnabled, density))
-        addView(actionButton("Statusanzeige ein / aus") { toggleDirectorCard(); collapse() },
+        addView(actionButton(service.getString(R.string.quick_status_toggle)) { toggleDirectorCard(); collapse() },
             LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (36 * density).toInt()).apply { bottomMargin = (4 * density).toInt() })
         val topRow = LinearLayout(service).apply {
             orientation = LinearLayout.HORIZONTAL
@@ -366,7 +366,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         })
         addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
         addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
-        addView(featureToggle("Home-Belohnungen", "copilot_rewards", AutomationState.copilotRewardsEnabled, density, beta = true))
+        addView(featureToggle(service.getString(R.string.quick_home_rewards), "copilot_rewards", AutomationState.copilotRewardsEnabled, density, beta = true))
         addView(featureToggle("DWS (max. 5 min)", "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
     }
 
@@ -458,7 +458,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         syncingFeatureSwitches = true
         featureSwitches["auto_purchase"]?.isChecked = preferences.getBoolean("auto_purchase", false)
         val supporter = SupporterLicenseManager.load(service) != null
-        featureSwitches["auto_dungeon"]?.isChecked = preferences.getBoolean("auto_dungeon", true)
+        featureSwitches["auto_dungeon"]?.isChecked = preferences.getBoolean("auto_dungeon", false)
         featureSwitches["auto_feed"]?.isChecked = preferences.getBoolean("auto_feed", false)
         featureSwitches["auto_bond_rotation"]?.isChecked = supporter && preferences.getBoolean("auto_bond_rotation", true)
         featureSwitches["auto_farm_harvest"]?.isChecked = supporter && preferences.getBoolean("auto_farm_harvest", true)
@@ -502,14 +502,14 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     private fun updateAutomationControls() {
         val dungeonRunning = DungeonRotationRequest.ownsFrames()
         dungeonControl?.apply {
-            text = if (dungeonRunning) "Dungeon stoppen  · BETA" else "Dungeon starten  · BETA"
+            text = service.getString(if (dungeonRunning) R.string.quick_dungeon_stop else R.string.quick_dungeon_start)
             backgroundTintList = android.content.res.ColorStateList.valueOf(
                 if (dungeonRunning) Color.rgb(190, 55, 76) else Color.rgb(176, 112, 0))
         }
         dungeonSpinner?.visibility = if (dungeonRunning) View.VISIBLE else View.GONE
         val copilotRunning = de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()
         copilotControl?.apply {
-            text = if (copilotRunning) "Digi Co-Pilot stoppen  · BETA" else "Digi Co-Pilot starten  · BETA"
+            text = service.getString(if (copilotRunning) R.string.quick_copilot_stop else R.string.quick_copilot_start)
             backgroundTintList = android.content.res.ColorStateList.valueOf(
                 if (copilotRunning) Color.rgb(104, 67, 180) else Color.rgb(176, 112, 0))
         }
@@ -525,7 +525,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         de.robinthor.digiworldexplorer.feed.BondRotationAnalyzer.reset()
         AutomationState.overlayEnabled = preferences.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = preferences.getBoolean("auto_purchase", false)
-        AutomationState.autoDungeonEnabled = preferences.getBoolean("auto_dungeon", true)
+        AutomationState.autoDungeonEnabled = preferences.getBoolean("auto_dungeon", false)
         AutomationState.autoNetworkDefenseEnabled = preferences.getBoolean("auto_network_defense", false)
         AutomationState.autoFeedEnabled = preferences.getBoolean("auto_feed", false)
         AutomationState.autoBondRotationEnabled = supporter && preferences.getBoolean("auto_bond_rotation", true)

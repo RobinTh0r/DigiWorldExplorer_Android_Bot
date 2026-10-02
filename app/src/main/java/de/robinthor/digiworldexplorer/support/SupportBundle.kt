@@ -11,10 +11,12 @@ object SupportBundle {
         "appVersion", "androidApi", "manufacturer", "model", "displayPixels", "language",
         "timezone", "mode", "automationEnabled", "runnerEnabled", "dungeonEnabled",
         "bondEnabled", "summonEnabled", "networkEnabled", "farmHarvestEnabled",
+        "copilotActive", "bondRotationEnabled", "copilotRewardsEnabled", "copilotDwsEnabled",
+        "bondCooldownSeconds", "bondAwaitingFarm", "dungeonRotationActive", "dwsPhase",
     )
 
     fun report(metadata: Map<String, String>, events: List<AutomationEvent>): String = buildString {
-        appendLine("DigiWorldExplorer support report / schema 1")
+        appendLine("DigiWorldExplorer support report / schema 2")
         appendLine("No screenshots, account identifiers, credentials or license keys are collected.")
         appendLine("Review device details before sharing this file.")
         appendLine()

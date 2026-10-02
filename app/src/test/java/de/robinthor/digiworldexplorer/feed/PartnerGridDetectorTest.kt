@@ -43,8 +43,19 @@ class PartnerGridDetectorTest {
     @Test fun recognizesExpandedOnePlusRoster() {
         val grid = read("oneplus_partner_grid_expanded.jpg")
         assertTrue(grid.page)
+        assertTrue(grid.digimonSection)
+        assertNotNull(grid.partnerTabTarget)
         assertTrue(grid.expanded)
         assertEquals(15, grid.cells.size)
         assertEquals("The green active-partner check is on the first row, fourth cell", 3, grid.raised)
+    }
+
+    @Test fun `only Digimon section evidence authorizes Partner tab recovery`() {
+        val partner = read("bond_partner_collapsed.png")
+        assertTrue(partner.digimonSection)
+        assertNotNull(partner.partnerTabTarget)
+        assertFalse(read("bond_home_food.png").digimonSection)
+        assertFalse(read("farm_explore_live.png").digimonSection)
+        assertFalse(read("dungeon_challenge_en.png").digimonSection)
     }
 }

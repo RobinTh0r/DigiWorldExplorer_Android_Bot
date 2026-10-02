@@ -6,7 +6,7 @@ object AutomationState {
  @Volatile var enabled=false
  @Volatile var overlayEnabled=true
  @Volatile var autoPurchaseEnabled=false
- @Volatile var autoDungeonEnabled=true
+ @Volatile var autoDungeonEnabled=false
  @Volatile var autoNetworkDefenseEnabled=false
  @Volatile var autoFeedEnabled=false
  @Volatile var autoBondRotationEnabled=false

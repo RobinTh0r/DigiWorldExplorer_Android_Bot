@@ -40,7 +40,7 @@ object BondRotationAnalyzer {
         // Use the same animation-tolerant Home decision as the Director/entry flow.
         val home = GameEntryDetector.detect(frame).screen == EntryScreen.HOME
         val grid = PartnerGridDetector.detect(frame)
-        val key = "$home|${grid.page}|${grid.expanded}|${grid.raised}|${grid.selected}|${grid.canRaise}|${grid.confirmation}"
+        val key = "$home|${grid.page}|${grid.expanded}|${grid.raised}|${grid.selected}|${grid.canRaise}|${grid.confirmation}|${grid.digimonSection}"
         if (key == signature) matches++ else { signature = key; matches = 1 }
         // A short-lived bubble must not wait for three identical scene classifications.
         if (matches < 3 && rotation.step != BondStep.COLLECT) return owns
@@ -99,6 +99,7 @@ object BondRotationAnalyzer {
         if (command == null) return owns
         val target = when (command.step) {
             BondStep.OPEN -> if (tapViewportIsTall(w, h)) NormalizedPoint(.205, .956) else NormalizedPoint(.254, .956)
+            BondStep.PARTNER_TAB -> grid.partnerTabTarget
             BondStep.EXPAND -> if (tapViewportIsTall(w, h)) NormalizedPoint(.883, .827) else NormalizedPoint(.823, .818)
             BondStep.SELECT -> grid.cells.getOrNull(command.cell ?: -1)?.let { point ->
                 // The expand/collapse control overlaps the lower-right portrait on tall phones.

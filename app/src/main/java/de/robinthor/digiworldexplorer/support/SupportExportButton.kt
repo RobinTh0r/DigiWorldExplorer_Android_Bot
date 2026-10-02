@@ -62,7 +62,7 @@ fun SupportExportButton(modifier: Modifier = Modifier) {
             "displayPixels" to "${metrics.widthPixels}x${metrics.heightPixels}",
             "language" to context.resources.configuration.locales[0].toLanguageTag(),
             "timezone" to TimeZone.getDefault().id,
-            "mode" to if (AutomationState.mode == AutomationMode.SEMI_AUTO) "Co-Pilot" else "Expedition (preview)",
+            "mode" to if (AutomationState.mode == AutomationMode.SEMI_AUTO) "Manual" else "Co-Pilot",
             "automationEnabled" to AutomationState.enabled.toString(),
             "runnerEnabled" to AutomationState.autoRunnerEnabled.toString(),
             "farmHarvestEnabled" to AutomationState.autoFarmEnabled.toString(),
@@ -70,6 +70,14 @@ fun SupportExportButton(modifier: Modifier = Modifier) {
             "bondEnabled" to AutomationState.autoFeedEnabled.toString(),
             "summonEnabled" to AutomationState.autoPurchaseEnabled.toString(),
             "networkEnabled" to AutomationState.autoNetworkDefenseEnabled.toString(),
+            "copilotActive" to de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active().toString(),
+            "bondRotationEnabled" to AutomationState.autoBondRotationEnabled.toString(),
+            "copilotRewardsEnabled" to AutomationState.copilotRewardsEnabled.toString(),
+            "copilotDwsEnabled" to AutomationState.copilotDwsEnabled.toString(),
+            "bondCooldownSeconds" to (de.robinthor.digiworldexplorer.automation.BondCycleTimer.remainingMillis() / 1_000L).toString(),
+            "bondAwaitingFarm" to de.robinthor.digiworldexplorer.automation.BondCycleTimer.awaitingFarm().toString(),
+            "dungeonRotationActive" to de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active().toString(),
+            "dwsPhase" to de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.phase.name,
         ), AutomationEventLog.snapshot())
         preview = true
     }) { Text(stringResource(R.string.support_export)) }

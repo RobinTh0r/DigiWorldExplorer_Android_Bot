@@ -1,6 +1,6 @@
 package de.robinthor.digiworldexplorer.feed
 
-enum class BondStep { IDLE, OPEN, EXPAND, SELECT, RAISE, CONFIRM, VERIFY, HOME, COLLECT, REST, PARK }
+enum class BondStep { IDLE, OPEN, PARTNER_TAB, EXPAND, SELECT, RAISE, CONFIRM, VERIFY, HOME, COLLECT, REST, PARK }
 data class BondCommand(val step: BondStep, val cell: Int? = null)
 
 /** Visit all 15 visible partners; the original active partner is always the last target. */
@@ -87,6 +87,8 @@ class BondRotation {
         when (step) {
             BondStep.OPEN, BondStep.EXPAND -> {
                 if (!grid.page) {
+                    if (step == BondStep.OPEN && grid.digimonSection && grid.partnerTabTarget != null)
+                        return issue(BondStep.PARTNER_TAB, now)
                     if (step == BondStep.OPEN && home && now - issuedAt >= 4_000 && retries < 2) {
                         retries++; issuedAt = now
                         return BondCommand(BondStep.OPEN)
@@ -104,6 +106,13 @@ class BondRotation {
                 if (target != null && visibleActive != target) return null
                 target = (original!! + visited + 1) % 15
                 return issue(BondStep.SELECT, now, target)
+            }
+            BondStep.PARTNER_TAB -> {
+                if (grid.page) return issue(BondStep.EXPAND, now)
+                if (grid.digimonSection && grid.partnerTabTarget != null && now - issuedAt >= 1_500 && retries < 3) {
+                    retries++; issuedAt = now
+                    return BondCommand(BondStep.PARTNER_TAB)
+                }
             }
             BondStep.SELECT -> {
                 if (grid.selected == target && grid.canRaise) return issue(BondStep.RAISE, now)

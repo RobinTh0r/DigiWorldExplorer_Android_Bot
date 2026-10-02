@@ -5,7 +5,8 @@ import de.robinthor.digiworldexplorer.vision.*
 data class PartnerGrid(val page: Boolean = false, val expanded: Boolean = false,
     val cells: List<NormalizedPoint> = emptyList(), val raised: Int? = null,
     val selected: Int? = null, val canRaise: Boolean = false, val confirmation: Boolean = false,
-    val raiseTarget: NormalizedPoint? = null)
+    val raiseTarget: NormalizedPoint? = null, val digimonSection: Boolean = false,
+    val partnerTabTarget: NormalizedPoint? = null)
 
 /** Independent screen evidence for the visible 5x3 Partner roster. */
 object PartnerGridDetector {
@@ -30,20 +31,37 @@ object PartnerGridDetector {
         val heroHalfHeight = if (tallPhone) .145 else .14
         val heroBottom = if (tallPhone) .472 else .4515
         val header = cyan(.5, headerY, .36, .012) > .45
+        // The selected Digimon bottom-navigation button has a large white mascot tile. Home,
+        // Explore and Dungeon keep this area blue, which prevents their cyan headers from being
+        // mistaken for a Buddy/Support/Partner subpage.
+        val digimonNavSelected = pale(.26, .94, .07, .035) > .12
+        val digimonSection = header && digimonNavSelected
         val heroSides = cyan(heroLeft, heroY, .004, heroHalfHeight) > .30 &&
             cyan(heroRight, heroY, .004, heroHalfHeight) > .30
         val hero = heroSides && (tallPhone || cyan(.5, heroBottom, .42, .001) > .55)
         // A dimmed page is accepted only as a prompt shape; its caller must own a Raise.
         val prompt = ratio(.35, .59, .075, .013) { it.hue in 135..165 && it.saturation > 100 && it.value > 160 } > .45 &&
             cyan(.635, .59, .075, .013) > .45
-        if (!header || !hero) return PartnerGrid(confirmation = prompt)
+        // Buddy, Support Digimon and Partner share the same full-width cyan Digimon header.
+        // Bond owns this recovery only after it deliberately opened the Digimon section from
+        // verified Home, so the shared header is safe evidence for selecting the Partner tab.
+        val partnerTab = NormalizedPoint(if (tallPhone) .115 else .125, .875)
+        if (!digimonSection || !hero) return PartnerGrid(
+            confirmation = prompt,
+            digimonSection = digimonSection,
+            partnerTabTarget = partnerTab.takeIf { digimonSection },
+        )
         val expanded = if (tallPhone) {
             // The adaptive phone layout keeps the roster's first-row position occupied by
             // passive-skill icons while collapsed, so a blue-frame probe is ambiguous. The
             // bottom-right control is unambiguous: '+' has a bright vertical stroke, '−' has not.
             pale(.883, .827, .006, .018) < .30 && pale(.883, .827, .018, .006) > .30
         } else cyan(.159, .642, .003, .025) > .45
-        if (!expanded) return PartnerGrid(page = true)
+        if (!expanded) return PartnerGrid(
+            page = true,
+            digimonSection = true,
+            partnerTabTarget = partnerTab,
+        )
         val cells = (0 until 15).map { i ->
             // Real 1080x2376 OnePlus captures use a tighter roster than the earlier Oppo
             // fixture: row centres are roughly 66.0%, 73.5% and 81.0% of the game viewport.
@@ -55,7 +73,7 @@ object PartnerGridDetector {
         val provedCells = if (tallPhone) cells.count { blue(it.x - cellFrameOffset, it.y, .006, .027) > .25 }
             else cells.count { cyan(it.x - cellFrameOffset, it.y, .003, .024) > .30 }
         if (provedCells < 14)
-            return PartnerGrid(page = true)
+            return PartnerGrid(page = true, digimonSection = true, partnerTabTarget = partnerTab)
         val raised = if (tallPhone) {
             // Read the small dark check badge, not a broad portrait area. Green parts of a
             // Digimon used to compete with the real marker and could leave `raised` ambiguous.
@@ -85,6 +103,7 @@ object PartnerGridDetector {
         val raiseY = if (tallPhone) .425 else .397
         val raiseTarget = listOf(.5, .632).firstOrNull { cyan(it, raiseY, .085, .012) > .65 }
             ?.let { NormalizedPoint(it, raiseY + .003) }
-        return PartnerGrid(true, true, cells, raised, selected, raiseTarget != null, prompt, raiseTarget)
+        return PartnerGrid(true, true, cells, raised, selected, raiseTarget != null, prompt, raiseTarget,
+            digimonSection = true, partnerTabTarget = partnerTab)
     }
 }
