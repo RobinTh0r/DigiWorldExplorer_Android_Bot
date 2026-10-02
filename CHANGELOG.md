@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.2.0 — 2 October 2026
+
+- Promoted the tested V3 Classic, V4 Dash and V5 All Sprites + Dash profiles to the stable 5.2 release, with V4 Dash remaining the default.
+- Added device-adaptive Bond Rotation, including verified bubble collection and recovery from Buddy or Support Digimon back to the Partner tab.
+- Completed the image-driven Meat Field flow for harvesting, seed selection, planting and prioritized watering across tall-phone dialog layouts.
+- Hardened Digi Co-Pilot, Dungeon rotation, Home rewards and title/login handling using physical-device diagnostics from OnePlus and Samsung devices.
+- Made VS / Tower Loop default-off and enforced its disabled state before recognition, status publication or input.
+- Restored the proven classic Auto-Summon recognition and fast result cadence while retaining the newer safety guards.
+- Made Stop release automation, screen capture and all overlays, and expanded offline diagnostics with up to 50 screenshots, readable sessions and Share All.
+- Localized the in-game quick controls and expanded support reports with Co-Pilot module, cooldown, farm, DWS and Dungeon state.
+
 ## 5.2.0 Beta 2 — 1 October 2026
 
 - Fixed Bond Rotation on physical phones by tapping only positively detected Bond bubbles and advancing only after the tapped bubble disappears.
