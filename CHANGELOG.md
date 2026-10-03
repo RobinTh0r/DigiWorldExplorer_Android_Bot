@@ -1,5 +1,12 @@
 # Changelog
 
+## 5.3.0 Beta 1 — 3 October 2026
+
+- Prevented the generic title/login detector from acting while a confirmed Network Defense session owns the screen.
+- Fixed repeated centre-card taps during Network Defense battles and card overlays while waiting for the final boss.
+- Added a pure frame-ownership policy and regression coverage based on Samsung SM-S948U offline diagnostics.
+- Retained the stable 5.2.0 behavior and diagnostic instrumentation for the separately reported Dungeon early-return issue.
+
 ## 5.2.0 — 2 October 2026
 
 - Promoted the tested V3 Classic, V4 Dash and V5 All Sprites + Dash profiles to the stable 5.2 release, with V4 Dash remaining the default.

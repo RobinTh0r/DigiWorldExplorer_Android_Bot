@@ -132,7 +132,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">5.2.0 · FULL RELEASE\n\nPHONE-READY CO-PILOT\n• Bond Rotation now verifies bubbles and recovers from Buddy or Support Digimon to the Partner tab\n• Meat Field completes harvesting, planting and prioritized watering on adaptive phone layouts\n• Dungeon, rewards and login flows include the latest OnePlus and Samsung diagnostics\n\nDIGITAL WORLD PROFILES\n• V3 Classic, V4 Dash and V5 All Sprites + Dash are mutually exclusive\n• V4 Dash remains the default with the proven V4 rhythm\n\nSAFETY AND DIAGNOSTICS\n• VS / Tower is default-off and cannot act while disabled\n• Stop releases capture and all overlays\n• Offline diagnostics store up to 50 compressed screenshots per session.</string>
+    <string name="release_notes_body">5.3.0 BETA 1\n\nNETWORK DEFENSE SAFETY\n• An active Network Defense run now owns all battle, loading and obscured frames\n• Title/login detection can no longer tap the centre skill card while waiting for the final boss\n\nDIAGNOSTIC FOLLOW-UP\n• The fix is based on Samsung SM-S948U offline diagnostics and protected by an ownership regression test\n• Dungeon early-return reports remain instrumented for a complete diagnostic capture.</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>
