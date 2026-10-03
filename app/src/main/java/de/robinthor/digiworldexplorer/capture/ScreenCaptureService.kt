@@ -28,6 +28,7 @@ import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityServic
 import de.robinthor.digiworldexplorer.automation.FrameOrchestrator
 import de.robinthor.digiworldexplorer.automation.FrameOwner
 import de.robinthor.digiworldexplorer.automation.FrameProbe
+import de.robinthor.digiworldexplorer.automation.FrameProbePolicy
 import de.robinthor.digiworldexplorer.automation.AutomationEventKind
 import de.robinthor.digiworldexplorer.automation.AutomationEventLog
 import de.robinthor.digiworldexplorer.automation.ScreenDirector
@@ -239,10 +240,16 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.WORLD_SEARCH, enabled = featureFrame && DwsExcursionRequest.active()) {
                             DwsExcursionAnalyzer.analyze(image, width, height)
                         },
-                        // Login and idle rewards are blocking entry screens and outrank feature tasks.
-                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame &&
-                            (!digiCopilotOwns || !BondCycleTimer.awaitingFarm()) &&
-                            !de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer.isSequenceActive()) {
+                        // A confirmed Network Defense run owns even obscured/loading frames. The
+                        // generic title detector otherwise mistakes the battle HUD or an opened
+                        // skill card for "Touch to Start" and taps the centre card repeatedly.
+                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = FrameProbePolicy.allowGenericGameEntry(
+                            featureFrame = featureFrame,
+                            networkDefenseSessionActive = NetworkDefenseFrameAnalyzer.isSessionActive(),
+                            digiCopilotOwns = digiCopilotOwns,
+                            awaitingFarm = BondCycleTimer.awaitingFarm(),
+                            rewardSequenceActive = de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer.isSequenceActive(),
+                        )) {
                             GameEntryAnalyzer.analyze(image, width, height)
                         },
                         // Persistent failure dialogs outrank every task. Network Defense is excluded

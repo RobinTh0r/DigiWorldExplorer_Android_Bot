@@ -30,3 +30,16 @@ VS / Tower Loop is default-off for unset preferences and is hard-gated before cl
 ## Build and release verification
 
 Use Android Studio JBR, Android SDK/build-tools 36.0.0 and Gradle 9.4.1. Run `:app:testDebugUnitTest :app:assembleRelease`, verify the APK certificate and SHA-256, and run `git diff --check`. Preserve app ID, signing identity, settings and installed user data. Future releases still require explicit user authorization.
+
+## Unreleased fixes after 5.2.0
+
+- Samsung SM-S948U diagnostics from 2026-10-03 proved that the generic title/login probe
+  alternated with an already active Network Defense session. Its false `LOGIN_READY` result sent
+  taps to `(540, 1632)`, opening the centre skill card while the Network module was waiting for the
+  final boss. An active Network Defense session now excludes the generic entry probe for every
+  intermediate, obscured and loading frame. `FrameProbePolicyTest` locks this ownership rule.
+- Two separate Discord reports say Dungeon Co-Pilot returns to Home before visually remaining
+  dungeons are used. Neither report included a diagnostic session, so do not conflate them with the
+  proven Network issue or weaken the counter/settings safety rules speculatively. Request a fresh
+  diagnostic ZIP from the start of Dungeon Co-Pilot through the early return; the log now already
+  records `DUNGEON.DECISION`, configured/locked cards at start, actions, and completion phase.
