@@ -4,6 +4,19 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GameEntryControllerTest {
+    @Test fun retriesRewardActionsOnlyWhileTheirScreenRemainsVisible() {
+        val claim = GameEntryController()
+        assertEquals(EntryAction.CLAIM_IDLE, claim.tick(EntryScreen.IDLE_CLAIM, 0))
+        assertEquals(EntryAction.WAIT, claim.tick(EntryScreen.UNKNOWN, 1_000))
+        assertEquals(EntryAction.CLAIM_IDLE, claim.tick(EntryScreen.IDLE_CLAIM, 1_001))
+        assertEquals(EntryAction.CLAIM_IDLE, claim.tick(EntryScreen.IDLE_CLAIM, 2_002))
+        assertEquals(EntryAction.WAIT, claim.tick(EntryScreen.IDLE_CLAIM, 3_003))
+
+        val close = GameEntryController()
+        assertEquals(EntryAction.CLOSE_IDLE, close.tick(EntryScreen.IDLE_EMPTY, 0))
+        assertEquals(EntryAction.CLOSE_IDLE, close.tick(EntryScreen.IDLE_EMPTY, 1_001))
+        assertEquals(EntryAction.WAIT, close.tick(EntryScreen.HOME, 1_002))
+    }
     @Test fun loadingWaitsAndTouchStartRetriesOnlyWhileReadyRemainsVisible() {
         val c = GameEntryController()
         assertEquals(EntryAction.WAIT,c.tick(EntryScreen.LOGIN_LOADING,0))

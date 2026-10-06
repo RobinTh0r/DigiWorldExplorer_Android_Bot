@@ -64,10 +64,8 @@ class CaptureConsentActivity : ComponentActivity() {
         val supporter = SupporterLicenseManager.load(this) != null
         AutomationState.mode = de.robinthor.digiworldexplorer.automation.AutomationMode.fromPreference(
             settings.getString("automation_mode", null))
-        val dwsProfile = if (supporter)
-            de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.fromPreference(
-                settings.getString("dws_profile", null))
-        else de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.V3_CLASSIC
+        val dwsProfile = de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.fromPreferenceForAccess(
+            settings.getString("dws_profile", null), supporter)
         AutomationState.overlayEnabled = settings.getBoolean("grid_enabled", true)
         AutomationState.autoPurchaseEnabled = settings.getBoolean("auto_purchase", false)
         AutomationState.autoDungeonEnabled = settings.getBoolean("auto_dungeon", false)

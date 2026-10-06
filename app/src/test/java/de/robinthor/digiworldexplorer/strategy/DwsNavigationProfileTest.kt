@@ -41,4 +41,21 @@ class DwsNavigationProfileTest {
         assertEquals(DwsNavigationProfile.V4_DASH, DwsNavigationProfile.fromPreference(null))
         assertEquals(DwsNavigationProfile.V4_DASH, DwsNavigationProfile.fromPreference("unknown"))
     }
+
+    @Test fun classicAndDashAreFreeButAllSpritesNeedsBetaAccess() {
+        assertTrue(DwsNavigationProfile.V3_CLASSIC.availableFor(false))
+        assertTrue(DwsNavigationProfile.V4_DASH.availableFor(false))
+        assertFalse(DwsNavigationProfile.V5_ALL_SPRITES.availableFor(false))
+        assertTrue(DwsNavigationProfile.V5_ALL_SPRITES.availableFor(true))
+        assertEquals(DwsNavigationProfile.V3_CLASSIC,
+            DwsNavigationProfile.fromPreferenceForAccess("V3_CLASSIC", false))
+        assertEquals(DwsNavigationProfile.V4_DASH,
+            DwsNavigationProfile.fromPreferenceForAccess("V4_DASH", false))
+        assertEquals(DwsNavigationProfile.V4_DASH,
+            DwsNavigationProfile.fromPreferenceForAccess("V5_ALL_SPRITES", false))
+        assertEquals(DwsNavigationProfile.V5_ALL_SPRITES,
+            DwsNavigationProfile.fromPreferenceForAccess("V5_ALL_SPRITES", true))
+        assertEquals(DwsNavigationProfile.V4_DASH,
+            DwsNavigationProfile.fromPreferenceForAccess(null, false))
+    }
 }

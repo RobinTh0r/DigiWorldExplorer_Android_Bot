@@ -5,6 +5,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FrameProbePolicyTest {
+    @Test fun `calibrated world search blocks generic title taps`() {
+        assertFalse(FrameProbePolicy.allowGenericGameEntry(
+            featureFrame = true,
+            networkDefenseSessionActive = false,
+            worldSearchCalibrated = true,
+            digiCopilotOwns = false,
+            awaitingFarm = false,
+            rewardSequenceActive = false,
+        ))
+    }
     @Test fun `active network session blocks generic title taps`() {
         assertFalse(FrameProbePolicy.allowGenericGameEntry(
             featureFrame = true,

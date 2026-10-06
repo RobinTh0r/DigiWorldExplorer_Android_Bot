@@ -13,9 +13,18 @@ object BondRotationAnalyzer {
     private var signature = ""
     private var matches = 0
     private var owns = false
+    private var lastObservation = ""
+    private var popupCloseAt = 0L
+    private var popupCloseAttempts = 0
+    private var popupCollectStartedAt = 0L
+    var observedScreen = ObservedScreen.UNKNOWN
+        private set
     @Volatile private var fastPolling = false
-    fun reset() { rotation = BondRotation(); scanAt = 0; signature = ""; matches = 0; owns = false; fastPolling = false }
+    fun reset() { rotation = BondRotation(); scanAt = 0; signature = ""; matches = 0; owns = false; fastPolling = false; lastObservation = ""; observedScreen = ObservedScreen.UNKNOWN; popupCloseAt = 0; popupCloseAttempts = 0; popupCollectStartedAt = 0 }
     fun needsFastPolling() = fastPolling
+    fun ownsSession() = AutomationState.enabled &&
+        (BondRotationRequest.active() || (DigiCopilotRequest.active() && AutomationState.autoBondRotationEnabled)) &&
+        (rotation.ownsFrame() || rotation.step == BondStep.COLLECT)
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         val forced = BondRotationRequest.active()
@@ -27,6 +36,10 @@ object BondRotationAnalyzer {
         fastPolling = rotation.fastBubblePolling(now)
         if (now < scanAt) return owns
         scanAt = now + if (fastPolling) 100 else 500
+        // The owning tour delegates this Home recovery itself; exclusive ownership must not
+        // suppress the existing stage-failure dismissal while waiting for the Bond bubble.
+        if (rotation.step in setOf(BondStep.HOME, BondStep.COLLECT) &&
+            StageFailedFrameAnalyzer.analyze(image, width, height)) return true
         val plane = image.planes.firstOrNull() ?: return owns
         val w = minOf(width, image.width); val h = minOf(height, image.height)
         val bytes = plane.buffer
@@ -38,9 +51,38 @@ object BondRotationAnalyzer {
                 ((bytes.get(offset + 1).toInt() and 255) shl 8) or (bytes.get(offset + 2).toInt() and 255)
         }
         // Use the same animation-tolerant Home decision as the Director/entry flow.
-        val home = GameEntryDetector.detect(frame).screen == EntryScreen.HOME
         val grid = PartnerGridDetector.detect(frame)
+        val home = GameEntryDetector.detect(frame, partnerReading = grid).screen == EntryScreen.HOME
+        if (rotation.step == BondStep.COLLECT && popupCollectStartedAt != rotation.collectStartedAt) {
+            popupCollectStartedAt = rotation.collectStartedAt
+            popupCloseAttempts = 0
+        }
+        if (rotation.step == BondStep.COLLECT && !home && PartnerDetailPopupDetector.detect(frame)) {
+            observedScreen = ObservedScreen.MESSAGE
+            if (now - popupCloseAt >= 1_500L && popupCloseAttempts < 2) {
+                popupCloseAt = now
+                popupCloseAttempts++
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                    "BOND.POPUP", "Closing recognized Partner detail card attempt=$popupCloseAttempts")
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("bond-partner-detail-popup")
+                DigiWorldAccessibilityService.instance?.dispatchBack()
+            }
+            return true
+        }
+        observedScreen = when {
+            grid.confirmation -> ObservedScreen.MESSAGE
+            grid.page -> ObservedScreen.PARTNER_PAGE
+            home -> ObservedScreen.HOME
+            else -> ObservedScreen.UNKNOWN
+        }
         val key = "$home|${grid.page}|${grid.expanded}|${grid.raised}|${grid.selected}|${grid.canRaise}|${grid.confirmation}|${grid.digimonSection}"
+        val observation = "step=${rotation.step} home=$home page=${grid.page} section=${grid.digimonSection} " +
+            "expanded=${grid.expanded} cells=${grid.cells.size} raised=${grid.raised} selected=${grid.selected} " +
+            "canRaise=${grid.canRaise} confirmation=${grid.confirmation}"
+        if (observation != lastObservation) {
+            lastObservation = observation
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("BOND.OBSERVE", observation)
+        }
         if (key == signature) matches++ else { signature = key; matches = 1 }
         // A short-lived bubble must not wait for three identical scene classifications.
         if (matches < 3 && rotation.step != BondStep.COLLECT) return owns
@@ -93,6 +135,10 @@ object BondRotationAnalyzer {
         val service = DigiWorldAccessibilityService.instance ?: return owns
         if (rotation.step == BondStep.PARK) {
             BondRotationRequest.park("Partner screen not confirmed")
+            if (previous != BondStep.PARK) {
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("BOND.PARK", observation)
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("bond-park-${previous.name.lowercase()}")
+            }
             service.showStatusOnly("Bond rotation paused: partner not confirmed")
             return true
         }
@@ -100,7 +146,7 @@ object BondRotationAnalyzer {
         val target = when (command.step) {
             BondStep.OPEN -> if (tapViewportIsTall(w, h)) NormalizedPoint(.205, .956) else NormalizedPoint(.254, .956)
             BondStep.PARTNER_TAB -> grid.partnerTabTarget
-            BondStep.EXPAND -> if (tapViewportIsTall(w, h)) NormalizedPoint(.883, .827) else NormalizedPoint(.823, .818)
+            BondStep.EXPAND -> grid.expandTarget
             BondStep.SELECT -> grid.cells.getOrNull(command.cell ?: -1)?.let { point ->
                 // The expand/collapse control overlaps the lower-right portrait on tall phones.
                 // Tap safely inside that portrait's upper-left quadrant instead of its centre.
@@ -108,7 +154,7 @@ object BondRotationAnalyzer {
                     NormalizedPoint(point.x - .035, point.y - .025) else point
             }
             BondStep.RAISE -> grid.raiseTarget
-            BondStep.CONFIRM -> NormalizedPoint(.634, .59)
+            BondStep.CONFIRM -> grid.confirmationTarget ?: return true
             BondStep.HOME -> NormalizedPoint(.5, .947)
             else -> null
         } ?: return owns

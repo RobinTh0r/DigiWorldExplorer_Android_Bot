@@ -84,6 +84,9 @@ class BondRotation {
             return issue(BondStep.OPEN, now)
         }
         if (now >= deadline) { step = BondStep.PARK; return null }
+        // Selecting Partner may reopen a roster which is already expanded. Observe that state
+        // before deciding whether a '+' tap is needed; tapping its '-' would collapse the grid.
+        if (step == BondStep.PARTNER_TAB && grid.page) step = BondStep.OPEN
         when (step) {
             BondStep.OPEN, BondStep.EXPAND -> {
                 if (!grid.page) {
@@ -95,7 +98,14 @@ class BondRotation {
                     }
                     return null
                 }
-                if (!grid.expanded) return if (step == BondStep.OPEN) issue(BondStep.EXPAND, now) else null
+                if (!grid.expanded) {
+                    if (step == BondStep.OPEN) return issue(BondStep.EXPAND, now)
+                    if (grid.expandTarget != null && now - issuedAt >= 1_500 && retries < 2) {
+                        retries++; issuedAt = now
+                        return BondCommand(BondStep.EXPAND)
+                    }
+                    return null
+                }
                 val visibleActive = grid.raised
                 if (grid.cells.size != 15 || visibleActive == null) return null
                 if (original == null) original = visibleActive
@@ -108,7 +118,6 @@ class BondRotation {
                 return issue(BondStep.SELECT, now, target)
             }
             BondStep.PARTNER_TAB -> {
-                if (grid.page) return issue(BondStep.EXPAND, now)
                 if (grid.digimonSection && grid.partnerTabTarget != null && now - issuedAt >= 1_500 && retries < 3) {
                     retries++; issuedAt = now
                     return BondCommand(BondStep.PARTNER_TAB)

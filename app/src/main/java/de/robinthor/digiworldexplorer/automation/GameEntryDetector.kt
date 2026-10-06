@@ -10,20 +10,22 @@ data class GameEntryReading(
     val adRemaining: Int? = null,
     val viewport: GameViewport? = null,
     val target: NormalizedPoint? = null,
+    val idleReading: IdleRewardReading? = null,
 )
 
 /** Conservative, language-independent recognition for the game's title and idle-reward flow. */
 object GameEntryDetector {
-    fun detect(frame: PixelFrame): GameEntryReading {
-        val idle = IdleRewardDetector.detect(frame)
+    fun detect(frame: PixelFrame, partnerReading: de.robinthor.digiworldexplorer.feed.PartnerGrid? = null): GameEntryReading {
+        val idleReading = IdleRewardDetector.read(frame)
+        val idle = idleReading.screen
         if (idle != IdleRewardScreen.NONE) {
-            val remaining = if (idle == IdleRewardScreen.RESULT) null else idleAdRemaining(frame)
+            val remaining = if (idle == IdleRewardScreen.RESULT) null else idleAdRemaining(frame, idleReading)
             return GameEntryReading(when (idle) {
                 IdleRewardScreen.CLAIM -> EntryScreen.IDLE_CLAIM
                 IdleRewardScreen.EMPTY -> EntryScreen.IDLE_EMPTY
                 IdleRewardScreen.RESULT -> EntryScreen.RESULT
                 IdleRewardScreen.NONE -> EntryScreen.UNKNOWN
-            }, remaining)
+            }, remaining, idleReading = idleReading)
         }
         val noticeHeader = ratio(frame, .20, .195, .82, .25) {
             it.blue > 145 && it.green > 90 && it.blue > it.red * 1.18
@@ -42,7 +44,7 @@ object GameEntryDetector {
             return GameEntryReading(EntryScreen.HOME)
 
         // Shared game chrome and positively recognized Partner screens cannot be a title.
-        val partner = de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame)
+        val partner = partnerReading ?: de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame)
         if (partner.page || partner.confirmation) return GameEntryReading(EntryScreen.UNKNOWN)
         val titleViewport = TitleScreenEvidence.viewport(frame) ?: return GameEntryReading(EntryScreen.UNKNOWN)
         val startTarget = TitleScreenEvidence.touchTarget(frame, titleViewport)
@@ -52,13 +54,15 @@ object GameEntryDetector {
     }
 
     /** Red numerator means 0/2. A visibly enabled purple button means at least one remains. */
-    private fun idleAdRemaining(frame: PixelFrame): Int? {
+    private fun idleAdRemaining(frame: PixelFrame, idle: IdleRewardReading): Int? {
+        val button = idle.adTarget ?: return null
         val viewport = GameViewport.fit(frame.width, frame.height)
-        val redZero = frame.ratioInViewportPatch(viewport, NormalizedPoint(.375, .725), .025, .018) {
+        val redZero = frame.ratioInViewportPatch(viewport,
+            NormalizedPoint(button.x + .025, button.y - .015), .025, .018) {
             it.red > 125 && it.red > it.green * 1.45 && it.red > it.blue * 1.35
         }
         if (redZero > .025) return 0
-        val enabledPurple = frame.ratioInViewportPatch(viewport, NormalizedPoint(.37, .738), .105, .035) {
+        val enabledPurple = frame.ratioInViewportPatch(viewport, button, .08, .025) {
             it.blue > 65 && it.red > 45 && it.blue > it.green * 1.18
         }
         return if (enabledPurple > .30) 2 else null

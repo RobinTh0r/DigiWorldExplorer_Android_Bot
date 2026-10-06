@@ -60,7 +60,7 @@
     <string name="dws_settings_button">⚙️ Advanced Settings</string>
     <string name="dws_settings_title">Advanced DigiWorld Mode</string>
     <string name="dws_settings_body">For testing, it is best to enable all options.</string>
-    <string name="dws_profile_body">Choose exactly one complete rule profile. Changing profiles restarts grid tracking.</string>
+    <string name="dws_profile_body">Choose one rule profile. V3 and V4 are free; V5 All Sprites is a Beta feature. Changing profiles restarts grid tracking.</string>
     <string name="dws_profile_v3">V3 Classic</string>
     <string name="dws_profile_v3_hint">Original Botamon detection; Force Forward, Dash spam and Collect Only Energy are disabled.</string>
     <string name="dws_profile_v4">V4 Dash</string>
@@ -132,7 +132,7 @@
     <string name="update_check">Check</string>
     <string name="update_download">Open release</string>
     <string name="release_notes_title">What’s new in this version</string>
-    <string name="release_notes_body">5.3.0 BETA 1\n\nNETWORK DEFENSE SAFETY\n• An active Network Defense run now owns all battle, loading and obscured frames\n• Title/login detection can no longer tap the centre skill card while waiting for the final boss\n\nDIAGNOSTIC FOLLOW-UP\n• The fix is based on Samsung SM-S948U offline diagnostics and protected by an ownership regression test\n• Dungeon early-return reports remain instrumented for a complete diagnostic capture.</string>
+    <string name="release_notes_body">5.3.0 BETA 2\n\nDWS ACCESS\n• V3 Classic and V4 Dash are free; only V5 All Sprites needs a Beta code\n\nCOPILOT AND REWARDS\n• Partner switching and reward dialogs use more visual evidence across screen sizes\n• Reward taps can retry when the same screen is still visible; failed runs pause with diagnostic evidence\n• Dungeon Rotation hides the large status card; active Copilot shows a small indicator\n\nSTILL UNDER TEST\n• Reports of early Dungeon exits, missed ad attempts, Bond stalls and DWS movement vary by device. Please send an in-app diagnostic ZIP; this Beta does not claim these are all fixed.</string>
     <string name="community_intro_title">🎉 New Discord community</string>
     <string name="community_intro_body">Join our new community to stay up to date, report bugs, suggest new features and exchange ideas with other users.</string>
     <string name="community_intro_join">Join Discord</string>

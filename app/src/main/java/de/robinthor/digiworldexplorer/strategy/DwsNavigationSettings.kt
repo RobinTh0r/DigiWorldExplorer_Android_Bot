@@ -16,6 +16,9 @@ enum class DwsNavigationProfile {
     V4_DASH,
     V5_ALL_SPRITES;
 
+    fun availableFor(supporterUnlocked: Boolean): Boolean =
+        supporterUnlocked || this != V5_ALL_SPRITES
+
     fun settings() = when (this) {
         V3_CLASSIC -> DwsNavigationSettings(
             betterEnergyCollect = false,
@@ -48,5 +51,8 @@ enum class DwsNavigationProfile {
     companion object {
         fun fromPreference(value: String?): DwsNavigationProfile =
             entries.firstOrNull { it.name == value } ?: V4_DASH
+
+        fun fromPreferenceForAccess(value: String?, supporterUnlocked: Boolean): DwsNavigationProfile =
+            fromPreference(value).takeIf { it.availableFor(supporterUnlocked) } ?: V4_DASH
     }
 }

@@ -2,6 +2,7 @@ package de.robinthor.digiworldexplorer.accessibility
 
 import android.content.Context
 import android.content.Intent
+import android.animation.ObjectAnimator
 import android.graphics.Color
 import android.graphics.PixelFormat
 import android.graphics.drawable.GradientDrawable
@@ -13,6 +14,7 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.ViewOutlineProvider
 import android.view.WindowManager
+import android.view.animation.LinearInterpolator
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -45,6 +47,9 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     private var root: LinearLayout? = null
     private var panel: LinearLayout? = null
     private var bubble: View? = null
+    private var copilotBadge: View? = null
+    private var copilotBadgeParams: WindowManager.LayoutParams? = null
+    private var copilotArrowAnimator: ObjectAnimator? = null
     private var directorTitle: TextView? = null
     private var directorAction: TextView? = null
     private var directorTimer: TextView? = null
@@ -174,13 +179,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             y = preferences.getInt("quick_overlay_y", (screenHeight * .15f).toInt())
         }
         val cardVisible = preferences.getBoolean("director_card_visible", true)
-        statusCard.visibility = if (cardVisible) View.VISIBLE else View.GONE
+        statusCard.visibility = if (cardVisible && !DungeonRotationRequest.ownsFrames()) View.VISIBLE else View.GONE
         tail.visibility = statusCard.visibility
         installDragAndClick(iconStack, layoutParams, onLongPress = {
-            val visible = statusCard.visibility != View.VISIBLE
-            statusCard.visibility = if (visible) View.VISIBLE else View.GONE
-            tail.visibility = statusCard.visibility
+            val visible = !preferences.getBoolean("director_card_visible", true)
             preferences.edit().putBoolean("director_card_visible", visible).apply()
+            updateDirectorCardDisplay()
             root?.requestLayout()
         }) { togglePanel(layoutParams) }
         installDragAndClick(statusCard, layoutParams) { }
@@ -195,6 +199,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         eyeStatus = eyes
         params = layoutParams
         runCatching { windowManager.addView(container, layoutParams) }
+        installCopilotBadge(density, layoutParams)
         refresh()
         updateDirector(de.robinthor.digiworldexplorer.automation.ScreenDirector.snapshot())
         timerHandler.post(timerTick)
@@ -202,6 +207,11 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     fun destroy() {
         timerHandler.removeCallbacks(timerTick)
+        copilotArrowAnimator?.cancel()
+        copilotArrowAnimator = null
+        copilotBadge?.let { runCatching { windowManager.removeView(it) } }
+        copilotBadge = null
+        copilotBadgeParams = null
         directorTimer = null
         root?.let { runCatching { windowManager.removeView(it) } }
         root = null
@@ -222,11 +232,86 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     fun setDirectorCardVisible(visible: Boolean) {
         preferences.edit().putBoolean("director_card_visible", visible).apply()
         root?.post {
-            directorCard?.visibility = if (visible) View.VISIBLE else View.GONE
-            directorTail?.visibility = if (visible) View.VISIBLE else View.GONE
+            updateDirectorCardDisplay()
             root?.requestLayout()
             params?.let { layout -> root?.let { runCatching { windowManager.updateViewLayout(it, layout) } } }
         }
+    }
+
+    private fun updateDirectorCardDisplay() {
+        val visible = preferences.getBoolean("director_card_visible", true) &&
+            !DungeonRotationRequest.ownsFrames()
+        directorCard?.visibility = if (visible) View.VISIBLE else View.GONE
+        directorTail?.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+
+    private fun installCopilotBadge(density: Float, anchor: WindowManager.LayoutParams) {
+        val arrow = TextView(service).apply {
+            text = "↻"
+            textSize = 15f
+            setTextColor(Color.rgb(226, 184, 255))
+            gravity = Gravity.CENTER
+        }
+        val label = TextView(service).apply {
+            text = "Copilot run"
+            textSize = 9f
+            setTextColor(Color.WHITE)
+            gravity = Gravity.CENTER_VERTICAL
+            setTypeface(typeface, android.graphics.Typeface.BOLD)
+        }
+        val badge = LinearLayout(service).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER
+            setPadding((3 * density).toInt(), 0, (3 * density).toInt(), 0)
+            background = GradientDrawable().apply {
+                setColor(Color.argb(195, 19, 23, 37))
+                cornerRadius = 9 * density
+                setStroke((1 * density).toInt().coerceAtLeast(1), Color.rgb(176, 103, 245))
+            }
+            addView(arrow, LinearLayout.LayoutParams((16 * density).toInt(),
+                WindowManager.LayoutParams.MATCH_PARENT))
+            addView(label)
+            visibility = View.GONE
+        }
+        val badgeParams = WindowManager.LayoutParams(
+            (82 * density).toInt(), (18 * density).toInt(),
+            if (Settings.canDrawOverlays(service)) WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
+            else WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            PixelFormat.TRANSLUCENT,
+        ).apply {
+            gravity = Gravity.TOP or Gravity.START
+            // Android 12+ rejects pass-through touches beneath opaque untrusted overlays.
+            alpha = .75f
+            x = anchor.x
+            y = anchor.y + (54 * density).toInt()
+        }
+        if (runCatching { windowManager.addView(badge, badgeParams) }.isSuccess) {
+            copilotBadge = badge
+            copilotBadgeParams = badgeParams
+            moveCopilotBadge(anchor)
+            copilotArrowAnimator = ObjectAnimator.ofFloat(arrow, View.ROTATION, 0f, 360f).apply {
+                duration = 1_400L
+                repeatCount = ObjectAnimator.INFINITE
+                interpolator = LinearInterpolator()
+            }
+        }
+    }
+
+    private fun moveCopilotBadge(anchor: WindowManager.LayoutParams) {
+        val badge = copilotBadge ?: return
+        val params = copilotBadgeParams ?: return
+        val bounds = if (Build.VERSION.SDK_INT >= 30) windowManager.maximumWindowMetrics.bounds
+            else android.graphics.Rect(0, 0, service.resources.displayMetrics.widthPixels,
+                service.resources.displayMetrics.heightPixels)
+        val density = service.resources.displayMetrics.density
+        params.x = anchor.x.coerceIn(0, (bounds.width() - params.width).coerceAtLeast(0))
+        val below = anchor.y + (54 * density).toInt()
+        params.y = (if (below + params.height <= bounds.height()) below
+            else anchor.y - params.height - (2 * density).toInt())
+            .coerceIn(0, (bounds.height() - params.height).coerceAtLeast(0))
+        runCatching { windowManager.updateViewLayout(badge, params) }
     }
 
     fun refresh() {
@@ -501,6 +586,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
 
     private fun updateAutomationControls() {
         val dungeonRunning = DungeonRotationRequest.ownsFrames()
+        updateDirectorCardDisplay()
         dungeonControl?.apply {
             text = service.getString(if (dungeonRunning) R.string.quick_dungeon_stop else R.string.quick_dungeon_start)
             backgroundTintList = android.content.res.ColorStateList.valueOf(
@@ -514,6 +600,11 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                 if (copilotRunning) Color.rgb(104, 67, 180) else Color.rgb(176, 112, 0))
         }
         copilotSpinner?.visibility = if (copilotRunning) View.VISIBLE else View.GONE
+        val showCopilotBadge = copilotRunning && !dungeonRunning
+        copilotBadge?.visibility = if (showCopilotBadge) View.VISIBLE else View.GONE
+        if (showCopilotBadge) {
+            if (copilotArrowAnimator?.isStarted != true) copilotArrowAnimator?.start()
+        } else copilotArrowAnimator?.cancel()
     }
 
     private fun reloadAutomation() {
@@ -532,10 +623,9 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         AutomationState.copilotRewardsEnabled = supporter && preferences.getBoolean("copilot_rewards", true)
         AutomationState.copilotDwsEnabled = supporter && preferences.getBoolean("copilot_dws", true)
         AutomationState.autoFarmEnabled = supporter && preferences.getBoolean("auto_farm_harvest", true)
-        AutomationState.dwsNavigationSettings = if (supporter)
-            de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.fromPreference(
-                preferences.getString("dws_profile", null)).settings()
-        else de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.V3_CLASSIC.settings()
+        AutomationState.dwsNavigationSettings =
+            de.robinthor.digiworldexplorer.strategy.DwsNavigationProfile.fromPreferenceForAccess(
+                preferences.getString("dws_profile", null), supporter).settings()
         RewardPurchaseFrameAnalyzer.reset()
         DungeonFrameAnalyzer.reset()
         NetworkDefenseFrameAnalyzer.reset()
@@ -588,6 +678,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                     layoutParams.x = (startX + event.rawX - downX).toInt().coerceAtLeast(0)
                     layoutParams.y = (startY + event.rawY - downY).toInt().coerceAtLeast(0)
                     root?.let { runCatching { windowManager.updateViewLayout(it, layoutParams) } }
+                    moveCopilotBadge(layoutParams)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
@@ -607,8 +698,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     }
 
     private fun toggleDirectorCard() {
-        val card = directorCard ?: return
-        setDirectorCardVisible(card.visibility != View.VISIBLE)
+        setDirectorCardVisible(!preferences.getBoolean("director_card_visible", true))
     }
 
     private fun togglePanel(layoutParams: WindowManager.LayoutParams) {
@@ -635,6 +725,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             layoutParams.x = layoutParams.x.coerceIn(0, (bounds.width() - width).coerceAtLeast(0))
             layoutParams.y = layoutParams.y.coerceIn(0, (bounds.height() - height).coerceAtLeast(0))
             root?.let { runCatching { windowManager.updateViewLayout(it, layoutParams) } }
+            moveCopilotBadge(layoutParams)
             preferences.edit().putInt("quick_overlay_x", layoutParams.x).putInt("quick_overlay_y", layoutParams.y).apply()
         }
     }

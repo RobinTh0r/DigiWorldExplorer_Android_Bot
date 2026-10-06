@@ -5,6 +5,21 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FrameOrchestratorTest {
+    @Test fun loadingFramesStayWithSessionAndNeverInvokeFalseTitleOrSummonProbe() {
+        val actions = mutableListOf<String>()
+        val ambient = listOf(
+            FrameProbe(FrameOwner.GAME_ENTRY) { actions += "title tap"; true },
+            FrameProbe(FrameOwner.SUMMON) { actions += "summon tap"; true },
+        )
+        // OPEN -> loading -> obscured -> PARTNER. Only the owner is permitted to inspect or act.
+        for (visible in listOf(true, false, false, true)) {
+            assertEquals(FrameOwner.BOND, FrameOrchestrator.resolve(false, ambient,
+                FrameProbe(FrameOwner.BOND) { actions += "bond observation"; visible }))
+        }
+        assertEquals(List(4) { "bond observation" }, actions)
+        assertEquals(FrameOwner.GAME_ENTRY, FrameOrchestrator.resolve(false, ambient))
+        assertEquals("title tap", actions.last())
+    }
     @Test fun captureFailureSkipsEveryProbe() {
         var called = false
         val owner = FrameOrchestrator.resolve(true, listOf(FrameProbe(FrameOwner.STAGE_FAILED) { called = true; true }))

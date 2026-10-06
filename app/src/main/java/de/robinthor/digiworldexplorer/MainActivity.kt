@@ -152,9 +152,8 @@ class MainActivity : ComponentActivity() {
         automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
             .takeIf { it != AutomationMode.FULL_AUTOPILOT || supporterLicense != null }
             ?: AutomationMode.SEMI_AUTO
-        dwsProfile = if (supporterLicense != null)
-            DwsNavigationProfile.fromPreference(settings.getString("dws_profile", null))
-        else DwsNavigationProfile.V3_CLASSIC
+        dwsProfile = DwsNavigationProfile.fromPreferenceForAccess(
+            settings.getString("dws_profile", null), supporterLicense != null)
         AutomationState.overlayEnabled = grid
         AutomationState.autoPurchaseEnabled = autoPurchase
         AutomationState.autoDungeonEnabled = autoDungeon
@@ -268,7 +267,8 @@ class MainActivity : ComponentActivity() {
                     }
                 },
                 onDwsSettings = { selected ->
-                    dwsProfile = if (supporterLicense != null) selected else DwsNavigationProfile.V3_CLASSIC
+                    dwsProfile = selected.takeIf { it.availableFor(supporterLicense != null) }
+                        ?: DwsNavigationProfile.V4_DASH
                     AutomationState.dwsNavigationSettings = dwsProfile.settings()
                     AutoMoveController.reset()
                     settings.edit()
@@ -333,6 +333,9 @@ class MainActivity : ComponentActivity() {
                     val license = SupporterLicenseManager.activate(this, code)
                     if (license != null) {
                         supporterLicense = license
+                        dwsProfile = DwsNavigationProfile.fromPreferenceForAccess(
+                            settings.getString("dws_profile", null), true)
+                        AutomationState.dwsNavigationSettings = dwsProfile.settings()
                         AutomationState.autoBondRotationEnabled = settings.getBoolean("auto_bond_rotation", true)
                         AutomationState.autoFarmEnabled = settings.getBoolean("auto_farm_harvest", true)
                         AutomationState.copilotRewardsEnabled = settings.getBoolean("copilot_rewards", true)
@@ -348,9 +351,9 @@ class MainActivity : ComponentActivity() {
                     AutomationState.autoFarmEnabled = false
                     AutomationState.copilotRewardsEnabled = false
                     AutomationState.copilotDwsEnabled = false
-                    dwsProfile = DwsNavigationProfile.V3_CLASSIC
+                    dwsProfile = DwsNavigationProfile.fromPreferenceForAccess(
+                        settings.getString("dws_profile", null), false)
                     AutomationState.dwsNavigationSettings = dwsProfile.settings()
-                    settings.edit().putString("dws_profile", dwsProfile.name).apply()
                 },
                 onDonate = { openUrl(getString(R.string.supporter_purchase_url)) },
                 onRequestDiscord = { openUrl(getString(R.string.discord_url)) },
@@ -397,6 +400,7 @@ class MainActivity : ComponentActivity() {
             .getBoolean("farm_watering", true)
         AutomationState.adSkipPassEnabled = getSharedPreferences("settings", MODE_PRIVATE)
             .getBoolean("ad_skip_pass", false)
+        AutomationState.dwsNavigationSettings = dwsProfile.settings()
         AutomationState.mode = automationMode
         DungeonFrameAnalyzer.reset()
         de.robinthor.digiworldexplorer.farm.FarmHarvestAnalyzer.reset()
@@ -515,6 +519,9 @@ class MainActivity : ComponentActivity() {
         automationMode = AutomationMode.fromPreference(settings.getString("automation_mode", null))
             .takeIf { it != AutomationMode.FULL_AUTOPILOT || supporterLicense != null }
             ?: AutomationMode.SEMI_AUTO
+        dwsProfile = DwsNavigationProfile.fromPreferenceForAccess(
+            settings.getString("dws_profile", null), supporterLicense != null)
+        AutomationState.dwsNavigationSettings = dwsProfile.settings()
         AutomationState.autoRunnerEnabled = false
         AutomationState.mode = automationMode
         autoNetworkDefense = settings.getBoolean("auto_network_defense", false)
@@ -1095,10 +1102,11 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
                     Triple(DwsNavigationProfile.V5_ALL_SPRITES, R.string.dws_profile_v5, R.string.dws_profile_v5_hint),
                 ).forEach { (choice, title, hint) ->
                     Row(
-                        Modifier.fillMaxWidth().clickable(enabled = supporterUnlocked) { onSettings(choice) },
+                        Modifier.fillMaxWidth().clickable(enabled = choice.availableFor(supporterUnlocked)) { onSettings(choice) },
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        RadioButton(selected = profile == choice, onClick = { onSettings(choice) }, enabled = supporterUnlocked)
+                        RadioButton(selected = profile == choice, onClick = { onSettings(choice) },
+                            enabled = choice.availableFor(supporterUnlocked))
                         Column(Modifier.weight(1f)) {
                             Text(stringResource(title), fontWeight = FontWeight.SemiBold)
                             Text(stringResource(hint), style = MaterialTheme.typography.bodySmall)

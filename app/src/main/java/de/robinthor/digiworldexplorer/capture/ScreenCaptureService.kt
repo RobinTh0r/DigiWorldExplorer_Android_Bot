@@ -56,6 +56,7 @@ class ScreenCaptureService : Service() {
     private var imageReader: ImageReader? = null
     private var captureThread: HandlerThread? = null
     private var framesSeen = 0
+    private var lastRewardAnalysisAt = 0L
     private var lastRecognizedContent = 0L
     private var missingStatusShown = false
     private var idleStopRequested = false
@@ -218,11 +219,33 @@ class ScreenCaptureService : Service() {
                 } else {
                     val digiCopilotOwns = DigiCopilotRequest.active()
                     val networkFrame = featureFrame || NetworkDefenseFrameAnalyzer.isSessionActive()
+                    val activeSession = when {
+                        de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames() -> null
+                        BondRotationAnalyzer.ownsSession() -> FrameProbe(FrameOwner.BOND) {
+                            BondRotationAnalyzer.analyze(image, width, height)
+                        }
+                        HomeIdleRewardRequest.ownsFrames() -> FrameProbe(FrameOwner.GAME_ENTRY) {
+                            // Hold ownership on every frame, but sample this expensive visual
+                            // dialog classifier at a bounded cadence on physical devices.
+                            val now = SystemClock.elapsedRealtime()
+                            if (now - lastRewardAnalysisAt >= 300L) {
+                                lastRewardAnalysisAt = now
+                                HomeIdleRewardAnalyzer.analyze(image, width, height)
+                            } else true
+                        }
+                        !digiCopilotOwns && NetworkDefenseFrameAnalyzer.isSessionActive() ->
+                            FrameProbe(FrameOwner.NETWORK_DEFENSE) {
+                                NetworkDefenseFrameAnalyzer.analyze(image, width, height)
+                            }
+                        else -> null
+                    }
                     // Classic V4 Summon must get the frame before the V5 entry/reveal guards.
                     // Otherwise those guards either tap cards as notices or swallow animation taps.
                     val classicSummon = !digiCopilotOwns && AutomationState.autoPurchaseEnabled &&
                         !de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()
-                    val owner = if (classicSummon &&
+                    val owner = if (activeSession != null) {
+                        FrameOrchestrator.resolve(false, emptyList(), activeSession)
+                    } else if (classicSummon &&
                         RewardPurchaseFrameAnalyzer.analyze(image, width, height)) {
                         FrameOwner.SUMMON
                     } else if (de.robinthor.digiworldexplorer.purchase.SummonRewardFrameGuard.analyze(image, width, height)) {
@@ -234,9 +257,6 @@ class ScreenCaptureService : Service() {
                             de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.analyze(image, width, height)
                         FrameOwner.DUNGEON
                     } else FrameOrchestrator.resolve(false, listOf(
-                        FrameProbe(FrameOwner.GAME_ENTRY, enabled = featureFrame && HomeIdleRewardRequest.active()) {
-                            HomeIdleRewardAnalyzer.analyze(image, width, height)
-                        },
                         FrameProbe(FrameOwner.WORLD_SEARCH, enabled = featureFrame && DwsExcursionRequest.active()) {
                             DwsExcursionAnalyzer.analyze(image, width, height)
                         },
@@ -246,6 +266,7 @@ class ScreenCaptureService : Service() {
                         FrameProbe(FrameOwner.GAME_ENTRY, enabled = FrameProbePolicy.allowGenericGameEntry(
                             featureFrame = featureFrame,
                             networkDefenseSessionActive = NetworkDefenseFrameAnalyzer.isSessionActive(),
+                            worldSearchCalibrated = CaptureFrameAnalyzer.isCalibrated,
                             digiCopilotOwns = digiCopilotOwns,
                             awaitingFarm = BondCycleTimer.awaitingFarm(),
                             rewardSequenceActive = de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer.isSequenceActive(),
@@ -321,9 +342,14 @@ class ScreenCaptureService : Service() {
                             de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("owner-${lastFrameOwner.name}-${owner.name}")
                         lastFrameOwner = owner
                     }
-                    // Publish only a classification from this frame. The old independent
-                    // modulo schedules published UNKNOWN between successful feature scans.
-                    if (owner in setOf(FrameOwner.NONE, FrameOwner.BOND) && featureFrame) {
+                    // Publish the owner's observation or a read-only fallback. Independent
+                    // modulo schedules must not invent UNKNOWN between successful feature scans.
+                    if (owner == FrameOwner.BOND && BondRotationAnalyzer.ownsSession()) {
+                        // Reuse the owner's observation for display. Running the full passive
+                        // classifier again duplicates geometry scans and can disagree with it.
+                        // This cached display state never authorizes a gesture.
+                        passiveScreen = BondRotationAnalyzer.observedScreen
+                    } else if (owner in setOf(FrameOwner.NONE, FrameOwner.BOND) && featureFrame) {
                         passiveScreen = PassiveScreenClassifier.detect(image, width, height)
                     } else if (owner != FrameOwner.NONE) passiveScreen = ObservedScreen.UNKNOWN
                     if (featureFrame || owner != FrameOwner.NONE) {
@@ -454,6 +480,7 @@ class ScreenCaptureService : Service() {
         captureThread?.quit()
         captureThread = null
         framesSeen = 0
+        lastRewardAnalysisAt = 0L
         badCaptureSince = 0L
         healthyCaptureSince = 0L
         captureImageMissing = false

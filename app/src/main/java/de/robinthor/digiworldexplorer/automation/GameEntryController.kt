@@ -34,7 +34,9 @@ class GameEntryController {
                 // result screen is safer than waiting until the whole reward flow parks.
                 val retryVisible = (pending == EntryAction.CLOSE_RESULT && screen == EntryScreen.RESULT) ||
                     (pending == EntryAction.TOUCH_START && screen == EntryScreen.LOGIN_READY) ||
-                    (pending == EntryAction.CLOSE_NOTICE && screen == EntryScreen.NOTICE)
+                    (pending == EntryAction.CLOSE_NOTICE && screen == EntryScreen.NOTICE) ||
+                    (pending == EntryAction.CLAIM_IDLE && screen == EntryScreen.IDLE_CLAIM) ||
+                    (pending == EntryAction.CLOSE_IDLE && screen == EntryScreen.IDLE_EMPTY)
                 val retryDelay = if (pending == EntryAction.TOUCH_START) 2_000L else 1_000L
                 val retryLimit = if (pending == EntryAction.TOUCH_START) 4 else 2
                 if (retryVisible && now - issuedAt >= retryDelay && retries < retryLimit) {

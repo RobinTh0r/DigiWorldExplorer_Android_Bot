@@ -9,11 +9,13 @@ object FrameProbePolicy {
     fun allowGenericGameEntry(
         featureFrame: Boolean,
         networkDefenseSessionActive: Boolean,
+        worldSearchCalibrated: Boolean = false,
         digiCopilotOwns: Boolean,
         awaitingFarm: Boolean,
         rewardSequenceActive: Boolean,
     ): Boolean = featureFrame &&
         !networkDefenseSessionActive &&
+        !worldSearchCalibrated &&
         (!digiCopilotOwns || !awaitingFarm) &&
         !rewardSequenceActive
 }

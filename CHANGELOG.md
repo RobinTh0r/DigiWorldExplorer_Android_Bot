@@ -1,5 +1,22 @@
 # Changelog
 
+## 5.3.0 Beta 2 — 6 October 2026
+
+- Make DWS V3 Classic and V4 Dash available without a Beta code, including after capture restart and quick-control reload. V5 All Sprites remains a Beta feature.
+
+- Detect Home reward chest and idle-reward dialog/button geometry from visible image regions across capture sizes and vertically shifted layouts instead of German text and fixed 720-pixel positions; retry only while the same claim/close screen remains visible.
+- Keep Copilot reward collection as the exclusive frame owner through transitions, record reward decisions in opt-in diagnostics, and finish a Copilot run without DWS after the reward check.
+- Hide the large status card during Dungeon Rotation and show a small animated, non-touchable Copilot-run badge beneath the floating icon.
+- Close a visually confirmed Partner detail popup during Bond collection with bounded Back attempts; prevent generic title taps while a World Search grid is calibrated.
+- Document the DigiAutoTap 1.3 comparison and a device evidence plan for remaining dynamic-screen work.
+- Locate the roster Plus and paired confirmation buttons visually; do not use fixed Expand/Confirm tap coordinates. Retry expansion only while a visible Plus remains.
+- Locate Partner panel and roster geometry from visible card borders, including the CPH2611 layout that previously repeated Partner-tab taps.
+- Read animated selection frames around observed portrait edges and locate Raise within the visible Partner panel.
+- Avoid collapsing an already expanded roster after switching from another Digimon tab.
+- Keep Bond and Network session ownership during loading/obscured frames; delegate Bond stage-failure recovery explicitly.
+- Record Bond observations and failure state, and add screenshot replay, scaling and layout-offset regressions.
+- Known open reports needing real-device diagnostics: some Dungeon routes return Home early or miss free/ad attempts; Bond still stalls on some Samsung phones and BlueStacks; DWS movement/dash and Auto Summon still vary by device. This Beta does not claim those issues are resolved.
+
 ## 5.3.0 Beta 1 — 3 October 2026
 
 - Prevented the generic title/login detector from acting while a confirmed Network Defense session owns the screen.

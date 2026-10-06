@@ -18,6 +18,7 @@ object HomeIdleRewardRequest {
     @Synchronized fun park(why: String) { phase = Phase.PARKED; reason = why }
     @Synchronized fun reset() { phase = Phase.IDLE; reason = "" }
     fun active() = phase in setOf(Phase.WAIT_HOME, Phase.WAIT_DIALOG, Phase.CLAIMING)
+    fun ownsFrames() = active() || phase == Phase.PARKED
 }
 
 /** Exclusive bridge from the Home chest into the existing, tested entry reward controller. */
@@ -27,6 +28,24 @@ object HomeIdleRewardAnalyzer {
     private var deadline = 0L
     private var chestTapAt = 0L
     private var chestTapRetries = 0
+
+    private fun finishRewardCheck() {
+        HomeIdleRewardRequest.complete()
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+            "REWARD.COMPLETE", "Home reward checked; nextDws=${de.robinthor.digiworldexplorer.strategy.AutomationState.copilotDwsEnabled}")
+        if (de.robinthor.digiworldexplorer.strategy.AutomationState.copilotDwsEnabled) {
+            DwsExcursionRequest.start()
+        } else {
+            DigiCopilotRequest.stop("Selected modules complete")
+        }
+    }
+
+    private fun parkReward(why: String, detail: String) {
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("REWARD.PARK", detail)
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("reward-unconfirmed")
+        HomeIdleRewardRequest.park(why)
+        DigiCopilotRequest.stop(why)
+    }
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!HomeIdleRewardRequest.active()) return false
@@ -40,15 +59,22 @@ object HomeIdleRewardAnalyzer {
                 ((buffer.get(i + 1).toInt() and 255) shl 8) or (buffer.get(i + 2).toInt() and 255)
         }
         val now = SystemClock.elapsedRealtime()
+        if (HomeIdleRewardRequest.phase == HomeIdleRewardRequest.Phase.CLAIMING && deadline > 0 && now >= deadline) {
+            parkReward("Idle reward claim not confirmed", "Claim sequence exceeded deadline")
+            return true
+        }
         val entry = GameEntryDetector.detect(frame)
         if (entry.screen in setOf(EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY, EntryScreen.RESULT)) {
+            if (HomeIdleRewardRequest.phase != HomeIdleRewardRequest.Phase.CLAIMING) {
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                    "REWARD.DIALOG", "screen=${entry.screen} target=${entry.idleReading?.claimTarget}")
+                deadline = now + 120_000L
+            }
             HomeIdleRewardRequest.dialogSeen()
-            deadline = now + 45_000L
             return GameEntryAnalyzer.analyze(image, w, h)
         }
         if (HomeIdleRewardRequest.phase == HomeIdleRewardRequest.Phase.CLAIMING && entry.screen == EntryScreen.HOME) {
-            HomeIdleRewardRequest.complete()
-            if (de.robinthor.digiworldexplorer.strategy.AutomationState.copilotDwsEnabled) DwsExcursionRequest.start()
+            finishRewardCheck()
             stable = 0
             DigiWorldAccessibilityService.instance?.showStatusOnly("Idle rewards checked — Home", sourceScreen = ObservedScreen.HOME)
             return false
@@ -60,12 +86,17 @@ object HomeIdleRewardAnalyzer {
             val reading = HomeIdleRewardDetector.detect(frame, homeAlreadyConfirmed = true)
             if (!reading.available) {
                 stable = 0
-                absentStable++
+                val homeNow = HomeScreenDetector.viewport(w, h, frame::argbAt) != null
+                absentStable = if (homeNow && reading.chestVisible) absentStable + 1 else 0
                 // This phase is created only at a freshly verified Home boundary. A stable
                 // absence therefore means the animated box currently has nothing to claim.
                 if (absentStable >= 3) {
-                    HomeIdleRewardRequest.complete()
-                    if (de.robinthor.digiworldexplorer.strategy.AutomationState.copilotDwsEnabled) DwsExcursionRequest.start()
+                    finishRewardCheck()
+                    return false
+                }
+                if (now >= deadline) {
+                    parkReward("Home reward chest not confirmed",
+                        "Home chest unconfirmed visible=${reading.chestVisible} home=$homeNow")
                 }
                 return HomeIdleRewardRequest.active()
             }
@@ -76,6 +107,8 @@ object HomeIdleRewardAnalyzer {
             val target = reading.target ?: return true
             val (x, y) = viewport.pixel(target)
             HomeIdleRewardRequest.waitingDialog()
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                "REWARD.CHEST", "target=$target stable=$stable")
             deadline = now + 20_000L
             chestTapAt = now
             chestTapRetries = 0
@@ -96,7 +129,10 @@ object HomeIdleRewardAnalyzer {
                 DigiWorldAccessibilityService.instance?.dispatchValidatedTap(x.toFloat(), y.toFloat()) { }
             }
         }
-        if (deadline > 0 && now >= deadline) HomeIdleRewardRequest.park("Idle reward screen not confirmed")
+        if (deadline > 0 && now >= deadline) {
+            parkReward("Idle reward screen not confirmed",
+                "Idle reward dialog not confirmed; entry=${entry.screen} retries=$chestTapRetries")
+        }
         return true
     }
 

@@ -112,16 +112,33 @@ object GameEntryAnalyzer {
         ScreenDirector.noteAction(label, observedScreen)
         val target = when (action) {
             EntryAction.TOUCH_START -> reading.target ?: NormalizedPoint(.50, .843)
-            EntryAction.CLAIM_IDLE -> NormalizedPoint(.632, .74)
-            EntryAction.CLAIM_AD -> NormalizedPoint(.37, .74)
-            EntryAction.CLOSE_RESULT -> NormalizedPoint(.90, .82)
-            EntryAction.CLOSE_IDLE -> NormalizedPoint(.92, .55)
+            EntryAction.CLAIM_IDLE -> reading.idleReading?.claimTarget
+            EntryAction.CLAIM_AD -> reading.idleReading?.adTarget
+            EntryAction.CLOSE_RESULT -> reading.idleReading?.closeTarget
+            EntryAction.CLOSE_IDLE -> null
             EntryAction.CLOSE_NOTICE -> NormalizedPoint(.94, .52)
             else -> null
+        }
+        if (reading.screen in setOf(EntryScreen.IDLE_CLAIM, EntryScreen.IDLE_EMPTY, EntryScreen.RESULT) &&
+            action != EntryAction.WAIT) {
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                "REWARD.ACTION", "screen=${reading.screen} action=$action target=$target adRemaining=$effectiveRemaining")
+            if (action == EntryAction.PARK || (action in setOf(EntryAction.CLAIM_IDLE,
+                    EntryAction.CLAIM_AD, EntryAction.CLOSE_RESULT) && target == null))
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot(
+                    "reward-${action.name.lowercase()}")
+        }
+        if (action == EntryAction.PARK && HomeIdleRewardRequest.active()) {
+            HomeIdleRewardRequest.park("Reward action not confirmed")
+            DigiCopilotRequest.stop("Reward action not confirmed")
         }
         if (action == EntryAction.CLAIM_AD) {
             adClaimsThisFlow++
             if (adClaimsThisFlow >= 2) EntryDailyStore.markAdsDone(service)
+        }
+        if (action == EntryAction.CLOSE_IDLE && reading.screen == EntryScreen.IDLE_EMPTY) {
+            service.dispatchBack()
+            return true
         }
         if (target != null) {
             // Entry fixtures and the title screen cover the complete captured game surface.

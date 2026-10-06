@@ -28,8 +28,14 @@ data class FrameProbe(
  * safety property, not merely an optimization: at most one analyzer can act on a given frame.
  */
 object FrameOrchestrator {
-    fun resolve(captureBlocked: Boolean, probes: List<FrameProbe>): FrameOwner {
+    fun resolve(captureBlocked: Boolean, probes: List<FrameProbe>, activeSession: FrameProbe? = null): FrameOwner {
         if (captureBlocked) return FrameOwner.CAPTURE_BLOCKED
+        // Ownership spans transitions, not just positively recognized individual images. A task
+        // waiting for its postcondition must not hand loading/occluded frames to unrelated tasks.
+        if (activeSession?.enabled == true) {
+            activeSession.analyze()
+            return activeSession.owner
+        }
         for (probe in probes) {
             if (probe.enabled && probe.analyze()) return probe.owner
         }
