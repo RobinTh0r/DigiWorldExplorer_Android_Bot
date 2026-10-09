@@ -1,5 +1,7 @@
 # Handoff — 5.3.0 (2026-10-09)
 
+Historical handoff: the calibration follow-up below was subsequently committed and published as **5.4.1 Beta 1** at the user's request. Current authoritative status is `HANDOFF_5.4.1_BETA1.md`; the older local-build/published-5.3.0 hashes below remain historical.
+
 ## Current local follow-up — automatic calibration
 
 After publication, the user requested implementation and automated verification of universal automatic calibration, not another release. Read `docs/AUTO_CALIBRATION_AUDIT_20261009.md` before continuing. The working tree now contains uncommitted calibration changes on top of the published release: shared physical-display/game-window/projection geometry, game-local `AnalysisImage`, generation-bound input, resize/configuration handling, observed borders, periodic DWS grid verification, small Plus recognition and diagnostics. No phone profiles were added, movement rules/license gates were not changed, and app ID/certificate/settings/version remain unchanged.

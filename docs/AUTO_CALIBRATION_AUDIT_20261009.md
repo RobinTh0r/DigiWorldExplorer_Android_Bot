@@ -1,6 +1,6 @@
 # Automatic calibration audit — 9 October 2026
 
-Status: implemented locally after the published 5.3.0 release. Not published or installed. This is an engineering verification, not certification of all Android devices.
+Status: implemented after the published 5.3.0 release and subsequently published as **5.4.1 Beta 1** at the user's explicit request. Not installed or live-tested. This is an engineering verification, not certification of all Android devices.
 
 Publication follow-up: the user subsequently authorized packaging this work as **5.4.1 Beta 1** for their device testing. See `HANDOFF_5.4.1_BETA1.md` for current release identity and publication confirmation. The implementation/test evidence below describes the preceding local development run; live-device limitations still apply.
 
@@ -55,4 +55,4 @@ The two old tests that asserted an unconditional 9:16 crop now assert that dimen
 - Border detection deliberately recognizes near-black outer strips, not arbitrary textured/gray backgrounds. A new/different game layout still needs positive feature recognition. The transform does not make an unknown screen recognizable by itself. Truly black gameplay edges, severe overlay obstruction and unsupported capture semantics may cause a safe pause; this is preferable to invented coordinates.
 - Periodic DWS revalidation needs live performance/animation testing. Existing Classic/All-Sprite movement rules and feature decisions were intentionally retained; this work is not proof that every Dungeon/Bond outcome is fixed.
 - Next validation: install the explicitly labelled local development APK on a consenting test device, keep USB debugging disabled on phones, run the in-app diagnostic mode, check Plus/roster/bubble/seed/ad/Matching targets and visual postconditions, then restart after real resolution/zoom/navigation changes. Gather paired before/after frames with `geometry-current.json` for failures. Do not add model-specific profiles.
-- App ID, signing identity, settings and version 84/5.3.0 are unchanged. A local build with that version is **not** the published 5.3.0 asset; do not upload it under the existing tag. No new publication is authorized by this task.
+- At initial implementation, app ID/signing identity/settings and version 84/5.3.0 were unchanged. That local build is **not** the published 5.3.0 asset. The subsequently authorized Beta uses version 85/5.4.1-beta.1 with the same app ID/certificate/settings; see its handoff for verified publication details. Do not replace old tags/assets or publish another version without explicit authorization.

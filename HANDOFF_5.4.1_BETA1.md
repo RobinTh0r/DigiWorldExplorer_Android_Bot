@@ -12,7 +12,7 @@ Shared display/window/projection geometry now feeds game-local `AnalysisImage` r
 
 ## Publication verification
 
-Publication is being prepared at the user's explicit request. Re-run 672 tests/build/vital lint on version 85; verify APK manifest/signature/hash, then push source/tag and create a GitHub prerelease with the verified APK. Append confirmed publication details once GitHub and uploaded asset digest are verified. Do not mark this Beta latest stable or overwrite v5.3.0.
+Publication completed at the user's explicit request. Source/tag target `08f45e01fbd0246ca75b91d78ef9e53fb2493546`; `main` and annotated `v5.4.1-beta.1` pushed. Public GitHub release: `https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v5.4.1-beta.1` (`draft=false`, `prerelease=true`). APK uploaded; GitHub asset size and SHA-256 digest match the verified local artifact below. Stable `/releases/latest` remains `v5.3.0`. No APK installed. This confirmation is a documentation-only follow-up; the release tag stays on the verified code commit.
 
 Pre-publication verification completed on version 85: **672 tests, zero failures/errors/skips**, `assembleRelease` and vital lint successful. Manifest ID/name/code verified; certificate SHA-256 `859229d0e9163ad0d1ca11aa8ec85c55321a0a50aebca489b3ff775d1e3528f8` unchanged. APK `C:/Users/thor/AppData/Local/Temp/dwe-verify-20261003/app/outputs/release/DigiWorldExplorer-Bot-v5.4.1-beta.1.apk`, 25,729,016 bytes, SHA-256 `d44490bf4aedadd600fd75f5338a565f249adb4c0d83f71a5d9ca3fbdd49a9ab`. Previous remote main was `3f6f507`; requested tag did not exist before this release. No device settings, packages or game run changed.
 
