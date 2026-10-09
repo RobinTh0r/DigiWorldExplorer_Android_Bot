@@ -193,6 +193,9 @@ class ScreenCaptureService : Service() {
             height = bounds.height().coerceAtLeast(1)
         }
         val density = displayMetrics.densityDpi
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.snapshotContext(
+            "capture-start", mapOf("captureWidth" to "$width", "captureHeight" to "$height",
+                "densityDpi" to "$density", "metricsMode" to if (useLegacyMetrics) "legacy" else "currentWindow"))
         android.util.Log.i("DigiWorldCapture", "metrics mode=${if (useLegacyMetrics) "legacy" else "currentWindow"} ${width}x$height")
         val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         val thread = HandlerThread("DigiWorldAnalysis").apply { start() }
@@ -575,6 +578,10 @@ class ScreenCaptureService : Service() {
 
         fun setAutomation(context: Context, enabled: Boolean) {
             context.startService(Intent(context, ScreenCaptureService::class.java).setAction(if (enabled) ACTION_AUTO_ON else ACTION_AUTO_OFF))
+            // startService queues onStartCommand. A consent caller starts its requested
+            // Dungeon/Copilot mode immediately afterwards, so publish the accepted start
+            // now rather than letting that request see the previous disabled state.
+            if (enabled) AutomationState.enabled = true
         }
 
         fun stopForStuck(context: Context) {

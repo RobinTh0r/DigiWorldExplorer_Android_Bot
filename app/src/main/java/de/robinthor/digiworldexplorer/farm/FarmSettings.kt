@@ -17,6 +17,13 @@ fun FarmSettings(showEnabled: Boolean = true, showDetails: Boolean = true, betaU
     var enabled by remember(betaUnlocked) { mutableStateOf(betaUnlocked && preferences.getBoolean("auto_farm_harvest", true)) }
     var watering by remember { mutableStateOf(preferences.getBoolean("farm_watering", true)) }
     var adSkipPass by remember { mutableStateOf(preferences.getBoolean("ad_skip_pass", false)) }
+    DisposableEffect(preferences) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+            if (key == "ad_skip_pass") adSkipPass = prefs.getBoolean(key, false)
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     Column(Modifier.fillMaxWidth()) {
         if (showEnabled) Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
@@ -52,6 +59,7 @@ fun FarmSettings(showEnabled: Boolean = true, showDetails: Boolean = true, betaU
                 adSkipPass = it
                 AutomationState.adSkipPassEnabled = it
                 preferences.edit().putBoolean("ad_skip_pass", it).apply()
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.snapshotContext("ad-pass-setting")
             })
         }
     }

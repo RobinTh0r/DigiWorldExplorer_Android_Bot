@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.3.0 — 9 October 2026
+
+- Simplify DWS selection to free/default **Classic / Bota Walk** and experimental **All-Sprite Test · Beta**. Hide V3 from the chooser without silently migrating saved settings. Retain the current movement, energy and Dash rules.
+- Read the updated green Dash stock, including touching digits 271 and 270. Require positive stock evidence; an explicitly marked conservative minimum may be derived from a verified multi-digit prefix. Zero/unknown leading digits remain blocked. Exclude the broom action.
+- Reject grid candidates that include the reward strip; resume calibration against actual board edges. Refresh quick status when DWS movement resumes instead of leaving a stale no-grid pause message.
+- Fix Dungeon cold-start capture timing, fast Ad-Skip ticket confirmation and retries that incorrectly pressed Challenge. Retry only the verified Ad button. Add bounded Network team-leave/reopen inspection for remaining ad attempts and locate its visible counter/button regions on different layouts.
+- Expose the existing global Ad-Skip Pass setting directly in Dungeon settings, with synchronized controls. Genuine video-ad playback is not automated by these changes; the tested account owns Ad-Skip Pass.
+- Expand opt-in diagnostic ZIPs with device/Android/display/capture geometry, density, safe settings, runtime rules, daily progress and ad-transaction evidence. No activation codes or device serials are exported in metadata. Keep the 50-image/session cap.
+- Verified 326 automated tests, signed release build and vital lint. BlueStacks live evidence includes automatic green Dash use and Network tickets across several runs at 720x1280 and 720x1612. A fresh uninterrupted Dungeon day, physical-phone coverage, Bond bubbles and other previously reported device-specific issues remain unverified.
+
 ## 5.3.0 Beta 3 — 9 October 2026
 
 - Adapt DWS grid, green left-hand Dash targeting and four-row resource counter recognition to the game's 1.5.0 interface using a real BlueStacks frame. The upper-right broom action is not Dash. Keep the previous phone-grid detector before the new fallback and remove the unsafe blind Dash target.

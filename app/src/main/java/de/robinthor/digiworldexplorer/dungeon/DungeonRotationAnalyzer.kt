@@ -32,6 +32,7 @@ object DungeonRotationAnalyzer {
     private var passUsage = DungeonPassUsage()
     private var cardDiagnostic = ""
     private var cardDiagnosticAt = 0L
+    private var networkAdInspections = 0
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!AutomationState.enabled || !DungeonRotationRequest.active()) return false
@@ -103,7 +104,8 @@ object DungeonRotationAnalyzer {
             val returnedToPanel = retryPanel?.kind in setOf("challenge", "network_challenge", "network_matching", "destroy", "ad")
             if(retryPanel == null) waitingSawTransition = true
             val returnDelay = if(waiting == "ad") 2_500L else 15_000L
-            if(returnedToPanel && now-waitingAt > returnDelay && waitingSawTransition) {
+            val grantedTicket = waiting == "ad" && DungeonAdReturnPolicy.ticketGranted(retryPanel?.kind, retryPanel?.remaining)
+            if(returnedToPanel && now-waitingAt > returnDelay && (waitingSawTransition || grantedTicket)) {
                 val completed = waiting
                 waiting=""; startRetries=0; retryAt=0; unknownAt=0; waitingSawTransition=false
                 if(completed=="battle") confirmBattle(service, key!!, won = true)
@@ -112,11 +114,13 @@ object DungeonRotationAnalyzer {
                     DungeonDailyStore.record(service,key) { it.copy(ads=it.ads+1) }
                 }
                 Log.i("DigiWorldDungeonRotation","RESUME $key $completed confirmed by returned panel ${retryPanel!!.kind}:${retryPanel.remaining}")
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                    "DUNGEON.TRANSACTION", "key=$key completed=$completed panel=${retryPanel.kind} remaining=${retryPanel.remaining} grantedTicket=$grantedTicket elapsed=${now-waitingAt}")
                 status(service,"${key!!.name}: ${if(completed=="ad") "Ad ticket received" else "battle complete"}")
                 candidate=""; matches=0
                 return true
             }
-            if(waiting == "ad" && returnedToPanel && !waitingSawTransition &&
+            if(waiting == "ad" && DungeonAdReturnPolicy.canRetry(retryPanel?.kind, retryPanel?.remaining, waitingSawTransition) &&
                 now-waitingAt > 1_500L && now-retryAt > 1_500L && startRetries < 2) {
                 startRetries++; retryAt=now
                 tap(service,v,retryPanel!!.target,now,"Retrying unaccepted Ad-Skip ($startRetries)")
@@ -191,7 +195,22 @@ object DungeonRotationAnalyzer {
                     // button is authoritative; the normal ticket counter remains authoritative
                     // for every repeatable dungeon.
                     val noTickets = panel.remaining == 0 && key != DungeonKey.APOCALYMON_WALL
-                    if(noTickets || spent >= limit) { finishCard(service,v,now); return true }
+                    if(noTickets || spent >= limit) {
+                        // Network's retained team can show a Challenge sheet instead of the
+                        // available Ad button. Leave that team and reopen the entry, without
+                        // marking the card complete or spending another normal ticket.
+                        val inspectAd = key == DungeonKey.NETWORK_DEFENSE &&
+                            AutomationState.adSkipPassEnabled && cfg.useAdAttempts && used.ads < 2
+                        if (inspectAd) {
+                            if (networkAdInspections >= 2) {
+                                park(service, "Network Ad panel not confirmed after leaving team")
+                            } else {
+                                networkAdInspections++
+                                tap(service,v,NormalizedPoint(.94,.87),now,"Network: leaving retained team to check remaining Ads")
+                            }
+                        } else finishCard(service,v,now)
+                        return true
+                    }
                     if(panel.remaining == null && key != DungeonKey.APOCALYMON_WALL) {
                         park(service,"Ticket counter unreadable: ${key!!.name}"); return true
                     }
@@ -313,13 +332,16 @@ object DungeonRotationAnalyzer {
     }
     fun onReward() {
         val key=activeKey ?: return
-        if(waiting.isEmpty() || SystemClock.elapsedRealtime()-waitingAt < 1_500) return
+        if(waiting.isEmpty()) return
         if(waiting=="ad") {
             // The reward overlay is the visual proof that the Ad-Skip tap was accepted. Keep the
             // transaction open until the panel returns, then persist the consumed Ad exactly once.
+            if (!waitingSawTransition) de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                "DUNGEON.AD_REWARD", "key=$key elapsed=${SystemClock.elapsedRealtime()-waitingAt}")
             waitingSawTransition=true
             return
         }
+        if(SystemClock.elapsedRealtime()-waitingAt < 1_500) return
         Log.i("DigiWorldDungeonRotation","RESULT $key $waiting")
         if(waiting=="battle") DigiWorldAccessibilityService.instance?.let { service -> confirmBattle(service, key, won = true) }
         waiting=""
@@ -361,5 +383,6 @@ object DungeonRotationAnalyzer {
         rewardFallbackAt=0L
         passUsage= DungeonPassUsage()
         cardDiagnostic=""; cardDiagnosticAt=0L
+        networkAdInspections=0
     }
 }

@@ -32,21 +32,24 @@ object GridDetector {
         if(xRatio<5.0||yRatio<5.0) {
             // Current game UI and some scaled phone boards keep clear columns but obscure rows.
             // This is shared UI observation; the V4/V5 movement rules stay separate.
-            return bottomAnchoredPhoneGrid(width,height,xb,xRatio,yScore)
+            return bottomAnchoredPhoneGrid(width,height,xb,xRatio,yScore,argb)
         }
         val xf=fit(xb.positions);val yf=fit(yb.positions)
         val b=GridBounds(xf.second.roundToInt(),yf.second.roundToInt(),(xf.second+5*xf.first).roundToInt(),(yf.second+5*yf.first).roundToInt())
         val bw=b.right-b.left;val bh=b.bottom-b.top
         val aspect=bw/bh.coerceAtLeast(1).toDouble();val coverage=bw*bh/(width*height).toDouble()
         if(aspect !in .85..1.55||coverage !in .20..0.45)return null
-        val anchored=bottomAnchoredPhoneGrid(width,height,xb,xRatio,yScore)
+        // The reward/progress strip supplies a tempting sixth edge, shifting the board
+        // down one row. Reject that candidate, then keep searching actual board bottoms.
+        if(hasTextFooter(width,height,argb,b)) return bottomAnchoredPhoneGrid(width,height,xb,xRatio,yScore,argb)
+        val anchored=bottomAnchoredPhoneGrid(width,height,xb,xRatio,yScore,argb)
         if(anchored!=null && b.top-anchored.bounds.top>height*.035 &&
             abs(b.bottom-anchored.bounds.bottom)<height*.06) return anchored
         return GridDetection((.70+.03*(minOf(xRatio,yRatio)-4.0)).coerceIn(.0,.98),b,"six equidistant grid edges")
     }
-    private fun bottomAnchoredPhoneGrid(width:Int,height:Int,xb:Six,xRatio:Double,yScore:DoubleArray):GridDetection? {
+    private fun bottomAnchoredPhoneGrid(width:Int,height:Int,xb:Six,xRatio:Double,yScore:DoubleArray,argb:IntArray):GridDetection? {
         if(xRatio<3.0||xb.values.sorted()[1]<12.0)return null
-        originalPhoneAnchor(width,height,xb,yScore)?.let{return it}
+        originalPhoneAnchor(width,height,xb,yScore)?.takeUnless { hasTextFooter(width,height,argb,it.bounds) }?.let{return it}
         val xFit=fit(xb.positions)
         val cellWidth=xFit.first
         if(cellWidth<=0.0)return null
@@ -79,11 +82,15 @@ object GridDetector {
                 (xFit.second+5*cellWidth).roundToInt(),bottom)
             val bw=bounds.right-bounds.left;val bh=bounds.bottom-bounds.top
             val aspect=bw/bh.coerceAtLeast(1).toDouble();val coverage=bw*bh/(width*height).toDouble()
+            if(hasTextFooter(width,height,argb,bounds)) continue
             if(bounds.left>=0&&bounds.right<=width&&aspect in .85..1.55&&coverage in .20.. .45)
                 return GridDetection(.62,bounds,"bottom-anchored phone grid")
         }
         return null
     }
+    private fun hasTextFooter(width:Int,height:Int,argb:IntArray,bounds:GridBounds):Boolean =
+        CellClassifier.classify(width,height,argb,bounds,allSprites=false,legacyV4Core=true)
+            .count { (cell,score) -> cell.row==4 && score.text>.08 } >= 3
     /** Keep the pre-update phone fit before trying the lower, more compact 1.5 UI. */
     private fun originalPhoneAnchor(width:Int,height:Int,xb:Six,yScore:DoubleArray):GridDetection?{
         val xFit=fit(xb.positions);val cellWidth=xFit.first

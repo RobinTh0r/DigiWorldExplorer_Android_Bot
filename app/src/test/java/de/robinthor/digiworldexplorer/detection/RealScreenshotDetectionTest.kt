@@ -16,6 +16,15 @@ import javax.imageio.ImageIO
  * von ~20 deutlich weicher als in synthetischen Testbildern.
  */
 class RealScreenshotDetectionTest {
+    @Test fun rewardStripIsNotTheLastBoardRow() {
+        val (w,h,px)=frame("dws_1_5_reward_footer.png")
+        val b=requireNotNull(GridDetector.detect(w,h,px)).bounds
+        assertTrue("$b",b.top in 340..355 && b.bottom in 785..810)
+        val cells=CellClassifier.classify(w,h,px,b,allSprites=false,legacyV4Core=true)
+        assertTrue(CalibrationValidator.plausible(cells))
+        assertEquals(Cell(2,1),PlayerSelector.select(cells,null,null,emptySet(),legacyV4Core=true)?.key)
+        assertEquals(271,HudCounterReader.read(w,h,px,b,updatedActionRow=true).dash)
+    }
     @Test fun updatedDwsBlueStacksGreenDashIsSeparateFromBroom() {
         val (width, height, pixels) = frame("dws_1_5_bluestacks.png")
         for (legacy in listOf(true, false)) {
@@ -26,7 +35,7 @@ class RealScreenshotDetectionTest {
             assertTrue("Dash must be inside the lower-left green action, not the broom: $dash",
                 dash.first in 395f..455f && dash.second in 1080f..1180f)
             val hud = HudCounterReader.read(width, height, pixels, b, updatedActionRow = true)
-            assertEquals("unsupported green stock must not become broom stock", null, hud.dash)
+            assertEquals("green stock must not become broom stock", 271, hud.dash)
             assertTrue("green stock box must be above broom row", requireNotNull(hud.dashBox).bottom < 1150)
             val cells = CellClassifier.classify(width, height, pixels, b, allSprites = !legacy, legacyV4Core = legacy)
             assertTrue("new DWS board should be plausible for legacy=$legacy", CalibrationValidator.plausible(cells))

@@ -50,6 +50,7 @@ object DungeonSettingsStore {
             .putInt(NORMAL_ATTEMPTS, settings.normalAttempts).putBoolean(USE_ADS, settings.useAdAttempts)
         DungeonKey.entries.forEach { edit.putBoolean(cardKey(it), it in settings.enabledCards) }
         edit.apply()
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.snapshotContext("dungeon-settings")
     }
 }
 
@@ -57,6 +58,15 @@ object DungeonSettingsStore {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
     var settings by remember { mutableStateOf(DungeonSettingsStore.load(context)) }
+    val preferences = remember { context.getSharedPreferences("settings", Context.MODE_PRIVATE) }
+    var adSkipPass by remember { mutableStateOf(preferences.getBoolean("ad_skip_pass", false)) }
+    DisposableEffect(preferences) {
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { prefs, key ->
+            if (key == "ad_skip_pass") adSkipPass = prefs.getBoolean(key, false)
+        }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
     Column(Modifier.fillMaxWidth()) {
         if (showEnabled) Row(Modifier.fillMaxWidth()) {
             Column(Modifier.weight(1f)) {
@@ -72,6 +82,12 @@ object DungeonSettingsStore {
             Text(stringResource(if (expanded) R.string.dungeon_settings_hide else R.string.dungeon_settings_show))
         }
         if (expanded) {
+            DungeonSettingSwitch(stringResource(R.string.ad_skip_pass_title), stringResource(R.string.ad_skip_pass_hint), adSkipPass) {
+                adSkipPass = it
+                AutomationState.adSkipPassEnabled = it
+                preferences.edit().putBoolean("ad_skip_pass", it).apply()
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.snapshotContext("ad-pass-setting")
+            }
             Text(stringResource(R.string.dungeon_attempts_title), style = MaterialTheme.typography.labelLarge)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf(1, 2, 3).forEach { count -> FilterChip(

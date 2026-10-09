@@ -40,6 +40,9 @@ object DungeonRotationRequest {
         completedToday = DungeonPassPolicy.locked(DungeonDailyStore.snapshot(context))
         val diagnosticSettings = DungeonSettingsStore.load(context)
         val diagnosticDay = DungeonDailyStore.snapshot(context)
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.snapshotContext("dungeon-start", mapOf(
+            "gameDay" to diagnosticDay.gameDay.toString(), "dailyProgress" to diagnosticDay.progress.toString(),
+            "completedDaily" to completedToday.toString()))
         de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
             "DUNGEON.CONFIG", "adSkipPass=${de.robinthor.digiworldexplorer.strategy.AutomationState.adSkipPassEnabled} useAds=${diagnosticSettings.useAdAttempts} normal=${diagnosticSettings.normalAttempts} enabled=${diagnosticSettings.enabledCards}")
         de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(

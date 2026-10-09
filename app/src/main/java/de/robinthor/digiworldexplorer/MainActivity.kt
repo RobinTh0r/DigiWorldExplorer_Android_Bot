@@ -1096,8 +1096,10 @@ if (showAccessHelp) TroubleshootingAssistantDialog(
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(stringResource(R.string.dws_profile_body), style = MaterialTheme.typography.bodySmall)
+                if (profile == DwsNavigationProfile.V3_CLASSIC) {
+                    Text(stringResource(R.string.dws_hidden_legacy_active), style = MaterialTheme.typography.bodySmall)
+                }
                 listOf(
-                    Triple(DwsNavigationProfile.V3_CLASSIC, R.string.dws_profile_v3, R.string.dws_profile_v3_hint),
                     Triple(DwsNavigationProfile.V4_DASH, R.string.dws_profile_v4, R.string.dws_profile_v4_hint),
                     Triple(DwsNavigationProfile.V5_ALL_SPRITES, R.string.dws_profile_v5, R.string.dws_profile_v5_hint),
                 ).forEach { (choice, title, hint) ->

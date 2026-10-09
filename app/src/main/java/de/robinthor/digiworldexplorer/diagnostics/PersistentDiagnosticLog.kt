@@ -45,6 +45,8 @@ object PersistentDiagnosticLog {
     private var lastArea = ""
     private var lastMessage = ""
     private var lastRecordAt = 0L
+    private var contextSequence = 0
+    private var lastFrameGeometry = ""
 
     @Synchronized fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -63,6 +65,7 @@ object PersistentDiagnosticLog {
         sessionDir = null
         pendingScreenshot = null
         actionShots.clear()
+        contextSequence = 0; lastFrameGeometry = ""
         if (value) { ensureSessionLocked(); record("SESSION", "diagnostic mode enabled") }
     }
     @Synchronized fun record(area: String, message: String) {
@@ -78,6 +81,16 @@ object PersistentDiagnosticLog {
         }
     }
     @Synchronized fun requestScreenshot(reason: String) { if (enabled) pendingScreenshot = reason.take(80) }
+    @Synchronized fun snapshotContext(reason: String, extra: Map<String, String> = emptyMap()) {
+        if (!enabled || contextSequence >= 20) return
+        val context = appContext ?: return
+        val dir = ensureSessionLocked() ?: return
+        val label = reason.replace(Regex("[^A-Za-z0-9_.-]"), "_").take(40)
+        val name = "context-${++contextSequence}-$label.json"
+        runCatching { DiagnosticContext.write(context, dir, name, extra) }
+            .onSuccess { record("CONTEXT", "saved=$name") }
+            .onFailure { record("CONTEXT", "failed=$label type=${it.javaClass.simpleName}") }
+    }
     /** Sparse frames correlated with a tap dispatch; the first frame is not guaranteed pre-tap. */
     @Synchronized fun sampleAction(kind: String, x: Int, y: Int) {
         if (!enabled) return
@@ -93,6 +106,12 @@ object PersistentDiagnosticLog {
     @Synchronized fun captureIfRequested(image: Image, width: Int, height: Int) {
         val now = SystemClock.elapsedRealtime()
         if (!enabled) return
+        val planeGeometry = image.planes.firstOrNull()
+        val geometry = "analysis=${width}x$height image=${image.width}x${image.height} rowStride=${planeGeometry?.rowStride} pixelStride=${planeGeometry?.pixelStride}"
+        if (geometry != lastFrameGeometry) {
+            lastFrameGeometry = geometry
+            snapshotContext("capture-frame", mapOf("geometry" to geometry))
+        }
         val requested = pendingScreenshot
         val action = actionShots.firstOrNull()?.takeIf { now >= it.dueAt }
         val urgent = requested != null && now - lastScreenshotAt >= SCREENSHOT_COOLDOWN
@@ -151,6 +170,7 @@ object PersistentDiagnosticLog {
         val context = appContext ?: return null; sessionDir?.let { return it }; val root = root(context)
         val dir = File(root, "diagnostic-${stamp.format(Instant.now())}").also { it.mkdirs() }; sessionDir = dir
         File(dir, "events.log").appendText("${Instant.now()} [SESSION] app=${BuildConfig.VERSION_NAME} device=${Build.MANUFACTURER}/${Build.MODEL} android=${Build.VERSION.RELEASE} sdk=${Build.VERSION.SDK_INT}\n")
+        runCatching { DiagnosticContext.write(context, dir, "context-session.json", emptyMap()) }
         root.listFiles { f -> f.isDirectory }?.sortedByDescending { it.name }?.drop(MAX_SESSIONS)?.forEach { it.deleteRecursively() }
         return dir
     }

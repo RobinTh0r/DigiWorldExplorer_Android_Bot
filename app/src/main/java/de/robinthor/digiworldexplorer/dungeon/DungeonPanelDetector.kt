@@ -22,10 +22,18 @@ object DungeonPanelDetector {
             DungeonKey.METAL_SEA -> .186
             else -> .234
         }
-        val title = frame.ratioInViewportPatch(v,NormalizedPoint(.5,titleY),.22,.018) {
+        val knownTitle = frame.ratioInViewportPatch(v,NormalizedPoint(.5,titleY),.22,.018) {
             val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
         }
-        if(title < .35) return null
+        val networkTitle = if (key == DungeonKey.NETWORK_DEFENSE) ColorRegionLocator.find(
+            frame,v,NormalizedRect(.10,.17,.90,.32)) {
+            val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
+        }.filter { it.width > .45 && it.height in .018.. .09 }.maxByOrNull { it.width * it.height } else null
+        val adaptiveTitle = frame.ratioInViewportPatch(v,NormalizedPoint(.5,networkTitle?.center?.y ?: titleY),.22,.018) {
+            val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
+        }
+        if(maxOf(knownTitle, adaptiveTitle) < .35) return null
+        val effectiveTitleY = if (networkTitle != null && adaptiveTitle >= .35) networkTitle.center.y else titleY
         if (key == DungeonKey.NETWORK_DEFENSE) {
             fun cyanButton(rgb: Rgb): Boolean = rgb.blue > 120 && rgb.green > 75 &&
                 rgb.blue > rgb.red * 1.15 && rgb.green > rgb.red * .90
@@ -52,8 +60,16 @@ object DungeonPanelDetector {
                 if (confirm != null) return DungeonPanel("network_confirm", confirm.center)
                 return null
             }
-            val tickets = number(frame,v,if(v.usesTallPhoneLayout).80 else .802,
-                if(v.usesTallPhoneLayout).955 else .880,if(v.usesTallPhoneLayout).181 else .145)
+            val adButton = purpleButtons.filter { it.center.x in .40.. .60 && it.center.y > .70 && it.width > .20 }
+                .maxByOrNull { it.width * it.height }
+            if (adButton != null) return DungeonPanel("ad", adButton.center,
+                number(frame,v,.514,.582,adButton.center.y))
+            val counter = ColorRegionLocator.find(frame,v,NormalizedRect(.75,.10,.98,.22),predicate=::cyanButton)
+                .filter { it.left > .78 && it.width in .08.. .22 && it.height in .010.. .045 }
+                .maxByOrNull { it.width * it.height }
+            val tickets = if (counter != null) number(frame,v,counter.left,counter.right,counter.center.y) else
+                number(frame,v,if(v.usesTallPhoneLayout).80 else .802,
+                    if(v.usesTallPhoneLayout).955 else .880,if(networkTitle != null && adaptiveTitle >= .35) effectiveTitleY-.05 else if(v.usesTallPhoneLayout).181 else .145)
             val matching = cyanButtons.filter { it.center.x in .35..0.65 && it.center.y > .70 }
                 .maxByOrNull { it.width*it.height }
             if (matching != null) return DungeonPanel("network_matching", matching.center, tickets)

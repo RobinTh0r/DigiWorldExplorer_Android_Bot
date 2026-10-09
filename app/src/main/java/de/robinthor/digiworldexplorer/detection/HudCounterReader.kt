@@ -1,5 +1,7 @@
 package de.robinthor.digiworldexplorer.detection
 
+import kotlin.math.roundToInt
+
 /** Bildschirmrechteck einer HUD-Zahl, damit das Overlay sie einkasten kann. */
 data class HudBox(val left: Int, val top: Int, val right: Int, val bottom: Int)
 
@@ -12,6 +14,8 @@ data class HudCounters(
     /** Normalformen der Ziffern, die zu keiner Vorlage passten - Rohmaterial fuer neue Vorlagen. */
     val unknown: List<String> = emptyList(),
     val updatedActionRow: Boolean = false,
+    /** True when only a proven multi-digit prefix supplies a conservative minimum stock. */
+    val dashMinimumOnly: Boolean = false,
 )
 
 enum class HudActionRowLayout { LEGACY, UPDATED, UNKNOWN }
@@ -38,7 +42,7 @@ object HudCounterReader {
     private const val WHITE = 225
 
     /** Hoechstens so viele leere Spalten gelten noch als Teil derselben Ziffer. */
-    private const val COLUMN_GAP = 1
+    private const val COLUMN_GAP = 0
 
     /** Eine Ziffer muss mindestens so hoch sein, sonst ist es Bildrauschen. */
     private const val MIN_HEIGHT = 12
@@ -80,10 +84,16 @@ object HudCounterReader {
 
     private val TEMPLATES: List<Pair<Int, String>> = listOf(
         1 to ONE,
+        1 to ONE_UPDATED,
         2 to TWO,
         2 to TWO_UPDATED,
+        2 to TWO_GREEN_UPDATED,
+        2 to TWO_SHORT_UPDATED,
         3 to THREE,
         5 to FIVE,
+        7 to SEVEN_UPDATED,
+        7 to SEVEN_SHORT_UPDATED,
+        0 to ZERO_UPDATED,
     )
 
     /** Distinguishes the fourth-row broom HUD from the old three-row HUD without using buttons. */
@@ -161,10 +171,24 @@ object HudCounterReader {
         val xTo = if (updatedActionRow) .44 else X_TO
         val claws = readBand(width, height, argb, bounds, clawsCenter, xFrom, xTo)
         val dash = readBand(width, height, argb, bounds, dashCenter, xFrom, xTo)
+        val minimum = if(updatedActionRow && dash?.first == null)
+            positivePrefixMinimum(glyphs(width,height,argb,bounds,dashCenter,xFrom,xTo)) else null
         val unknown = mutableListOf<String>()
         if (claws?.first == null) unknown += glyphs(width, height, argb, bounds, clawsCenter, xFrom, xTo).map { it.bits }
         if (dash?.first == null) unknown += glyphs(width, height, argb, bounds, dashCenter, xFrom, xTo).map { it.bits }
-        return HudCounters(claws?.first, claws?.second, dash?.first, dash?.second, unknown, updatedActionRow)
+        return HudCounters(claws?.first, claws?.second, dash?.first ?: minimum, dash?.second, unknown, updatedActionRow, minimum!=null)
+    }
+
+    /** A confidently read leading 2 in a three-digit stock proves at least 200, even
+     * when 6/9 have not yet been calibrated. A zero/unknown/single glyph proves nothing. */
+    private fun positivePrefixMinimum(glyphs:List<Glyph>):Int? {
+        if(glyphs.size !in 2..5 || glyphs.any {
+            val h=it.box.bottom-it.box.top; val w=it.box.right-it.box.left
+            h<MIN_HEIGHT || w<h*.30 || w>h*.95 || it.bits.count { bit -> bit=='1' }<20
+        }) return null
+        val first=classify(glyphs.first().bits) ?: return null
+        if(first==0) return null
+        return first * (1 until glyphs.size).fold(1) { n,_ -> n*10 }
     }
 
     /**
@@ -209,8 +233,11 @@ object HudCounterReader {
     ): List<Glyph> {
         val gridHeight = (bounds.bottom - bounds.top).toDouble()
         val gridWidth = (bounds.right - bounds.left).toDouble()
-        val y0 = (bounds.bottom + (center - BAND_HALF) * gridHeight).toInt().coerceIn(0, height - 1)
-        val y1 = (bounds.bottom + (center + BAND_HALF) * gridHeight).toInt().coerceIn(y0 + 1, height)
+        // Updated compact-grid fits vary by a few pixels. Keep the full glyph baseline;
+        // truncating its bottom changed the apparent aspect and split 71 into three pieces.
+        val bandHalf = if (xFrom < .20) .042 else BAND_HALF
+        val y0 = (bounds.bottom + (center - bandHalf) * gridHeight).toInt().coerceIn(0, height - 1)
+        val y1 = (bounds.bottom + (center + bandHalf) * gridHeight).toInt().coerceIn(y0 + 1, height)
         val x0 = (bounds.left + xFrom * gridWidth).toInt().coerceIn(0, width - 1)
         val x1 = (bounds.left + xTo * gridWidth).toInt().coerceIn(x0 + 1, width)
         val w = x1 - x0
@@ -226,7 +253,20 @@ object HudCounterReader {
             }
         }
 
-        return columnGroups(ink, w, h).mapNotNull { (cx0, cx1) ->
+        val groups = columnGroups(ink, w, h).flatMap { (left, right) ->
+            val rows = (0 until h).filter { y -> (left..right).any { x -> ink[y*w+x] } }
+            val inkHeight = if (rows.isEmpty()) 0 else rows.last()-rows.first()+1
+            val span = right-left+1
+            // Current outlined digits can touch at their bottom strokes (notably 7+1).
+            // A single digit is narrower than its height; split only genuinely wide groups.
+            if (inkHeight >= MIN_HEIGHT && span > inkHeight * 1.05) {
+                val count = (span / (inkHeight * .70)).roundToInt().coerceIn(2,6)
+                (0 until count).map { part ->
+                    (left+part*span/count) to (left+(part+1)*span/count-1)
+                }
+            } else listOf(left to right)
+        }
+        return groups.mapNotNull { (cx0, cx1) ->
             var ry0 = Int.MAX_VALUE
             var ry1 = Int.MIN_VALUE
             for (y in 0 until h) for (x in cx0..cx1) if (ink[y * w + x]) {
@@ -315,6 +355,14 @@ object HudCounterReader {
         "010000000001" +   // .#.........#
         "010000000001" +   // .#.........#
         "001111111110"     // ..#########.
+
+    // Recorded from the verified green stock 271, never from the broom resource.
+    private const val ONE_UPDATED = "000000110000000011001000000110001000111000001000100000001000100000001000010000001000001100001000000000001000000000001000000000001000000000001000011100001111010000000001010000000001011111111111"
+    private const val SEVEN_UPDATED = "111111111111100000000001100000000001100000000001111111100001000001000001000001000010000010000110000100001000000100001000000100000000000100010000001000010000001000010000001000010000001111100000"
+    private const val TWO_GREEN_UPDATED = "000011111000001100001110010000000011100000000001100000000001100011100001011110100001000001000001000001000001000110000010001000000100010000011111100000000001000000000001000000000001111111111111"
+    private const val TWO_SHORT_UPDATED = "000011111000001100000110010000000011100000000001100000000001100011100001010110100001001100100001000001000001000001000001000110000110001000001100010000011111100000000001000000000001000000000001"
+    private const val SEVEN_SHORT_UPDATED = "100000000001100000000001100000000001100000000001100000000001111111100001000001000001000011000111000010000101000100001001000100001001000100000001000100010000000100010000001000010000001000010000"
+    private const val ZERO_UPDATED = "000111110000001100001100011000000110110000000010100000000001100001100001000010010001000010010001000010010001000010010001000010010001000010010001100001100000100000000001100000000001011000000110"
 
     private const val TWO =
         "000001110000" +   // .....###....

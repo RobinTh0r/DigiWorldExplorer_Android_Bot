@@ -88,7 +88,7 @@ object CaptureFrameAnalyzer {
             // Aufgezeichnet sind bisher nur die Ziffern 1 und 2. Unbekannte Formen werden hier
             // ausgegeben, damit die fehlenden Vorlagen aus echten Spielstaenden ergaenzt werden koennen.
             if(hud.unknown.isNotEmpty())android.util.Log.i("DigiWorldHud","unbekannte Ziffer "+hud.unknown)
-            val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\npreview="+preview+"\ndash="+dashButton+"\nkrallen="+hud.claws+" dashvorrat="+hud.dash+"\n"
+            val summary="confidence="+detection.confidence+"\nplayer="+player?.key+" score="+player?.value?.player+"\nitems="+items+"\nobstacles="+obstacles+"\npreview="+preview+"\ndash="+dashButton+"\nkrallen="+hud.claws+" dashvorrat="+hud.dash+" dashMinimumOnly="+hud.dashMinimumOnly+"\n"
             if(android.os.SystemClock.elapsedRealtime()-lastDiagnostic>=DIAGNOSTIC_INTERVAL){
                 File(directory,"latest_detection.txt").writeText(summary)
                 android.util.Log.i("DigiWorldDetection",summary.replace("\n","; "))

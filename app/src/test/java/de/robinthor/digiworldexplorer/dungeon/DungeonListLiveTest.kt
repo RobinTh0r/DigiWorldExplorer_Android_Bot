@@ -8,6 +8,28 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DungeonListLiveTest {
+    @Test fun networkGrantedTicketFindsCounterAndMatchingOnTallLayout() {
+        val image = ImageIO.read(javaClass.getResource("/dungeon_network_tall_granted.png"))
+        val frame = PixelFrame(image.width, image.height, image::getRGB)
+        val panel = DungeonPanelDetector.detect(frame, DungeonKey.NETWORK_DEFENSE)
+        assertEquals("$panel", "network_matching", panel?.kind)
+        assertEquals("$panel", 1, panel?.remaining)
+    }
+    @Test fun networkLastAdUsesVisibleButtonOnTallPhoneGeometry() {
+        val image = ImageIO.read(javaClass.getResource("/dungeon_network_one_ad_tall.png"))
+        val frame = PixelFrame(image.width, image.height, image::getRGB)
+        val panel = DungeonPanelDetector.detect(frame, DungeonKey.NETWORK_DEFENSE)
+        assertEquals("$panel", "ad", panel?.kind)
+        assertEquals("$panel", 1, panel?.remaining)
+        assertTrue("$panel", panel!!.target.y in .77.. .79)
+    }
+    @Test fun networkLastAdIsPositiveAndNotAChallenge() {
+        val image = ImageIO.read(javaClass.getResource("/dungeon_network_one_ad.png"))
+        val frame = PixelFrame(image.width, image.height, image::getRGB)
+        val panel = DungeonPanelDetector.detect(frame, DungeonKey.NETWORK_DEFENSE)
+        assertEquals("$panel", "ad", panel?.kind)
+        assertEquals("$panel", 1, panel?.remaining)
+    }
     @Test fun networkEntryIsNotTheTeamNotice() {
         val image = ImageIO.read(javaClass.getResource("/dungeon_network_entry.png"))
         val frame = PixelFrame(image.width, image.height, image::getRGB)
