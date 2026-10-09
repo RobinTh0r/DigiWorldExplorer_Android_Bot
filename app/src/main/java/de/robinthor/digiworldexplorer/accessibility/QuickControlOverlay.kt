@@ -42,6 +42,12 @@ import kotlin.math.abs
 
 /** Small user-controlled overlay. The full-screen grid remains non-touchable. */
 class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
+    /** Only opaque/touchable controls, never the transparent full-screen grid window. */
+    fun occupiedBounds():List<de.robinthor.digiworldexplorer.capture.PixelRect> = listOfNotNull(root,copilotBadge).mapNotNull { view ->
+        if(view.visibility!=View.VISIBLE || !view.isAttachedToWindow || view.width<=0 || view.height<=0)return@mapNotNull null
+        val location=IntArray(2);view.getLocationOnScreen(location)
+        de.robinthor.digiworldexplorer.capture.PixelRect(location[0],location[1],location[0]+view.width,location[1]+view.height)
+    }
     private val windowManager = service.getSystemService(WindowManager::class.java)
     private val preferences = service.getSharedPreferences("settings", Context.MODE_PRIVATE)
     private var root: LinearLayout? = null

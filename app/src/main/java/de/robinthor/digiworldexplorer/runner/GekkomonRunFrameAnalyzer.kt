@@ -1,7 +1,7 @@
 package de.robinthor.digiworldexplorer.runner
 
 import android.graphics.Color
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import android.os.SystemClock
 import android.util.Log
 import de.robinthor.digiworldexplorer.R

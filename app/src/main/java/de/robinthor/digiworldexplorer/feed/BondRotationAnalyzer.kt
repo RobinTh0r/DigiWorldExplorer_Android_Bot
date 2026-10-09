@@ -1,6 +1,6 @@
 package de.robinthor.digiworldexplorer.feed
 
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import android.os.SystemClock
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.automation.*

@@ -22,8 +22,8 @@ class IdleRewardDetectorTest {
             assertEquals(name, expected, reading.screen)
             if (expected == IdleRewardScreen.CLAIM) {
                 assertNotNull(reading.claimTarget)
-                assertEquals((.740 * image.height + pad) / frame.height,
-                    reading.claimTarget!!.y, .035)
+                val target=de.robinthor.digiworldexplorer.vision.GameViewport.detect(frame).pixel(reading.claimTarget!!)
+                assertEquals(.740 * image.height + pad, target.second.toDouble(), image.height*.035)
             }
         }
     }

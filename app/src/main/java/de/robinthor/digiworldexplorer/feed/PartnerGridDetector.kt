@@ -13,7 +13,7 @@ data class PartnerGrid(val page: Boolean = false, val expanded: Boolean = false,
 /** Independent screen evidence for the visible 5x3 Partner roster. */
 object PartnerGridDetector {
     fun detect(frame: PixelFrame): PartnerGrid {
-        val viewport = GameViewport.fit(frame.width, frame.height)
+        val viewport = GameViewport.detect(frame)
         val tallPhone = viewport.usesTallPhoneLayout
         fun ratio(x: Double, y: Double, rx: Double, ry: Double, match: (Hsv) -> Boolean) =
             frame.ratioInViewportPatch(viewport, NormalizedPoint(x, y), rx, ry, 1) { match(it.hsv()) }

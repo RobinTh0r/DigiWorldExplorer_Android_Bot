@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import de.robinthor.digiworldexplorer.detection.CellClassifier
 import de.robinthor.digiworldexplorer.detection.CalibrationValidator
 import de.robinthor.digiworldexplorer.detection.GridDetector
@@ -32,10 +32,13 @@ object CaptureFrameAnalyzer {
     @Volatile private var calibrated: de.robinthor.digiworldexplorer.detection.GridDetection? = null
     @Volatile private var pending: de.robinthor.digiworldexplorer.detection.GridDetection? = null
     @Volatile private var pendingCount = 0
+    private var lastGridVerification=0L
+    private var verifyCleanFrame=false
+    private var unverifiableFrames=0
     /** Solange keine Kalibrierung steht, sucht [GridDetector] noch nach Kanten und darf das Overlay
      *  nicht im Bild haben. Danach sind die Bounds fixiert und das Overlay kann sichtbar bleiben. */
     val isCalibrated: Boolean get() = calibrated != null
-    fun resetCalibration(){ calibrated=null; pending=null; pendingCount=0; de.robinthor.digiworldexplorer.strategy.AutoMoveController.reset(); de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService.instance?.clearCalibrationOverlay() }
+    fun resetCalibration(){ calibrated=null; pending=null; pendingCount=0;lastGridVerification=0L;verifyCleanFrame=false;unverifiableFrames=0; de.robinthor.digiworldexplorer.strategy.AutoMoveController.reset(); de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService.instance?.clearCalibrationOverlay() }
     data class Result(val detected:Boolean,val confidence:Double,val output:String)
 
     private fun stable(candidate: de.robinthor.digiworldexplorer.detection.GridDetection): Boolean {
@@ -50,6 +53,13 @@ object CaptureFrameAnalyzer {
     }
 
     fun analyze(context:Context,image:Image,width:Int,height:Int):Result?=runCatching{
+        val frameNow=android.os.SystemClock.elapsedRealtime()
+        if(calibrated!=null && !verifyCleanFrame && frameNow-lastGridVerification>=5_000L) {
+            // A drawn debug grid cannot be evidence of its own continued existence.
+            verifyCleanFrame=true
+            de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService.instance?.hideForCapture()
+            return@runCatching Result(false,0.0,"")
+        }
         val plane=image.planes.first()
         val paddedWidth=plane.rowStride/plane.pixelStride
         val padded=Bitmap.createBitmap(paddedWidth,height,Bitmap.Config.ARGB_8888)
@@ -60,6 +70,22 @@ object CaptureFrameAnalyzer {
         val pixels=IntArray(width*height)
         frame.getPixels(pixels,0,width,0,0,width,height)
         val dwsSettings=de.robinthor.digiworldexplorer.strategy.AutomationState.dwsNavigationSettings
+        if(verifyCleanFrame) {
+            verifyCleanFrame=false;lastGridVerification=frameNow
+            val fresh=GridDetector.detect(width,height,pixels)?.takeIf { it.confidence>=CANDIDATE_MIN }
+            val previous=calibrated
+            val same=fresh!=null && previous!=null &&
+                kotlin.math.abs(previous.bounds.left-fresh.bounds.left)<=BOUNDS_TOLERANCE &&
+                kotlin.math.abs(previous.bounds.top-fresh.bounds.top)<=BOUNDS_TOLERANCE &&
+                kotlin.math.abs(previous.bounds.right-fresh.bounds.right)<=BOUNDS_TOLERANCE &&
+                kotlin.math.abs(previous.bounds.bottom-fresh.bounds.bottom)<=BOUNDS_TOLERANCE
+            if(same)unverifiableFrames=0 else unverifiableFrames++
+            if(fresh!=null && !same || unverifiableFrames>=3) {
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.GRID","revoked previous=${previous?.bounds} fresh=${fresh?.bounds} misses=$unverifiableFrames")
+                resetCalibration()
+                lastGridVerification=frameNow
+            }
+        }
         var detection=calibrated ?: GridDetector.detect(width,height,pixels)
             ?.takeIf { it.confidence>=CANDIDATE_MIN }
         var cells=detection?.let { CellClassifier.classify(width,height,pixels,it.bounds,
@@ -69,6 +95,7 @@ object CaptureFrameAnalyzer {
             if(cells!=null&&CalibrationValidator.plausible(cells)&&geometryStable){
                 val locked=detection.copy(confidence=maxOf(detection.confidence,.90),reason="Raster ueber $STABLE_FRAMES Frames stabil")
                 calibrated=locked
+                lastGridVerification=frameNow
                 detection=locked
                 android.util.Log.i("DigiWorldCapture","kalibriert bounds=${locked.bounds} rohkonfidenz=${locked.confidence}")
             } else { detection=null;cells=null }

@@ -16,6 +16,11 @@ import de.robinthor.digiworldexplorer.detection.HudCounters
 import de.robinthor.digiworldexplorer.strategy.AutomationState
 import de.robinthor.digiworldexplorer.automation.DirectorSnapshot
 import de.robinthor.digiworldexplorer.automation.ScreenDirector
+import de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry
+import de.robinthor.digiworldexplorer.capture.GeometrySnapshot
+import de.robinthor.digiworldexplorer.capture.PixelRect
+import de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog
+import android.os.SystemClock
 
 class DigiWorldAccessibilityService:AccessibilityService(){
  @Volatile private var activePackage:String?=null
@@ -35,16 +40,64 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   return current=="com.bandainamcoent.dgup_ww"
  }
  override fun onDestroy(){quickControls?.destroy();quickControls=null;removeOverlay();if(instance===this)instance=null;super.onDestroy()}
- fun dispatchValidatedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){if(x<0||y<0){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","tap rejected invalid x=$x y=$y");onComplete(false);return};de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.sampleAction("tap",x.toInt(),y.toInt());de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","tap dispatch x=${x.toInt()} y=${y.toInt()}");val p=Path().apply{moveTo(x,y)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,80)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","tap completed x=${x.toInt()} y=${y.toInt()}");onComplete(true)};override fun onCancelled(d:GestureDescription?){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","tap cancelled x=${x.toInt()} y=${y.toInt()}");onComplete(false)}},null);if(!ok){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","tap dispatch rejected x=${x.toInt()} y=${y.toInt()}");onComplete(false)}}
- fun dispatchValidatedSwipe(x1:Float,y1:Float,x2:Float,y2:Float,onComplete:(Boolean)->Unit){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","swipe dispatch ${x1.toInt()},${y1.toInt()} -> ${x2.toInt()},${y2.toInt()}");val p=Path().apply{moveTo(x1,y1);lineTo(x2,y2)};val g=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(p,0,420)).build();val ok=dispatchGesture(g,object:GestureResultCallback(){override fun onCompleted(d:GestureDescription?){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","swipe completed");onComplete(true)};override fun onCancelled(d:GestureDescription?){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","swipe cancelled");onComplete(false)}},null);if(!ok){de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","swipe dispatch rejected");onComplete(false)}}
+ fun gameWindowBounds():PixelRect? {
+  val window=windows.firstOrNull { it.type==android.view.accessibility.AccessibilityWindowInfo.TYPE_APPLICATION && it.isActive }
+  val root=window?.root ?: rootInActiveWindow ?: return null
+  try {
+   if(root.packageName?.toString()!="com.bandainamcoent.dgup_ww")return null
+   val rect=Rect()
+   if(window!=null)window.getBoundsInScreen(rect) else root.getBoundsInScreen(rect)
+   return if(rect.width()>0 && rect.height()>0)PixelRect(rect.left,rect.top,rect.right,rect.bottom) else null
+  } finally { @Suppress("DEPRECATION") root.recycle() }
+ }
+ fun controlOverlayBounds()=quickControls?.occupiedBounds() ?: emptyList()
+ private fun validOrigin():GeometrySnapshot? {
+  val now=SystemClock.elapsedRealtime()
+  val origin=FrameGeometryRegistry.forCaller(now) ?: return null
+  if(!FrameGeometryRegistry.calibration.valid(origin,now) || !isGameForeground())return null
+  val display=de.robinthor.digiworldexplorer.capture.PhysicalDisplay.bounds(this,AutomationState.forceLegacyCaptureMetrics)
+  if(display!=origin.geometry.display.bounds || gameWindowBounds()?.intersect(display)!=origin.geometry.display.gameWindow || resources.configuration.densityDpi!=origin.geometry.display.densityDpi)return null
+  return origin
+ }
+ fun dispatchValidatedTap(x:Float,y:Float,onComplete:(Boolean)->Unit) {
+  val origin=validOrigin();val point=origin?.geometry?.map(x.toDouble(),y.toDouble())
+  if(origin==null || point==null || controlOverlayBounds().any { it.contains(point.x,point.y) }){PersistentDiagnosticLog.record("GESTURE","tap rejected: stale/missing geometry, outside game or overlay-covered target x=$x y=$y");onComplete(false);return}
+  PersistentDiagnosticLog.sampleAction("tap",x.toInt(),y.toInt())
+  PersistentDiagnosticLog.record("GESTURE","tap local=$x,$y display=${point.x},${point.y} generation=${origin.generation}")
+  val path=Path().apply { moveTo(point.x.toFloat(),point.y.toFloat()) }
+  dispatchMappedGesture(path,80,origin,onComplete)
+ }
+ private fun dispatchMappedGesture(path:Path,duration:Long,origin:GeometrySnapshot,onComplete:(Boolean)->Unit) {
+  val gesture=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path,0,duration)).build()
+  fun finish(ok:Boolean)=FrameGeometryRegistry.withSnapshot(origin) {
+   // Completion confirms Android input delivery, NOT the game's desired action.
+   onComplete(ok && FrameGeometryRegistry.calibration.valid(origin,SystemClock.elapsedRealtime()))
+  }
+  val accepted=dispatchGesture(gesture,object:GestureResultCallback() {
+   override fun onCompleted(d:GestureDescription?){PersistentDiagnosticLog.record("GESTURE","input completed generation=${origin.generation}; visual confirmation required");finish(true)}
+   override fun onCancelled(d:GestureDescription?){PersistentDiagnosticLog.record("GESTURE","input cancelled");finish(false)}
+  },null)
+  if(!accepted)finish(false)
+ }
+ fun dispatchValidatedSwipe(x1:Float,y1:Float,x2:Float,y2:Float,onComplete:(Boolean)->Unit) {
+  val origin=validOrigin();val a=origin?.geometry?.map(x1.toDouble(),y1.toDouble());val b=origin?.geometry?.map(x2.toDouble(),y2.toDouble())
+  if(origin==null || a==null || b==null || controlOverlayBounds().any { it.intersectsSegment(a,b) }){PersistentDiagnosticLog.record("GESTURE","swipe rejected: invalid geometry/target or overlay obstruction");onComplete(false);return}
+  PersistentDiagnosticLog.record("GESTURE","swipe local=$x1,$y1->$x2,$y2 display=$a->$b generation=${origin.generation}")
+  dispatchMappedGesture(Path().apply{moveTo(a.x.toFloat(),a.y.toFloat());lineTo(b.x.toFloat(),b.y.toFloat())},420,origin,onComplete)
+ }
  fun dispatchBack(onComplete:(Boolean)->Unit={}){val ok=performGlobalAction(GLOBAL_ACTION_BACK);de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","back result=$ok");onComplete(ok)}
  fun dispatchSafeRandomizedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){
   // Ein dp Varianz ist auf allen Zielbuttons weit innerhalb des erkannten Mittelpunkts.
-  val radius=resources.displayMetrics.density.coerceAtLeast(1f)
+  val geometry=validOrigin()?.geometry ?: run { onComplete(false);return }
+  val radius=(resources.displayMetrics.density.coerceAtLeast(1f)/geometry.scaleToDisplay).toFloat()
   val (jx,jy)=SafeTapRandomizer.point(x,y,radius,radius)
   dispatchValidatedTap(jx,jy,onComplete)
  }
- fun dispatchNormalizedTap(xRatio:Float,yRatio:Float,onComplete:(Boolean)->Unit){val wm=getSystemService(WindowManager::class.java);val bounds=if(android.os.Build.VERSION.SDK_INT>=30)wm.maximumWindowMetrics.bounds else{val metrics=android.util.DisplayMetrics();@Suppress("DEPRECATION") wm.defaultDisplay.getRealMetrics(metrics);Rect(0,0,metrics.widthPixels,metrics.heightPixels)};val x=bounds.left+xRatio.coerceIn(0f,1f)*bounds.width();val y=bounds.top+yRatio.coerceIn(0f,1f)*bounds.height();android.util.Log.i("DigiWorldTap","normalized $xRatio,$yRatio -> $x,$y display=${bounds.width()}x${bounds.height()}");dispatchSafeRandomizedTap(x,y,onComplete)}
+ fun dispatchNormalizedTap(xRatio:Float,yRatio:Float,onComplete:(Boolean)->Unit) {
+  val geometry=validOrigin()?.geometry
+  if(geometry==null || !xRatio.isFinite() || !yRatio.isFinite() || xRatio !in 0f..1f || yRatio !in 0f..1f){onComplete(false);return}
+  dispatchSafeRandomizedTap(xRatio*(geometry.analysisSize.width-1),yRatio*(geometry.analysisSize.height-1),onComplete)
+ }
  fun clearCalibrationOverlay(){overlay?.post{overlay?.bounds=null;overlay?.visibility=View.GONE;overlay?.invalidate()}}
  fun setOverlayEnabled(enabled:Boolean){overlay?.post{overlay?.visibility=if(enabled)View.VISIBLE else View.GONE};quickControls?.refresh()}
  fun setQuickControlsEnabled(enabled:Boolean){
@@ -80,6 +133,12 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   // darf das Overlay dauerhaft sichtbar bleiben und muss für die Analyse nicht mehr ausgeblendet werden.
   override fun onDraw(c:Canvas){super.onDraw(c);if(captureMode)return;val b=bounds
    if(b==null)return
+   val geometry=FrameGeometryRegistry.current(SystemClock.elapsedRealtime())?.geometry ?: return
+   val location=IntArray(2);getLocationOnScreen(location)
+   val checkpoint=c.save()
+   c.translate((geometry.displayOrigin.x-location[0]).toFloat(),(geometry.displayOrigin.y-location[1]).toFloat())
+   c.scale(geometry.scaleToDisplay.toFloat(),geometry.scaleToDisplay.toFloat())
+   c.clipRect(0,0,geometry.analysisSize.width,geometry.analysisSize.height)
    val cw=(b.right-b.left)/5f;val ch=(b.bottom-b.top)/5f;val unit=minOf(cw,ch)
    p.pathEffect=null;p.style=Paint.Style.STROKE;p.color=Color.GREEN;p.strokeWidth=unit*.025f;for(i in 0..5){c.drawLine(b.left+i*cw,b.top.toFloat(),b.left+i*cw,b.bottom.toFloat(),p);c.drawLine(b.left.toFloat(),b.top+i*ch,b.right.toFloat(),b.top+i*ch,p)}
    p.pathEffect=DashPathEffect(floatArrayOf(unit*.07f,unit*.05f),0f);c.drawRect(b.right.toFloat(),b.top.toFloat(),b.right+cw,b.bottom.toFloat(),p);for(i in 1..4)c.drawLine(b.right.toFloat(),b.top+i*ch,b.right+cw,b.top+i*ch,p);p.pathEffect=null
@@ -94,9 +153,10 @@ class DigiWorldAccessibilityService:AccessibilityService(){
    dashButton?.let{(x,y)->c.drawCircle(x,y,unit*.25f,p)}
    // Status direkt unter dem Raster im hellen Bereich. Heller Umriss plus dunkle Füllung bleibt auf
    // hellem wie dunklem Untergrund lesbar; unterhalb von bounds.bottom liegt kein Abtastfenster mehr.
-   val ts=ch*.24f;p.textSize=ts;val below=b.bottom+ts*1.15f;val ty=if(below<=height-ts*.3f)below else (b.top-ts*.45f).coerceAtLeast(ts)
+   val ts=ch*.24f;p.textSize=ts;val below=b.bottom+ts*1.15f;val ty=if(below<=geometry.analysisSize.height-ts*.3f)below else (b.top-ts*.45f).coerceAtLeast(ts)
    p.style=Paint.Style.STROKE;p.strokeWidth=ts*.20f;p.color=Color.WHITE;c.drawText(status,b.left.toFloat(),ty,p)
    p.style=Paint.Style.FILL;p.color=Color.rgb(12,20,36);c.drawText(status,b.left.toFloat(),ty,p)
+   c.restoreToCount(checkpoint)
 }
  }
  companion object{@Volatile var instance:DigiWorldAccessibilityService?=null;private set}

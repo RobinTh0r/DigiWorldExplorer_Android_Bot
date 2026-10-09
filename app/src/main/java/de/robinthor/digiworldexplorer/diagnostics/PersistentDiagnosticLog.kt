@@ -3,7 +3,7 @@ package de.robinthor.digiworldexplorer.diagnostics
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import android.os.Build
 import android.os.SystemClock
 import androidx.core.content.FileProvider
@@ -81,6 +81,14 @@ object PersistentDiagnosticLog {
         }
     }
     @Synchronized fun requestScreenshot(reason: String) { if (enabled) pendingScreenshot = reason.take(80) }
+    /** Always retain the latest mapping, even when the general context snapshot budget is used. */
+    @Synchronized fun recordCalibration(extra:Map<String,String>) {
+        if(!enabled)return
+        val context=appContext ?: return;val directory=ensureSessionLocked() ?: return
+        runCatching {DiagnosticContext.write(context,directory,"geometry-current.json",extra)}
+            .onFailure {record("GEOMETRY.CONTEXT_FAILED",it.javaClass.simpleName)}
+        snapshotContext("geometry",extra)
+    }
     @Synchronized fun snapshotContext(reason: String, extra: Map<String, String> = emptyMap()) {
         if (!enabled || contextSequence >= 20) return
         val context = appContext ?: return

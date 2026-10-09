@@ -19,7 +19,7 @@ data class HomeIdleRewardReading(
 object HomeIdleRewardDetector {
     fun detect(frame: PixelFrame, homeAlreadyConfirmed: Boolean = false): HomeIdleRewardReading {
         val viewport = HomeScreenDetector.viewport(frame.width, frame.height, frame::argbAt)
-            ?: if (homeAlreadyConfirmed) GameViewport.fit(frame.width, frame.height)
+            ?: if (homeAlreadyConfirmed) GameViewport.detect(frame)
             else return HomeIdleRewardReading(false)
         val chest = ColorRegionLocator.find(frame, viewport, NormalizedRect(.04, .54, .27, .80),
             (viewport.width / 540).coerceAtLeast(1)) {

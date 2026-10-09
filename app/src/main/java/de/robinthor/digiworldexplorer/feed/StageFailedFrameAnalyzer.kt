@@ -1,7 +1,7 @@
 package de.robinthor.digiworldexplorer.feed
 
 import android.graphics.Color
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import android.os.SystemClock
 import de.robinthor.digiworldexplorer.R
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService

@@ -23,7 +23,7 @@ object FarmDialogDetector {
     fun detect(
         frame: PixelFrame,
         visiblePlots: Int,
-        viewport: GameViewport = GameViewport.fit(frame.width, frame.height),
+        viewport: GameViewport = GameViewport.detect(frame),
         trustedFarmFlow: Boolean = false,
     ): FarmDialogDetection {
         if (!trustedFarmFlow && visiblePlots !in 2..6) return FarmDialogDetection()

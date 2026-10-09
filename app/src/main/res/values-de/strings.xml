@@ -235,6 +235,7 @@
     <string name="dungeon_help_body">Starte einen Durchlauf manuell über den runden Bot im Spiel. Der Co-Pilot arbeitet die ausgewählten Dungeon-Karten ab und nutzt pro regulärem Dungeon bis zu drei normale Versuche sowie—bei aktiviertem Ad-Skip-Pass—bis zu zwei Werbeversuche. Er wartet Kämpfe ab, schließt Ergebnis- und Belohnungsdialoge und kehrt danach Richtung Home zurück. Apocalymon ist auswählbar, wegen des noch nötigen Tests aber standardmäßig ausgeschaltet. Während des Durchlaufs pausieren konkurrierende Automatiken.</string>
     <string name="overlay_no_digiworld">Keine DigiWorld erkannt</string>
     <string name="overlay_no_capture_image">Kein Spielbild empfangen — Aufnahme ist grau oder schwarz</string>
+    <string name="overlay_calibrating_geometry">Spielbereich wird kalibriert — Eingabe pausiert</string>
     <string name="overlay_auto_purchase">AUTO: Beschwören</string>
     <string name="overlay_purchase_disabled">Beschwörungsbildschirm erkannt — Automatik aus</string>
     <string name="notification_idle_title">Aufnahme gestoppt: kein Spiel erkannt</string>

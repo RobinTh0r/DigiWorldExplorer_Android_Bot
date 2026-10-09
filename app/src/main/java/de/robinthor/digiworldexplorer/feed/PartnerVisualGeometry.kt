@@ -2,6 +2,7 @@ package de.robinthor.digiworldexplorer.feed
 
 import de.robinthor.digiworldexplorer.vision.*
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 /** Geometry measured from the current image, independent of device names and portrait artwork. */
 internal data class PartnerVisualGeometry(
@@ -20,11 +21,19 @@ internal object PartnerVisualLocator {
             val pixelAspect = region.width * viewport.width / (region.height * viewport.height)
             region.width in .022.. .055 && pixelAspect in .75..1.30
         }.filter { region ->
-            fun white(dx: Double, dy: Double) = frame.ratioInViewportPatch(viewport,
-                NormalizedPoint(region.center.x + dx * region.width, region.center.y + dy * region.height),
-                region.width * .08, region.height * .08, 1) {
-                val hsv = it.hsv(); hsv.value > 205 && hsv.saturation < 65
-            } > .6
+            fun white(dx: Double, dy: Double):Boolean {
+                // Component extents use pixel boundaries. Sample their pixel centres directly;
+                // forcing a 3x3 patch erased one-pixel-wide cross arms in smaller captures.
+                val cx=(viewport.left+(region.center.x+dx*region.width)*viewport.width-.5).roundToInt()
+                val cy=(viewport.top+(region.center.y+dy*region.height)*viewport.height-.5).roundToInt()
+                val rx=(region.width*viewport.width*.06).toInt();val ry=(region.height*viewport.height*.06).toInt()
+                var bright=0;var total=0
+                for(y in cy-ry..cy+ry)for(x in cx-rx..cx+rx) {
+                    val hsv=frame.rgbAt(x,y).hsv();total++
+                    if(hsv.value>205 && hsv.saturation<65)bright++
+                }
+                return bright.toDouble()/total>.6
+            }
             // A cross has four bright arms and dark corners, unlike text or a portrait highlight.
             white(0.0, 0.0) && white(-.3, 0.0) && white(.3, 0.0) &&
                 white(0.0, -.3) && white(0.0, .3) &&

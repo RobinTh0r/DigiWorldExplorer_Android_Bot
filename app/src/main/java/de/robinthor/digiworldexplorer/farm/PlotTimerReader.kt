@@ -5,7 +5,7 @@ import kotlin.math.abs
 
 object PlotTimerReader {
     /** Reads HH:MM:SS or MM:SS. Any incomplete/invalid row remains null. */
-    fun read(frame: PixelFrame, plot: Int, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): Int? {
+    fun read(frame: PixelFrame, plot: Int, viewport: GameViewport = GameViewport.detect(frame)): Int? {
         val center = FarmHarvestDetector.centers.getOrNull(plot) ?: return null
         val left = viewport.left + (viewport.width * (center.x - .15)).toInt()
         val right = viewport.left + (viewport.width * (center.x + .15)).toInt()

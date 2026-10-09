@@ -56,7 +56,12 @@ class CaptureConsentActivity : ComponentActivity() {
             return
         }
         val manager = getSystemService(MediaProjectionManager::class.java)
-        consent.launch(manager.createScreenCaptureIntent())
+        // Game-local pixels must have an unambiguous relationship to accessibility's
+        // display coordinates. App-only sharing can silently crop system bars/windows.
+        val captureIntent = if(android.os.Build.VERSION.SDK_INT>=34)
+            manager.createScreenCaptureIntent(android.media.projection.MediaProjectionConfig.createConfigForDefaultDisplay())
+        else manager.createScreenCaptureIntent()
+        consent.launch(captureIntent)
     }
 
     private fun applyRuntimeSettings() {

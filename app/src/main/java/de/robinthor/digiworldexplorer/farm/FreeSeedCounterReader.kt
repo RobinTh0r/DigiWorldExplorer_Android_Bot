@@ -5,7 +5,7 @@ import kotlin.math.abs
 
 object FreeSeedCounterReader {
     /** Returns null for no row, more than two glyphs, noise or any unrecognized digit. */
-    fun read(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): Int? {
+    fun read(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): Int? {
         val left = viewport.left + (viewport.width * .375).toInt()
         val right = viewport.left + (viewport.width * .455).toInt()
         val top = viewport.top + (viewport.height * .06).toInt()

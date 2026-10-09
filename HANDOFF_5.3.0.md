@@ -1,5 +1,15 @@
 # Handoff — 5.3.0 (2026-10-09)
 
+## Current local follow-up — automatic calibration
+
+After publication, the user requested implementation and automated verification of universal automatic calibration, not another release. Read `docs/AUTO_CALIBRATION_AUDIT_20261009.md` before continuing. The working tree now contains uncommitted calibration changes on top of the published release: shared physical-display/game-window/projection geometry, game-local `AnalysisImage`, generation-bound input, resize/configuration handling, observed borders, periodic DWS grid verification, small Plus recognition and diagnostics. No phone profiles were added, movement rules/license gates were not changed, and app ID/certificate/settings/version remain unchanged.
+
+672 automated tests are green and the signed release-variant build/vital lint succeeded. No APK was installed and no live test of these changes was performed. The generated local 5.3.0 APK is a DEVELOPMENT BUILD and differs from the published asset described below. Do not overwrite/upload the existing release or treat the historical live tests below as proof of this new code. Next step is explicitly labelled device validation with in-app diagnostics and real resolution/zoom/navigation restarts; keep physical-phone USB debugging off.
+
+Final labelled local artifact: `C:/Users/thor/AppData/Local/Temp/dwe-calibration-20261009/DigiWorldExplorer-calibration-dev.apk`, SHA-256 `8d7938aa16c2d9a4ae013365d5b0b4d816a4c3058a1f1c4ccbd5e46904d6c42f`. Manifest ID/version remains `de.robinthor.digiworldexplorer` / 84 / 5.3.0; certificate independently verified unchanged (`859229d0e9163ad0d1ca11aa8ec85c55321a0a50aebca489b3ff775d1e3528f8`). Build artifacts in the regular temporary 5.3.0 output directory now also contain this local development code, not the published APK.
+
+## Published release history (unchanged)
+
 The user explicitly requested the regular **5.3.0 release**, replacing the initial Beta 4 plan. Remote tag `v5.3.0` was absent before publication. This workspace is authoritative; preserve app ID, certificate, preferences and user data. Do not publish another release without explicit authorization.
 
 ## Implementation and evidence

@@ -26,6 +26,10 @@ class PixelFrame(
         val value = argbAt(x, y)
         return Rgb(value shr 16 and 255, value shr 8 and 255, value and 255)
     }
+    val observedViewport:GameViewport by lazy {
+        val area=de.robinthor.digiworldexplorer.capture.VisibleGameArea.detect(this)
+        if(area==null)GameViewport.fit(width,height) else GameViewport(area.left,area.top,area.width,area.height)
+    }
 }
 
 data class Rgb(val red: Int, val green: Int, val blue: Int) {
@@ -62,24 +66,10 @@ data class GameViewport(val left: Int, val top: Int, val width: Int, val height:
     val usesTallPhoneLayout: Boolean get() = width.toDouble() / height < .53
 
     companion object {
-        private const val GAME_ASPECT = 9.0 / 16.0
-
-        /** Fits the centered 9:16 game canvas and excludes letter/pillar boxes. */
-        fun fit(frameWidth: Int, frameHeight: Int): GameViewport {
-            require(frameWidth > 0 && frameHeight > 0)
-            val frameAspect = frameWidth.toDouble() / frameHeight
-            return if (frameAspect > GAME_ASPECT) {
-                val gameWidth = (frameHeight * GAME_ASPECT).toInt().coerceAtLeast(1)
-                GameViewport((frameWidth - gameWidth) / 2, 0, gameWidth, frameHeight)
-            } else {
-                // Modern phones can be taller than 16:9 and the game adapts its layout to the
-                // complete window (it does not add horizontal letterboxing). Cropping such a
-                // frame to a synthetic 9:16 canvas shifts every normalized tap vertically; on a
-                // 582x1280 OnePlus frame the Partner-grid '+' was consequently tapped ~90 px too
-                // high. Only wide frames need pillar-box removal; narrow frames are the viewport.
-                GameViewport(0, 0, frameWidth, frameHeight)
-            }
-        }
+        /** Dimensions alone cannot prove pillar/letterboxing. Runtime images are already
+         * cropped using Android window bounds and observed content; never invent 9:16. */
+        fun fit(frameWidth: Int, frameHeight: Int)=GameViewport(0,0,frameWidth,frameHeight)
+        fun detect(frame:PixelFrame)=frame.observedViewport
     }
 }
 

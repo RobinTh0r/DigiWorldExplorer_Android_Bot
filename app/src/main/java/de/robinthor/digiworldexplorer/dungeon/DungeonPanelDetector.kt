@@ -6,7 +6,7 @@ data class DungeonPanel(val kind: String, val target: NormalizedPoint, val remai
 
 /** Reads the foreground action and its counter, independently of the list behind the modal. */
 object DungeonPanelDetector {
-    fun detect(frame: PixelFrame, key: DungeonKey, v: GameViewport = GameViewport.fit(frame.width, frame.height)): DungeonPanel? {
+    fun detect(frame: PixelFrame, key: DungeonKey, v: GameViewport = GameViewport.detect(frame)): DungeonPanel? {
         fun color(x: Double, y: Double, purple: Boolean = false, rx: Double = .018, ry: Double = .010): Double = frame.ratioInViewportPatch(v, NormalizedPoint(x,y), rx,ry) {
             val h = it.hsv()
             h.value >= 150 && h.saturation >= 100 && if (purple) h.hue in 120..155 else h.hue in 90..115

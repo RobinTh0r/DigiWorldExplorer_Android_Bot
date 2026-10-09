@@ -16,7 +16,7 @@ object IdleRewardDetector {
     fun detect(frame: PixelFrame): IdleRewardScreen = read(frame).screen
 
     fun read(frame: PixelFrame): IdleRewardReading {
-        val viewport = GameViewport.fit(frame.width, frame.height)
+        val viewport = GameViewport.detect(frame)
         // Sample at roughly 360 columns so session-wide ownership stays cheap on high-DPI phones.
         val step = (viewport.width / 360).coerceAtLeast(1)
         val cyan = ColorRegionLocator.find(frame, viewport, NormalizedRect(.04, .14, .96, .86), step) {

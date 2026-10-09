@@ -53,7 +53,7 @@ object TitleScreenEvidence {
         val full = GameViewport(0, 0, frame.width, frame.height)
         if (adaptiveTitleChrome(frame, full)) return full
         return listOf(
-        GameViewport(0, 0, frame.width, frame.height), GameViewport.fit(frame.width, frame.height)
+        GameViewport(0, 0, frame.width, frame.height), GameViewport.detect(frame)
     ).distinct().map { it to maxOf(logo.score(frame, it), loading.score(frame, it)) }
         .filter { it.second >= .80 }.maxByOrNull { it.second }?.first
     }

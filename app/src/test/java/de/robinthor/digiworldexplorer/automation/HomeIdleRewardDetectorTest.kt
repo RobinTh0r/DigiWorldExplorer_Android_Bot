@@ -19,7 +19,8 @@ class HomeIdleRewardDetectorTest {
         }
         val reward = HomeIdleRewardDetector.detect(frame, homeAlreadyConfirmed = true)
         assertTrue(reward.toString(), reward.available)
-        assertEquals((.691 * image.height + pad) / frame.height, reward.target!!.y, .025)
+        val target=de.robinthor.digiworldexplorer.vision.GameViewport.detect(frame).pixel(reward.target!!)
+        assertEquals(.691 * image.height + pad, target.second.toDouble(), image.height*.025)
     }
     @Test fun chestPositionFollowsCaptureScaleAndEmptyChestIsObserved() {
         val image = ImageIO.read(javaClass.classLoader!!.getResource("home_reward_live_720x1280.png"))

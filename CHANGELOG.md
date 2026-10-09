@@ -1,5 +1,13 @@
 # Changelog
 
+## 5.4.1 Beta 1 — 9 October 2026
+
+- Share one observed game-local coordinate system across image recognition, physical taps/swipes and grid rendering. Use Android's real display/game-window bounds and observed black borders, not device profiles or a guessed 9:16 canvas.
+- Recalibrate after capture/window/display/DPI/rotation changes and frame gaps; revoke old queued movement coordinates. Resize the existing projection surface and request full-display sharing on Android 14+.
+- Compact image crops using actual RGBA strides, reject unsafe/overlay-covered input, periodically revalidate DWS grid geometry without its own drawn grid, and fix small-capture Plus verification.
+- Expand bounded diagnostics with the current transformation and generation, mapped input/rejection evidence and a calibration-paused status.
+- Verified 672 automated tests, signed release-variant build and vital lint. Software matrix includes 1080x2340/2400 plus six other display sizes and recorded Partner/Network/seed-dialog replays. This Beta is for user device testing; no live device gameplay test of the calibration changes was performed. See `docs/AUTO_CALIBRATION_AUDIT_20261009.md` for limits.
+
 ## 5.3.0 — 9 October 2026
 
 - Simplify DWS selection to free/default **Classic / Bota Walk** and experimental **All-Sprite Test · Beta**. Hide V3 from the chooser without silently migrating saved settings. Retain the current movement, energy and Dash rules.

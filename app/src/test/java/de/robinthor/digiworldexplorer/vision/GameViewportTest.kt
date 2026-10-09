@@ -10,8 +10,10 @@ class GameViewportTest {
         assertEquals(1046, viewport.pixel(NormalizedPoint(.823, .818)).second)
     }
 
-    @Test fun `wide capture still removes pillar boxes`() {
-        assertEquals(GameViewport(180, 0, 1080, 1920), GameViewport.fit(1440, 1920))
+    @Test fun `wide dimensions alone do not justify cropping a real game window`() {
+        assertEquals(GameViewport(0, 0, 1440, 1920), GameViewport.fit(1440, 1920))
+        val frame=PixelFrame(1440,1920) { x,_ -> if(x<180 || x>=1260)0xff000000.toInt() else 0xff335577.toInt() }
+        assertEquals(GameViewport(180,0,1080,1920),GameViewport.detect(frame))
     }
 
     @Test fun `current Galaxy Pixel and OnePlus ratios use adaptive tall layout`() {

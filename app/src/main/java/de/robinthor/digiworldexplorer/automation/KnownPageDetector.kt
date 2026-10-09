@@ -10,7 +10,7 @@ object KnownPageDetector {
     private const val W = 180
     private const val H = 320
 
-    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): ObservedScreen {
+    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): ObservedScreen {
         val list = de.robinthor.digiworldexplorer.dungeon.DungeonListDetector.detect(frame, viewport)
         if (list.position == de.robinthor.digiworldexplorer.dungeon.DungeonListPosition.TOP ||
             list.position == de.robinthor.digiworldexplorer.dungeon.DungeonListPosition.BOTTOM)

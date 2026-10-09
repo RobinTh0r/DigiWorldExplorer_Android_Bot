@@ -235,6 +235,7 @@
     <string name="dungeon_help_body">Start one route manually from the round in-game bot. The Co-Pilot processes the selected dungeon cards, takes up to three normal attempts and—when Ad Skip Pass is enabled—up to two ad attempts per regular dungeon. It waits for battles, closes result and reward dialogs and returns toward Home when finished. Apocalymon is available but disabled by default because this preview still needs more testing. During the route, competing automation is paused.</string>
     <string name="overlay_no_digiworld">No DigiWorld detected</string>
     <string name="overlay_no_capture_image">No game image received — capture is gray or black</string>
+    <string name="overlay_calibrating_geometry">Calibrating game area — input paused</string>
     <string name="overlay_auto_purchase">AUTO: Summoning</string>
     <string name="overlay_purchase_disabled">Summon screen detected — auto summon off</string>
     <string name="notification_idle_title">Capture stopped: no game detected</string>

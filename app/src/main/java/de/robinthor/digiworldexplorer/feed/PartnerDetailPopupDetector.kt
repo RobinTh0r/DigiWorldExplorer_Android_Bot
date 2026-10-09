@@ -6,7 +6,7 @@ import kotlin.math.abs
 /** The large Partner detail card accidentally opened by a misplaced food-bubble tap. */
 internal object PartnerDetailPopupDetector {
     fun detect(frame: PixelFrame): Boolean {
-        val viewport = GameViewport.fit(frame.width, frame.height)
+        val viewport = GameViewport.detect(frame)
         val step = (viewport.width / 540).coerceAtLeast(1)
         val cyan = ColorRegionLocator.find(frame, viewport, NormalizedRect(.04, .12, .96, .86), step) {
             val hsv = it.hsv(); hsv.hue in 85..110 && hsv.saturation > 95 && hsv.value > 130

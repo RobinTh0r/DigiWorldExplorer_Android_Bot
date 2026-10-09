@@ -4,11 +4,11 @@ import kotlin.math.roundToInt
 
 /** Small sampled text silhouette from our game screenshots, not a whole-screen template. */
 class ScreenTextPattern(private val left: Int, private val top: Int, private val rows: List<String>) {
-    fun matches(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): Boolean {
+    fun matches(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): Boolean {
         return score(frame, viewport) >= .80
     }
 
-    fun score(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): Double {
+    fun score(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): Double {
         var best = 0.0
         for (dy in -1..1) for (dx in -1..1) {
             var intersection = 0

@@ -56,7 +56,7 @@ object GameEntryDetector {
     /** Red numerator means 0/2. A visibly enabled purple button means at least one remains. */
     private fun idleAdRemaining(frame: PixelFrame, idle: IdleRewardReading): Int? {
         val button = idle.adTarget ?: return null
-        val viewport = GameViewport.fit(frame.width, frame.height)
+        val viewport = GameViewport.detect(frame)
         val redZero = frame.ratioInViewportPatch(viewport,
             NormalizedPoint(button.x + .025, button.y - .015), .025, .018) {
             it.red > 125 && it.red > it.green * 1.45 && it.red > it.blue * 1.35

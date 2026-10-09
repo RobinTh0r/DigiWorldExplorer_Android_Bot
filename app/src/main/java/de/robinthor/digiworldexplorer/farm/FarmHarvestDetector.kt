@@ -18,7 +18,7 @@ object FarmHarvestDetector {
     private const val H = 640
     val centers = listOf(.507, .653, .810).flatMap { y -> listOf(.313, .640).map { x -> NormalizedPoint(x, y) } }
 
-    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): FarmHarvestDetection {
+    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): FarmHarvestDetection {
         val ground = BooleanArray(W * H)
         val badges = BooleanArray(W * H)
         val bright = BooleanArray(W * H)

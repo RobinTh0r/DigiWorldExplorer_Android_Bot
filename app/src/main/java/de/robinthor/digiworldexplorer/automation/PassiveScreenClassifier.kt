@@ -1,6 +1,6 @@
 package de.robinthor.digiworldexplorer.automation
 
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import de.robinthor.digiworldexplorer.dungeon.DungeonScreen
 import de.robinthor.digiworldexplorer.dungeon.DungeonScreenDetector
 import de.robinthor.digiworldexplorer.farm.ExploreMenuDetector

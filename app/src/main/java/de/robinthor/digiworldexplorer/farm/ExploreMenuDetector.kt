@@ -20,7 +20,7 @@ object ExploreMenuDetector {
     private const val W = 360
     private const val H = 640
 
-    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): ExploreMenuDetection {
+    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): ExploreMenuDetection {
         if (de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame).page) return ExploreMenuDetection()
         val dark = BooleanArray(W * H)
         val world = BooleanArray(W * H)

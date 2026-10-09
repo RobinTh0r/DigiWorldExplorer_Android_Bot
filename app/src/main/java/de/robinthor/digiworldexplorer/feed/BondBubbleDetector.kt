@@ -5,7 +5,7 @@ import de.robinthor.digiworldexplorer.vision.*
 /** White speech panel plus cyan outline; battle damage text alone cannot authorize feeding. */
 object BondBubbleDetector {
     fun detect(frame: PixelFrame): NormalizedPoint? {
-        val viewport = GameViewport.fit(frame.width, frame.height)
+        val viewport = GameViewport.detect(frame)
         val w = 360; val h = 640
         val white = BooleanArray(w*h)
         val cyan = BooleanArray(w*h)

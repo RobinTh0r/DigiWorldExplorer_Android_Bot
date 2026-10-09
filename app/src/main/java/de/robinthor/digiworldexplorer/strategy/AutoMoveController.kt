@@ -258,7 +258,7 @@ object AutoMoveController{
    ActionKind.DASH->{expected=null;expectedAge=0;sameCellFrames=0;dashFailures++;lastResourceKind=ActionKind.DASH;resourcePlayer=player;resourceUnchangedFrames=0}
   }
   val info="kind=${action.kind} player=$player target=${action.target} direction=${action.direction} reason=${action.reason}"
-  main.post{dispatchBurst(service,taps,0,info)}
+  main.post(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){dispatchBurst(service,taps,0,info)})
  }
 
  private fun dispatchBlindStageDismiss(service:DigiWorldAccessibilityService,bounds:GridBounds){
@@ -270,10 +270,10 @@ object AutoMoveController{
    val (x,y)=SafeTapRandomizer.point(baseX,baseY,radius,radius*.45f)
    service.dispatchValidatedTap(x,y){ok->
     Log.i("DigiWorldAuto","Stage-Failed-Testtap ${index+1}/$taps ok=$ok x=$x y=$y")
-    if(ok&&index+1<taps)main.postDelayed({tap(index+1)},SafeTapRandomizer.delay(240L,80L))
+    if(ok&&index+1<taps)main.postDelayed(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){tap(index+1)},SafeTapRandomizer.delay(240L,80L))
    }
   }
-  main.post{tap(0)}
+  main.post(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){tap(0)})
  }
  private fun cellCenter(bounds:GridBounds,row:Int,col:Int):Pair<Float,Float> {
   val cw=(bounds.right-bounds.left)/5f;val ch=(bounds.bottom-bounds.top)/5f
@@ -289,7 +289,7 @@ object AutoMoveController{
    if(!ok||index+1>=taps.size){
     lastTap=SystemClock.elapsedRealtime();nextTapDelay=SafeTapRandomizer.delay(TAP_DELAY,60L);pending=false
     if(!ok){expected=null;trackingConfirmed=false;probeFrom=null}
-   } else main.postDelayed({
+   } else main.postDelayed(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){
     if(dialogActive){Log.i("DigiWorldAuto","Burst abgebrochen: Meldung im Bild");lastTap=SystemClock.elapsedRealtime();nextTapDelay=SafeTapRandomizer.delay(TAP_DELAY,60L);pending=false}
     else dispatchBurst(service,taps,index+1,info)
    },SafeTapRandomizer.delay(

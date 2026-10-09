@@ -52,8 +52,8 @@ import de.robinthor.digiworldexplorer.strategy.AutomationState
 
 class ScreenCaptureService : Service() {
     private var projection: MediaProjection? = null
-    private var virtualDisplay: VirtualDisplay? = null
-    private var imageReader: ImageReader? = null
+    @Volatile private var virtualDisplay: VirtualDisplay? = null
+    @Volatile private var imageReader: ImageReader? = null
     private var captureThread: HandlerThread? = null
     private var framesSeen = 0
     private var lastRewardAnalysisAt = 0L
@@ -68,8 +68,18 @@ class ScreenCaptureService : Service() {
     private var lastDirectorSnapshot = ScreenDirector.snapshot()
     private var passiveScreen = ObservedScreen.UNKNOWN
     @Volatile private var shuttingDown = false
+    private var frameScratch:java.nio.ByteBuffer?=null
+    private var observedGeneration=-1L
+    private var captureDensity=0
+    private var geometryPendingSince=0L
+    private val displayListener=object:DisplayManager.DisplayListener {
+        override fun onDisplayAdded(displayId:Int)=Unit
+        override fun onDisplayRemoved(displayId:Int)=Unit
+        override fun onDisplayChanged(displayId:Int) { if(displayId==android.view.Display.DEFAULT_DISPLAY)refreshCaptureSize() }
+    }
 
     private val projectionCallback = object : MediaProjection.Callback() {
+        override fun onCapturedContentResize(width:Int,height:Int) { requestCaptureResize(width,height) }
         override fun onStop() {
             android.util.Log.w("DigiWorldCapture", "MediaProjection stopped by system or user")
             releaseCapture()
@@ -83,6 +93,86 @@ class ScreenCaptureService : Service() {
         de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("CAPTURE", "service created")
         de.robinthor.digiworldexplorer.automation.BondCycleTimer.initialize(this)
         createNotificationChannel()
+    }
+
+    override fun onConfigurationChanged(newConfig:android.content.res.Configuration) {
+        super.onConfigurationChanged(newConfig)
+        FrameGeometryRegistry.calibration.reset()
+        refreshCaptureSize()
+    }
+
+    private fun physicalDisplay()=PhysicalDisplay.bounds(this,AutomationState.forceLegacyCaptureMetrics)
+    private fun refreshCaptureSize() {
+        if(projection==null || shuttingDown)return
+        val size=physicalDisplay();requestCaptureResize(size.width,size.height)
+    }
+    private fun requestCaptureResize(width:Int,height:Int) {
+        val handler=captureThread?.looper?.let { Handler(it) } ?: return
+        handler.post {
+            val display=virtualDisplay ?: return@post
+            if(shuttingDown || width<1 || height<1)return@post
+            val density=resources.configuration.densityDpi
+            if(imageReader?.width==width && imageReader?.height==height && captureDensity==density)return@post
+            FrameGeometryRegistry.calibration.reset();CaptureFrameAnalyzer.resetCalibration()
+            val previous=imageReader
+            val next=createReader(width,height)
+            display.resize(width,height,density)
+            captureDensity=density
+            display.surface=next.surface
+            imageReader=next
+            previous?.setOnImageAvailableListener(null,null);previous?.close()
+            frameScratch=null
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.RESIZE","surface=${width}x$height")
+        }
+    }
+    private fun observeGeometry(image:android.media.Image):GeometrySnapshot? {
+        val service=DigiWorldAccessibilityService.instance
+        if(service?.isGameForeground()!=true){
+            FrameGeometryRegistry.calibration.reset();CaptureFrameAnalyzer.resetCalibration()
+            GameEntryAnalyzer.reset();publishDirector(ObservedScreen.UNKNOWN)
+            return null
+        }
+        val display=physicalDisplay()
+        val window=service.gameWindowBounds()?.intersect(display)
+            ?: run { FrameGeometryRegistry.calibration.reset();return null }
+        val metadata=DisplayGeometry(display,window,resources.configuration.densityDpi,
+            @Suppress("DEPRECATION") getSystemService(WindowManager::class.java).defaultDisplay.rotation)
+        val size=PixelSize(image.width,image.height)
+        // Uniform fitting is guaranteed by Android from 12L onwards. On older versions
+        // a stale mismatched surface after rotation must be resized, never guessed/stretched.
+        if(Build.VERSION.SDK_INT<32 && kotlin.math.abs(size.width.toLong()*display.height-size.height.toLong()*display.width)>maxOf(display.width,display.height)*2L) {
+            FrameGeometryRegistry.calibration.reset();refreshCaptureSize();return null
+        }
+        val projected=ProjectionTransform(size,display).captureRect(window) ?: run {FrameGeometryRegistry.calibration.reset();return null}
+        val plane=image.planes.firstOrNull() ?: run {FrameGeometryRegistry.calibration.reset();return null}
+        val data=plane.buffer
+        val required=(image.height-1L)*plane.rowStride+(image.width-1L)*plane.pixelStride+3
+        if(plane.pixelStride<4 || required>=data.limit()) { FrameGeometryRegistry.calibration.reset();return null }
+        val pixels=de.robinthor.digiworldexplorer.vision.PixelFrame(image.width,image.height) { x,y ->
+            val at=y*plane.rowStride+x*plane.pixelStride
+            Color.rgb(data.get(at).toInt() and 255,data.get(at+1).toInt() and 255,data.get(at+2).toInt() and 255)
+        }
+        val transform=ProjectionTransform(size,display)
+        val occlusions=service.controlOverlayBounds().mapNotNull { transform.captureRect(it) }.map {
+            PixelRect(maxOf(0,it.left-2),maxOf(0,it.top-2),minOf(size.width,it.right+2),minOf(size.height,it.bottom+2))
+        }
+        val content=VisibleGameArea.detect(pixels,projected,occlusions)
+        val geometry=content?.let { FrameGeometry(size,metadata,it) }
+        val snapshot=FrameGeometryRegistry.calibration.observe(geometry,SystemClock.elapsedRealtime())
+        if(snapshot==null){
+            CaptureFrameAnalyzer.resetCalibration()
+            return null
+        }
+        if(snapshot.generation!=observedGeneration) {
+            observedGeneration=snapshot.generation
+            CaptureFrameAnalyzer.resetCalibration()
+            val details=mapOf("generation" to "${snapshot.generation}","capture" to "$size",
+                "display" to "$metadata","gameInCapture" to "$content","analysis" to "${geometry!!.analysisSize}",
+                "displayOrigin" to "${geometry.displayOrigin}","scaleToDisplay" to "${geometry.scaleToDisplay}")
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.recordCalibration(details)
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.CONFIRMED","generation=${snapshot.generation} capture=${size.width}x${size.height} analysis=${geometry.analysisSize.width}x${geometry.analysisSize.height} crop=$content origin=${geometry.displayOrigin} scale=${geometry.scaleToDisplay}")
+        }
+        return snapshot
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -161,6 +251,7 @@ class ScreenCaptureService : Service() {
 
     private fun beginCapture(resultCode: Int, resultData: Intent) {
         shuttingDown = false
+        FrameGeometryRegistry.calibration.reset();observedGeneration=-1L
         CaptureFrameAnalyzer.resetCalibration()
         lastRecognizedContent = SystemClock.elapsedRealtime()
         missingStatusShown = false
@@ -185,10 +276,11 @@ class ScreenCaptureService : Service() {
         val width: Int
         val height: Int
         if (useLegacyMetrics) {
-            width = displayMetrics.widthPixels.coerceAtLeast(1)
-            height = displayMetrics.heightPixels.coerceAtLeast(1)
+            val bounds=physicalDisplay()
+            width = bounds.width
+            height = bounds.height
         } else {
-            val bounds = getSystemService(WindowManager::class.java).currentWindowMetrics.bounds
+            val bounds = getSystemService(WindowManager::class.java).maximumWindowMetrics.bounds
             width = bounds.width().coerceAtLeast(1)
             height = bounds.height().coerceAtLeast(1)
         }
@@ -197,14 +289,59 @@ class ScreenCaptureService : Service() {
             "capture-start", mapOf("captureWidth" to "$width", "captureHeight" to "$height",
                 "densityDpi" to "$density", "metricsMode" to if (useLegacyMetrics) "legacy" else "currentWindow"))
         android.util.Log.i("DigiWorldCapture", "metrics mode=${if (useLegacyMetrics) "legacy" else "currentWindow"} ${width}x$height")
-        val reader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2)
         val thread = HandlerThread("DigiWorldAnalysis").apply { start() }
+        captureThread=thread
+        val reader=createReader(width,height)
+        val display = mediaProjection.createVirtualDisplay(
+            "DigiWorldCapture",
+            width,
+            height,
+            density,
+            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
+            reader.surface,
+            null,
+            null,
+        )
+        projection = mediaProjection
+        imageReader = reader
+        captureThread = thread
+        virtualDisplay = display
+        captureDensity=density
+        getSystemService(DisplayManager::class.java).registerDisplayListener(displayListener,Handler(thread.looper))
+        CaptureSessionState.markCaptureStarted()
+        android.util.Log.i("DigiWorldCapture", "capture started ${width}x$height density=$density display=${display != null}")
+    }
+
+    private fun createReader(width:Int,height:Int):ImageReader {
+        val reader=ImageReader.newInstance(width,height,PixelFormat.RGBA_8888,2)
+        val thread=captureThread ?: error("Capture thread not started")
         reader.setOnImageAvailableListener({ source ->
+            if(source!==imageReader)return@setOnImageAvailableListener
             if (shuttingDown) {
-                source.acquireLatestImage()?.close()
                 return@setOnImageAvailableListener
             }
-            source.acquireLatestImage()?.use { image ->
+            runCatching { source.acquireLatestImage()?.use { rawImage ->
+                val snapshot = observeGeometry(rawImage) ?: run {
+                    val now=SystemClock.elapsedRealtime()
+                    if(geometryPendingSince==0L)geometryPendingSince=now
+                    if(now-geometryPendingSince>=750 && DigiWorldAccessibilityService.instance?.isGameForeground()==true)
+                        DigiWorldAccessibilityService.instance?.showStatusOnly(getString(R.string.overlay_calibrating_geometry),sourceScreen=ObservedScreen.UNKNOWN)
+                    if(de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.isEnabled() &&
+                        DigiWorldAccessibilityService.instance?.isGameForeground()==true) {
+                        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.PENDING","unconfirmed; input blocked; raw=${rawImage.width}x${rawImage.height}")
+                        val raw=AnalysisImage.from(rawImage,PixelRect(0,0,rawImage.width,rawImage.height),frameScratch)
+                        frameScratch=raw.second
+                        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.captureIfRequested(raw.first,rawImage.width,rawImage.height)
+                    }
+                    checkRecognitionTimeouts()
+                    return@use
+                }
+                if(geometryPendingSince>0L) {geometryPendingSince=0L;ScreenDirector.noteAction("")}
+                val normalized = AnalysisImage.from(rawImage,snapshot.geometry.gameInCapture,frameScratch)
+                frameScratch = normalized.second
+                val image = normalized.first
+                val width = image.width; val height = image.height
+                FrameGeometryRegistry.withSnapshot(snapshot) {
                 framesSeen++
                 var recognized = false
                 val featureFrame = framesSeen % 3 == 0
@@ -369,27 +506,17 @@ class ScreenCaptureService : Service() {
                 }
                 de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.captureIfRequested(image, width, height)
                 if (recognized) markContentRecognized() else checkRecognitionTimeouts()
+                }
+            } }.onFailure {
+                FrameGeometryRegistry.calibration.reset()
+                android.util.Log.w("DigiWorldCapture","Frame discarded while capture changed",it)
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.FRAME_REJECTED",it.javaClass.simpleName)
             }
         }, Handler(thread.looper))
-        val display = mediaProjection.createVirtualDisplay(
-            "DigiWorldCapture",
-            width,
-            height,
-            density,
-            DisplayManager.VIRTUAL_DISPLAY_FLAG_AUTO_MIRROR,
-            reader.surface,
-            null,
-            null,
-        )
-        projection = mediaProjection
-        imageReader = reader
-        captureThread = thread
-        virtualDisplay = display
-        CaptureSessionState.markCaptureStarted()
-        android.util.Log.i("DigiWorldCapture", "capture started ${width}x$height density=$density display=${display != null}")
+        return reader
     }
 
-    private fun updateCaptureQuality(image: android.media.Image, width: Int, height: Int): Boolean {
+    private fun updateCaptureQuality(image: AnalysisImage, width: Int, height: Int): Boolean {
         val plane = image.planes.firstOrNull() ?: return false
         if (plane.pixelStride < 3) return false
         val buffer = plane.buffer
@@ -474,6 +601,9 @@ class ScreenCaptureService : Service() {
 
     private fun releaseCapture() {
         shuttingDown = true
+        FrameGeometryRegistry.calibration.reset();frameScratch=null;observedGeneration=-1L
+        geometryPendingSince=0L
+        getSystemService(DisplayManager::class.java).unregisterDisplayListener(displayListener)
         AutomationEventLog.record(AutomationEventKind.CAPTURE_STOPPED, "CAPTURE_STOPPED")
         CaptureSessionState.markCaptureStopped()
         virtualDisplay?.release()

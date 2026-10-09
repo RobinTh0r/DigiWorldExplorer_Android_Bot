@@ -6,15 +6,15 @@ import de.robinthor.digiworldexplorer.vision.*
 object FarmResourceReaders {
     private val hudSeedCenters = listOf(.418, .575, .725)
 
-    fun hudSeeds(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): List<Int?> =
+    fun hudSeeds(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): List<Int?> =
         hudSeedCenters.map { readNumber(frame, viewport, it - .04, it + .04, .055, .082) }
 
-    fun wateringCans(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): Int? =
+    fun wateringCans(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): Int? =
         readNumber(frame, viewport, .54, .61, .087, .105)
 
     fun dialogSeeds(
         frame: PixelFrame,
-        viewport: GameViewport = GameViewport.fit(frame.width, frame.height),
+        viewport: GameViewport = GameViewport.detect(frame),
         slotCenters: List<NormalizedPoint> = emptyList(),
     ): List<Int?> {
         // Emulator and tall-phone dialogs use different outer padding. The brown slot panels are

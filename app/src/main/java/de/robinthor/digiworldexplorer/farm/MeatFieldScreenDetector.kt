@@ -29,7 +29,7 @@ object MeatFieldScreenDetector {
     private val columns = doubleArrayOf(.313, .640)
     private val rows = doubleArrayOf(.507, .653, .810)
 
-    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.fit(frame.width, frame.height)): MeatFieldDetection {
+    fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): MeatFieldDetection {
         val plots = buildList {
             rows.forEachIndexed { row, y ->
                 columns.forEachIndexed { column, x ->

@@ -11,7 +11,8 @@ object HomeScreenDetector {
     /** Return the geometry that actually matched, so Home taps use the same coordinates. */
     fun viewport(width: Int, height: Int, argbAt: (Int, Int) -> Int): GameViewport? {
         if (width < 1 || height < 1) return null
-        val candidates = listOf(GameViewport(0, 0, width, height), GameViewport.fit(width, height)).distinct()
+        val frame=de.robinthor.digiworldexplorer.vision.PixelFrame(width,height) { x,y -> argbAt(x,y) }
+        val candidates = listOf(GameViewport.detect(frame))
         return candidates.firstOrNull { bounds ->
             controlsMatch(bounds.width, bounds.height) { x, y -> argbAt(bounds.left + x, bounds.top + y) }
         }

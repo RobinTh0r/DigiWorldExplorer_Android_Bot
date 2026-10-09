@@ -9,8 +9,8 @@ class PixelFrameTest {
         assertEquals(GameViewport(0, 0, 1080, 2400), GameViewport.fit(1080, 2400))
     }
 
-    @Test fun `viewport centers a 9 by 16 game in wide capture`() {
-        assertEquals(GameViewport(300, 0, 1080, 1920), GameViewport.fit(1680, 1920))
+    @Test fun `dimensions do not invent a centered 9 by 16 window`() {
+        assertEquals(GameViewport(0, 0, 1680, 1920), GameViewport.fit(1680, 1920))
     }
 
     @Test fun `rgb conversion uses OpenCV hue scale`() {

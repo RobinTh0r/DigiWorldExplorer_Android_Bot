@@ -1,7 +1,7 @@
 package de.robinthor.digiworldexplorer.purchase
 
 import android.graphics.Color
-import android.media.Image
+import de.robinthor.digiworldexplorer.capture.AnalysisImage as Image
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 
