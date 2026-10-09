@@ -9,4 +9,8 @@ class CalibrationValidatorTest{
   val cells=(0..4).associate{col->Cell(2,col) to s(if(col==2).14 else .01).copy(text=.20)}
   assertFalse(CalibrationValidator.plausible(cells))
  }
+ @Test fun v4RejectsTextHeavyDialogOnCachedGrid(){
+  val cells=(0..4).associate{col->Cell(2,col) to s(if(col==2).14 else .01).copy(text=.20)}
+  assertFalse(CalibrationValidator.plausible(cells))
+ }
 }

@@ -72,4 +72,29 @@ class HudCounterReaderTest {
         val grid = requireNotNull(GridDetector.detect(w, h, px))
         assertEquals(null, HudCounterReader.read(w, h, px, grid.bounds).dash)
     }
+
+    @Test
+    fun updatedHudUsesGreenThirdRowAndDoesNotReadBroomAsDash() {
+        val (w, h, px) = frame("dws_1_5_bluestacks.png")
+        val bounds = requireNotNull(GridDetector.detect(w, h, px)).bounds
+        assertEquals(true, HudCounterReader.hasUpdatedActionRow(w, h, px, bounds))
+
+        // The fourth row really contains a readable 2, but it belongs to the broom resource.
+        assertEquals(2, HudCounterReader.readBand(w, h, px, bounds, .82, .13, .44)?.first)
+        val hud = HudCounterReader.read(w, h, px, bounds, updatedActionRow = true)
+        val greenBox = assertNotNull(hud.dashBox).let { hud.dashBox!! }
+        assertTrue("green Dash count must be above the broom row: $greenBox", greenBox.top in 1100..1130 && greenBox.bottom < 1150)
+        // The visible 271 merges into one unsupported glyph; unknown is safer than reporting broom 2.
+        assertEquals(null, hud.dash)
+        assertTrue("unrecognized green digits should be retained for calibration", hud.unknown.isNotEmpty())
+        // If the fourth-row icon is obscured, the old layout path must not invent broom stock.
+        assertEquals(null, HudCounterReader.read(w, h, px, bounds, updatedActionRow = false).dash)
+    }
+
+    @Test
+    fun oldHudKeepsItsThirdRowDashCountWithoutFourthRowEvidence() {
+        val (w, h, px) = frame()
+        assertEquals(false, HudCounterReader.hasUpdatedActionRow(w, h, px, bounds))
+        assertEquals(2, HudCounterReader.read(w, h, px, bounds).dash)
+    }
 }

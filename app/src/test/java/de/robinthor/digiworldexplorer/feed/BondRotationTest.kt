@@ -161,6 +161,27 @@ class BondRotationTest {
         tour.tick(true, PartnerGrid(), false, 1)
         tour.tick(false, PartnerGrid(confirmation = true), false, 25_001)
         assertEquals(BondStep.PARK, tour.step)
+        assertEquals(BondPauseReason.PARTNER_NOT_CONFIRMED, tour.pauseReason)
+    }
+
+    @Test fun seenBubbleWithoutConfirmedCollectionHasSpecificPauseReason() {
+        val tour = rotationAtCollect()
+        tour.tick(true, PartnerGrid(), false, 1_000, bubbleVisible = true)
+        assertTrue(tour.bubbleSeenDuringCollect)
+        tour.tick(true, PartnerGrid(), false, 30_005)
+        assertEquals(BondStep.PARK, tour.step)
+        assertEquals(BondPauseReason.BUBBLE_COLLECTION_UNCONFIRMED, tour.pauseReason)
+    }
+
+    @Test fun missingBubbleAndLostHomeDoNotReportPartnerFailure() {
+        val noBubble = rotationAtCollect()
+        assertEquals(BondStep.OPEN, noBubble.tick(true, PartnerGrid(), false, 30_005)?.step)
+        assertFalse(noBubble.bubbleSeenDuringCollect)
+
+        val lostHome = rotationAtCollect()
+        lostHome.tick(false, PartnerGrid(), false, 40_005)
+        assertEquals(BondStep.PARK, lostHome.step)
+        assertEquals(BondPauseReason.HOME_NOT_CONFIRMED, lostHome.pauseReason)
     }
 
     @Test fun `active marker recovers when fast phone skips confirmation capture`() {
@@ -203,5 +224,18 @@ class BondRotationTest {
         tour.tick(true, PartnerGrid(), false, 0)
         assertNull(tour.tick(false, PartnerGrid(), false, 5_000))
         assertEquals(BondStep.OPEN, tour.step)
+    }
+
+    private fun rotationAtCollect(): BondRotation {
+        val tour = BondRotation()
+        val grid = PartnerGrid(true, true, List(15) { NormalizedPoint(.2, .6) }, raised = 0, selected = 0)
+        tour.tick(true, PartnerGrid(), false, 0)
+        tour.tick(false, grid, false, 1)
+        tour.tick(false, grid.copy(selected = 1, canRaise = true), false, 2)
+        tour.tick(false, PartnerGrid(confirmation = true), false, 3)
+        tour.tick(false, grid.copy(raised = 1), false, 4)
+        tour.tick(true, PartnerGrid(), false, 5)
+        assertEquals(BondStep.COLLECT, tour.step)
+        return tour
     }
 }

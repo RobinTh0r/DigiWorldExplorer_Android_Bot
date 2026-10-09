@@ -183,7 +183,7 @@ object MovementPlanner{
   if(energy.isEmpty())return any
   // A training-point pickup directly beside the player is worth one step. Taking it before
   // a more distant energy card avoids scrolling the collectible off-screen altogether.
-  if(any?.size==1 && (cells[any.last().target]?.orange?:0.0)<=ENERGY_ORANGE &&
+  if(!settings.legacyV4Core && any?.size==1 && (cells[any.last().target]?.orange?:0.0)<=ENERGY_ORANGE &&
    forwardItemPath(player,energy,cells,blocked,settings)?.size?.let{it>1}==true)return any
   if(settings.betterEnergyCollect){
    val sameColumn=energy.filter{it.col==player.col}.toSet()

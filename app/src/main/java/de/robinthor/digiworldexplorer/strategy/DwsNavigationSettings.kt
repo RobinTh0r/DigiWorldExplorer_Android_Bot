@@ -9,6 +9,8 @@ data class DwsNavigationSettings(
     val blindStageFailedTap: Boolean = false,
     val trackAllSprites: Boolean = true,
     val phoneSafeMovement: Boolean = true,
+    /** Restores v4.0.0 classification and movement rules; updated game UI is observed jointly. */
+    val legacyV4Core: Boolean = false,
 )
 
 enum class DwsNavigationProfile {
@@ -35,6 +37,7 @@ enum class DwsNavigationProfile {
             blindStageFailedTap = true,
             trackAllSprites = false,
             phoneSafeMovement = false,
+            legacyV4Core = true,
         )
         V5_ALL_SPRITES -> DwsNavigationSettings(
             allowLeft = false,

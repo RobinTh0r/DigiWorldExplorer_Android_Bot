@@ -1,6 +1,7 @@
 package de.robinthor.digiworldexplorer.feed
 
 enum class BondStep { IDLE, OPEN, PARTNER_TAB, EXPAND, SELECT, RAISE, CONFIRM, VERIFY, HOME, COLLECT, REST, PARK }
+enum class BondPauseReason { PARTNER_NOT_CONFIRMED, HOME_NOT_CONFIRMED, BUBBLE_NOT_FOUND, BUBBLE_COLLECTION_UNCONFIRMED }
 data class BondCommand(val step: BondStep, val cell: Int? = null)
 
 /** Visit all 15 visible partners; the original active partner is always the last target. */
@@ -20,7 +21,10 @@ class BondRotation {
     private var retries = 0
     var collectStartedAt = 0L
         private set
-    private var bubbleSeenDuringCollect = false
+    var bubbleSeenDuringCollect = false
+        private set
+    var pauseReason = BondPauseReason.PARTNER_NOT_CONFIRMED
+        private set
 
     fun tick(home: Boolean, grid: PartnerGrid, feedBusy: Boolean, now: Long, bubbleVisible: Boolean = false,
         cycleReady: Boolean = true, bubbleCollected: Boolean = false): BondCommand? {
@@ -33,6 +37,7 @@ class BondRotation {
             }
             nextBubbleArmed = false
             original = null; visited = 0; target = null
+            pauseReason = BondPauseReason.PARTNER_NOT_CONFIRMED
             if (!grid.page) {
                 if (!home) return null
                 return issue(BondStep.OPEN, now)
@@ -75,15 +80,26 @@ class BondRotation {
                 return issue(BondStep.OPEN, now)
             }
             if (!home || feedBusy) {
-                if (now >= deadline) step = BondStep.PARK
+                if (now >= deadline) park(when {
+                    bubbleSeenDuringCollect -> BondPauseReason.BUBBLE_COLLECTION_UNCONFIRMED
+                    !home -> BondPauseReason.HOME_NOT_CONFIRMED
+                    else -> BondPauseReason.BUBBLE_NOT_FOUND
+                })
                 return null
             }
             if (!bubbleCollected && now < collectUntil) return null
-            if (!bubbleCollected && bubbleSeenDuringCollect) { step = BondStep.PARK; return null }
+            if (!bubbleCollected && bubbleSeenDuringCollect) {
+                park(BondPauseReason.BUBBLE_COLLECTION_UNCONFIRMED)
+                return null
+            }
             if (visited == 15) { step = BondStep.REST; nextBubbleArmed = !bubbleVisible; return null }
             return issue(BondStep.OPEN, now)
         }
-        if (now >= deadline) { step = BondStep.PARK; return null }
+        if (now >= deadline) {
+            park(if (step == BondStep.HOME) BondPauseReason.HOME_NOT_CONFIRMED
+                else BondPauseReason.PARTNER_NOT_CONFIRMED)
+            return null
+        }
         // Selecting Partner may reopen a roster which is already expanded. Observe that state
         // before deciding whether a '+' tap is needed; tapping its '-' would collapse the grid.
         if (step == BondStep.PARTNER_TAB && grid.page) step = BondStep.OPEN
@@ -161,7 +177,8 @@ class BondRotation {
 
     fun ownsFrame() = step !in setOf(BondStep.IDLE, BondStep.COLLECT, BondStep.REST)
     fun fastBubblePolling(now: Long) = step == BondStep.COLLECT && now < collectFastUntil
-    fun cancel() { step = BondStep.PARK }
+    fun cancel() { park(BondPauseReason.PARTNER_NOT_CONFIRMED) }
+    private fun park(reason: BondPauseReason) { pauseReason = reason; step = BondStep.PARK }
     private fun issue(next: BondStep, now: Long, cell: Int? = null): BondCommand {
         step = next; deadline = now + 25_000; issuedAt = now; retries = 0
         return BondCommand(next, cell)

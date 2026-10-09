@@ -30,9 +30,8 @@ object GridDetector {
         val xRatio=xb.values.sorted()[1]/xScore.average().coerceAtLeast(.01)
         val yRatio=yb.values.sorted()[1]/yScore.average().coerceAtLeast(.01)
         if(xRatio<5.0||yRatio<5.0) {
-            // MuMu's scaled phone board has clear vertical cell edges, but its pyramids obscure
-            // several horizontal edges. Anchor the last row to the strong lower board border
-            // and derive cell height from the independently measured column spacing.
+            // Current game UI and some scaled phone boards keep clear columns but obscure rows.
+            // This is shared UI observation; the V4/V5 movement rules stay separate.
             return bottomAnchoredPhoneGrid(width,height,xb,xRatio,yScore)
         }
         val xf=fit(xb.positions);val yf=fit(yb.positions)
@@ -47,12 +46,51 @@ object GridDetector {
     }
     private fun bottomAnchoredPhoneGrid(width:Int,height:Int,xb:Six,xRatio:Double,yScore:DoubleArray):GridDetection? {
         if(xRatio<3.0||xb.values.sorted()[1]<12.0)return null
+        originalPhoneAnchor(width,height,xb,yScore)?.let{return it}
         val xFit=fit(xb.positions)
         val cellWidth=xFit.first
         if(cellWidth<=0.0)return null
-        val bottomRange=(height*.67).toInt()..(height*.715).toInt().coerceAtMost(yScore.lastIndex)
+        val bottomRange=(height*.60).toInt()..(height*.715).toInt().coerceAtMost(yScore.lastIndex)
         if(bottomRange.isEmpty())return null
-        val bottom=bottomRange.maxByOrNull { yScore[it] } ?: return null
+        val background=yScore.average().coerceAtLeast(.01)
+        val bottomCandidates=mutableListOf<Int>()
+        for(at in bottomRange.sortedByDescending { yScore[it] }){
+            if(yScore[at]<maxOf(18.0,background*6.0))break
+            if(bottomCandidates.none{abs(it-at)<7})bottomCandidates+=at
+            if(bottomCandidates.size>=16)break
+        }
+        fun nearbyScore(at:Int):Double = ((at-3).coerceAtLeast(0)..(at+3).coerceAtMost(yScore.lastIndex))
+            .maxOf { yScore[it] }
+        for(bottom in bottomCandidates){
+            val top=listOf(.82,.92).mapNotNull { heightFactor ->
+                val estimatedCellHeight=cellWidth*heightFactor
+                val estimatedTop=(bottom-5*estimatedCellHeight).roundToInt()
+                val tolerance=(estimatedCellHeight*.12).roundToInt().coerceAtLeast(4)
+                val range=(estimatedTop-tolerance).coerceAtLeast(0)..
+                    (estimatedTop+tolerance).coerceAtMost(yScore.lastIndex)
+                range.maxByOrNull { yScore[it] }
+            }.filter { candidate ->
+                val step=(bottom-candidate)/5.0
+                candidate in (height*.20).toInt()..(height*.40).toInt() &&
+                    nearbyScore(candidate)>=background*2.8 &&
+                    (1..4).count { row -> nearbyScore((candidate+row*step).roundToInt())>=background*2.5 }>=2
+            }.maxByOrNull { yScore[it] } ?: continue
+            val bounds=GridBounds(xFit.second.roundToInt(),top,
+                (xFit.second+5*cellWidth).roundToInt(),bottom)
+            val bw=bounds.right-bounds.left;val bh=bounds.bottom-bounds.top
+            val aspect=bw/bh.coerceAtLeast(1).toDouble();val coverage=bw*bh/(width*height).toDouble()
+            if(bounds.left>=0&&bounds.right<=width&&aspect in .85..1.55&&coverage in .20.. .45)
+                return GridDetection(.62,bounds,"bottom-anchored phone grid")
+        }
+        return null
+    }
+    /** Keep the pre-update phone fit before trying the lower, more compact 1.5 UI. */
+    private fun originalPhoneAnchor(width:Int,height:Int,xb:Six,yScore:DoubleArray):GridDetection?{
+        val xFit=fit(xb.positions);val cellWidth=xFit.first
+        if(cellWidth<=0.0)return null
+        val range=(height*.67).toInt()..(height*.715).toInt().coerceAtMost(yScore.lastIndex)
+        if(range.isEmpty())return null
+        val bottom=range.maxByOrNull{yScore[it]}?:return null
         val background=yScore.average().coerceAtLeast(.01)
         if(yScore[bottom]<maxOf(18.0,background*6.0))return null
         val estimatedCellHeight=cellWidth*.92
@@ -60,15 +98,11 @@ object GridDetector {
         val tolerance=(estimatedCellHeight*.12).roundToInt().coerceAtLeast(4)
         val topRange=(estimatedTop-tolerance).coerceAtLeast(0)..
             (estimatedTop+tolerance).coerceAtMost(yScore.lastIndex)
-        val top=topRange.maxByOrNull { yScore[it] } ?: return null
+        val top=topRange.maxByOrNull{yScore[it]}?:return null
         if(top !in (height*.20).toInt()..(height*.40).toInt())return null
-        val cellHeight=(bottom-top)/5.0
-        fun nearbyScore(at:Int):Double = ((at-3).coerceAtLeast(0)..(at+3).coerceAtMost(yScore.lastIndex))
-            .maxOf { yScore[it] }
-        if(nearbyScore(top)<background*2.8 || nearbyScore((bottom-cellHeight).roundToInt())<background*3.0)
-            return null
-        val bounds=GridBounds(xFit.second.roundToInt(),top,
-            (xFit.second+5*cellWidth).roundToInt(),bottom)
+        fun nearbyScore(at:Int):Double=((at-3).coerceAtLeast(0)..(at+3).coerceAtMost(yScore.lastIndex)).maxOf{yScore[it]}
+        if(nearbyScore(top)<background*2.8||nearbyScore((bottom-(bottom-top)/5.0).roundToInt())<background*3.0)return null
+        val bounds=GridBounds(xFit.second.roundToInt(),top,(xFit.second+5*cellWidth).roundToInt(),bottom)
         val bw=bounds.right-bounds.left;val bh=bounds.bottom-bounds.top
         val aspect=bw/bh.coerceAtLeast(1).toDouble();val coverage=bw*bh/(width*height).toDouble()
         if(bounds.left<0||bounds.right>width||aspect !in .85..1.55||coverage !in .20.. .45)return null

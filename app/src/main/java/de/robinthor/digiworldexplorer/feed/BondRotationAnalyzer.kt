@@ -106,7 +106,26 @@ object BondRotationAnalyzer {
         // shared collection state when Auto Feed itself is disabled, causing a second bubble
         // tap and leaving the rotation parked instead of opening the next partner.
         owns = rotation.ownsFrame() || rotation.step == BondStep.COLLECT
-        if (previous != BondStep.COLLECT && rotation.step == BondStep.COLLECT) FeedFrameAnalyzer.allowImmediateScan()
+        if (previous != BondStep.COLLECT && rotation.step == BondStep.COLLECT) {
+            FeedFrameAnalyzer.allowImmediateScan()
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                "BOND.COLLECT", "waiting for bubble visited=${rotation.visited}")
+            DigiWorldAccessibilityService.instance?.let { service ->
+                service.showStatusOnly(service.getString(de.robinthor.digiworldexplorer.R.string.bond_wait_bubble, rotation.visited))
+            }
+        }
+        val bubbleNotFound = previous == BondStep.COLLECT && rotation.step != BondStep.COLLECT &&
+            !collectedSettled && !rotation.bubbleSeenDuringCollect && rotation.step != BondStep.PARK
+        if (previous == BondStep.COLLECT && rotation.step != BondStep.COLLECT) {
+            val outcome = when {
+                rotation.step == BondStep.PARK -> rotation.pauseReason.name.lowercase()
+                collectedSettled -> "bubble-collected"
+                bubbleNotFound -> "bubble-not-found"
+                else -> "bubble-seen-unconfirmed"
+            }
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                "BOND.COLLECT", "outcome=$outcome visited=${rotation.visited} home=$home")
+        }
         if (rotation.step == BondStep.COLLECT) {
             // This Home boundary was confirmed by the rotation itself. Delegating here avoids the
             // stricter passive Home fingerprint rejecting battle-animation frames with a bubble.
@@ -134,12 +153,21 @@ object BondRotationAnalyzer {
         }
         val service = DigiWorldAccessibilityService.instance ?: return owns
         if (rotation.step == BondStep.PARK) {
-            BondRotationRequest.park("Partner screen not confirmed")
             if (previous != BondStep.PARK) {
-                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("BOND.PARK", observation)
-                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot("bond-park-${previous.name.lowercase()}")
+                val (reason, status) = when (rotation.pauseReason) {
+                    BondPauseReason.PARTNER_NOT_CONFIRMED -> "Partner screen not confirmed" to service.getString(de.robinthor.digiworldexplorer.R.string.bond_partner_unconfirmed)
+                    BondPauseReason.HOME_NOT_CONFIRMED -> "Home screen not confirmed" to service.getString(de.robinthor.digiworldexplorer.R.string.bond_home_unconfirmed)
+                    BondPauseReason.BUBBLE_NOT_FOUND -> "Bond bubble not found" to service.getString(de.robinthor.digiworldexplorer.R.string.bond_bubble_not_found)
+                    BondPauseReason.BUBBLE_COLLECTION_UNCONFIRMED ->
+                        "Bond bubble collection unconfirmed" to service.getString(de.robinthor.digiworldexplorer.R.string.bond_bubble_unconfirmed)
+                }
+                BondRotationRequest.park(reason)
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                    "BOND.PARK", "reason=${rotation.pauseReason} $observation")
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.requestScreenshot(
+                    "bond-park-${rotation.pauseReason.name.lowercase()}")
+                service.showStatusOnly(status)
             }
-            service.showStatusOnly("Bond rotation paused: partner not confirmed")
             return true
         }
         if (command == null) return owns
@@ -164,7 +192,8 @@ object BondRotationAnalyzer {
                 ?: if (previous == BondStep.COLLECT && collectedSettled) GameViewport.fit(w, h) else return owns
         } else GameViewport.fit(w,h)
         val (x,y) = tapViewport.pixel(target)
-        service.showStatusOnly("Bond ${rotation.visited}/15: ${command.step.name.lowercase()}")
+        service.showStatusOnly(if (bubbleNotFound) service.getString(de.robinthor.digiworldexplorer.R.string.bond_bubble_not_found)
+            else "Bond ${rotation.visited}/15: ${command.step.name.lowercase()}")
         de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
             "BOND.ACTION",
             "step=${command.step} cell=${command.cell} original=${rotation.original} visited=${rotation.visited} " +

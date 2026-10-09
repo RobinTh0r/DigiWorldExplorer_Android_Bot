@@ -38,6 +38,12 @@ object DungeonRotationRequest {
         de.robinthor.digiworldexplorer.strategy.AutomationState.adSkipPassEnabled =
             context.getSharedPreferences("settings", Context.MODE_PRIVATE).getBoolean("ad_skip_pass", false)
         completedToday = DungeonPassPolicy.locked(DungeonDailyStore.snapshot(context))
+        val diagnosticSettings = DungeonSettingsStore.load(context)
+        val diagnosticDay = DungeonDailyStore.snapshot(context)
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+            "DUNGEON.CONFIG", "adSkipPass=${de.robinthor.digiworldexplorer.strategy.AutomationState.adSkipPassEnabled} useAds=${diagnosticSettings.useAdAttempts} normal=${diagnosticSettings.normalAttempts} enabled=${diagnosticSettings.enabledCards}")
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+            "DUNGEON.LEDGER", "day=${diagnosticDay.gameDay} progress=${diagnosticDay.progress}")
         val apocalymonEnabled = DungeonKey.APOCALYMON_WALL in DungeonSettingsStore.load(context).enabledCards
         apocalymonStatus = when {
             !apocalymonEnabled -> "Apocalymon disabled"

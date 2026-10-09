@@ -16,9 +16,44 @@ import javax.imageio.ImageIO
  * von ~20 deutlich weicher als in synthetischen Testbildern.
  */
 class RealScreenshotDetectionTest {
+    @Test fun updatedDwsBlueStacksGreenDashIsSeparateFromBroom() {
+        val (width, height, pixels) = frame("dws_1_5_bluestacks.png")
+        for (legacy in listOf(true, false)) {
+            val detected = requireNotNull(GridDetector.detect(width, height, pixels))
+            val b = detected.bounds
+            assertTrue("new DWS grid $b", b.left in 75..95 && b.top in 340..355 && b.right in 615..635 && b.bottom in 795..815)
+            val dash = requireNotNull(DashButtonLocator.locate(width, height, pixels, b))
+            assertTrue("Dash must be inside the lower-left green action, not the broom: $dash",
+                dash.first in 395f..455f && dash.second in 1080f..1180f)
+            val hud = HudCounterReader.read(width, height, pixels, b, updatedActionRow = true)
+            assertEquals("unsupported green stock must not become broom stock", null, hud.dash)
+            assertTrue("green stock box must be above broom row", requireNotNull(hud.dashBox).bottom < 1150)
+            val cells = CellClassifier.classify(width, height, pixels, b, allSprites = !legacy, legacyV4Core = legacy)
+            assertTrue("new DWS board should be plausible for legacy=$legacy", CalibrationValidator.plausible(cells))
+            assertEquals("player location on updated DWS, legacy=$legacy", Cell(4, 0), PlayerSelector.select(cells, null, null, emptySet(), legacyV4Core = legacy)?.key)
+        }
+    }
+    @Test fun isolatedGreenDashIsFoundButIsolatedBroomIsNot() {
+        val (width, height, pixels) = frame("dws_1_5_bluestacks.png")
+        val bounds = requireNotNull(GridDetector.detect(width, height, pixels)).bounds
+        fun withoutButton(xRange: IntRange, yRange: IntRange): IntArray = pixels.copyOf().also { copy ->
+            for (y in yRange) for (x in xRange) copy[y * width + x] = 0xff68707a.toInt()
+        }
+
+        // Hide the green Dash action: the upper-right broom must never be tapped as Dash.
+        val rightOnly = withoutButton(355..490, 1040..1195)
+        assertEquals(null, DashButtonLocator.locate(width, height, rightOnly, bounds))
+
+        // With the broom hidden, the lower-left green Dash is still safe to locate.
+        val leftOnly = withoutButton(485..620, 970..1120)
+        val dash = requireNotNull(DashButtonLocator.locate(width, height, leftOnly, bounds))
+        assertTrue("isolated green Dash $dash", dash.first in 395f..455f && dash.second in 1080f..1180f)
+    }
     @Test fun highlightedTrainingPointWinsOverDistantEnergyWithoutInventingAWall() {
         val (width, height, pixels) = frame("dws_training_points_highlight.jpg")
         val bounds = requireNotNull(GridDetector.detect(width, height, pixels)).bounds
+        val dash = requireNotNull(DashButtonLocator.locate(width, height, pixels, bounds))
+        assertTrue("old UI single green Dash $dash", dash.first in 280f..345f && dash.second in 860f..970f)
         val cells = CellClassifier.classify(width, height, pixels, bounds)
         assertTrue(CalibrationValidator.plausible(cells))
         assertTrue("training points must be visible", cells.getValue(Cell(0, 2)).pink > .06)

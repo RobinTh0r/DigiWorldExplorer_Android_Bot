@@ -1,5 +1,15 @@
 # Changelog
 
+## 5.3.0 Beta 3 — 9 October 2026
+
+- Adapt DWS grid, green left-hand Dash targeting and four-row resource counter recognition to the game's 1.5.0 interface using a real BlueStacks frame. The upper-right broom action is not Dash. Keep the previous phone-grid detector before the new fallback and remove the unsafe blind Dash target.
+- Restore V4's Botamon classification, player selection, obstacle and movement decisions against the `v4.0.0` tag while sharing updated visual UI detection with V5. Require a positively read Dash stock on every HUD; unknown stock no longer assumes three charges.
+- Log Dungeon ad switches, daily progress, card counters and explicit ad-skip reasons in opt-in diagnostics. This does not claim the reported missing ad attempts are fixed.
+- Extend opt-in diagnostics with sparse, paired first/follow-up screenshots tied to tap coordinates and keep the existing 50-image cap.
+- Localize the main quick controls in German and clarify that V5 all-sprite tracking remains experimental.
+- Verify a first German BlueStacks Bond partner switch through selection, raising, confirmation and Home. Bubble collection and physical phones remain unverified.
+
+
 ## 5.3.0 Beta 2 — 6 October 2026
 
 - Make DWS V3 Classic and V4 Dash available without a Beta code, including after capture restart and quick-control reload. V5 All Sprites remains a Beta feature.

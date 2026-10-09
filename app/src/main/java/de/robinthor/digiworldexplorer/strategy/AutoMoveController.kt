@@ -7,6 +7,8 @@ import de.robinthor.digiworldexplorer.capture.ScreenCaptureService
 import de.robinthor.digiworldexplorer.input.SafeTapRandomizer
 import de.robinthor.digiworldexplorer.detection.*
 
+// Even V4 needs a positively read stock: the old S22 HUD visibly shows zero while its glyph is
+// currently unreadable. Assuming three charges there would repeatedly tap an empty Dash button.
 internal fun safeDashCharges(read:Int?):Int=read?.coerceAtLeast(0)?:0
 
 object AutoMoveController{
@@ -78,18 +80,19 @@ object AutoMoveController{
   *  gebuendelt, solange der Wert `null` ist. */
  private var rightScrolls:Boolean?=null;private var probeFrom:Cell?=null;private var expectedRight:Cell?=null
  fun onAnalysis(confidence:Double,bounds:GridBounds,cells:Map<Cell,CellScores>,preview:Map<Cell,CellScores>,dashButton:Pair<Float,Float>?=null,hud:HudCounters=HudCounters()){
+  val dwsSettings=AutomationState.dwsNavigationSettings
   // Die Zelle, auf der die Figur steht (bzw. gleich stehen wird), darf nie als Item gesperrt
   // werden - ihr eigenes Sprite haelt den Item-Score sonst dauerhaft oben und die Figur
   // wird unauffindbar.
   val self=setOfNotNull(previous,expected)
   recentItems.replaceAll{_,ttl->ttl-1};recentItems.entries.removeIf{it.value<=0||it.key in self}
-  cells.filter{(_,score)->score.item>.06&&score.player<MIN_PLAYER&&(!AutomationState.dwsNavigationSettings.collectOnlyEnergy||score.orange>.06)}
+  cells.filter{(_,score)->score.item>.06&&(dwsSettings.legacyV4Core||score.player<MIN_PLAYER)&&(!dwsSettings.collectOnlyEnergy||score.orange>.06)}
    .filterKeys{it !in self}.keys.forEach{recentItems[it]=6}
   val service=DigiWorldAccessibilityService.instance
   if(pending&&SystemClock.elapsedRealtime()-lastTap>PENDING_TIMEOUT){
    Log.w("DigiWorldAuto","Tap-Rueckmeldung ausgeblieben - Sperre aufgehoben");pending=false;expected=null;trackingConfirmed=false
   }
-  val entry=PlayerSelector.select(cells,previous,expected,recentItems.keys,MIN_PLAYER);val player=entry?.key;val valid=confidence>=MIN_GRID&&entry!=null
+  val entry=PlayerSelector.select(cells,previous,expected,recentItems.keys,MIN_PLAYER,dwsSettings.legacyV4Core);val player=entry?.key;val valid=confidence>=MIN_GRID&&entry!=null
   if(valid)lastDwsGridSeen=SystemClock.elapsedRealtime()
   val obstacles=cells.filter{(c,s)->c!=player&&s.obstacle()}.keys+preview.filter{it.value.pyramid>.17&&it.value.item<=.06}.keys
   val onlyEnergy=AutomationState.dwsNavigationSettings.collectOnlyEnergy
@@ -213,8 +216,12 @@ object AutoMoveController{
    else if(AutomationState.dwsNavigationSettings.phoneSafeMovement)BURST_RIGHT_PHONE_SAFE else BURST_RIGHT_V4
   // Bringt ein Dash nach mehreren Versuchen nie echten Fortschritt (0 Ladungen oder Knopf falsch
   // erkannt), wuerde er sonst jede Analyse erneut vorgeschlagen und die Automatik haengt fest.
-  val safeDash=safeDashCharges(hud.dash)
-  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&safeDash>0&&dashFailures<3&&!dashUnavailable&&SystemClock.elapsedRealtime()>=dashBlockedUntil,preview=preview,forbiddenObstacles=forbiddenObstacles,dashCharges=if(dashUnavailable)0 else safeDash,stuck=stuck,claws=if(attackUnavailable)0 else hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst,settings=AutomationState.dwsNavigationSettings)
+  val dashCharges=safeDashCharges(hud.dash)
+  val plan=MovementPlanner.plan(player!!,cells,history.toList(),dashAvailable=dashButton!=null&&
+   dashCharges>0&&dashFailures<3&&!dashUnavailable&&
+   SystemClock.elapsedRealtime()>=dashBlockedUntil,preview=preview,forbiddenObstacles=forbiddenObstacles,
+   dashCharges=if(dashUnavailable)0 else dashCharges,stuck=stuck,
+   claws=if(attackUnavailable)0 else hud.claws?:UNKNOWN_CLAW_FALLBACK,maxSteps=burst,settings=dwsSettings)
   val action=plan.firstOrNull()
   val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
   service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud,dashButton)

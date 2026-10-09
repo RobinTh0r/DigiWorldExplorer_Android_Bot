@@ -7,10 +7,11 @@ data class CellScores(
  /** Anteil heller, entsaettigter Pixel - praktisch nur Dialogschrift. Diente frueher als
   *  Spielermerkmal und hat dabei jede Fehlermeldung zur Spielfigur erklaert. */
  val text:Double=0.0,
+ val legacyV4Obstacle:Boolean=false,
 ){
  // Reachable cyan tiles share the old broad blue/purple pixel score with pyramids. A real
  // pyramid remains comparatively dark; a strongly highlighted tile must stay traversable.
- fun obstacle():Boolean=pyramid>.30&&item<=.06&&highlight<.65
+ fun obstacle():Boolean=pyramid>.30&&item<=.06&&(legacyV4Obstacle||highlight<.65)
 }
 
 object CellClassifier{
@@ -18,7 +19,8 @@ object CellClassifier{
   *  Pixel liefert dieselben Werte bei einem Viertel der Arbeit. Bei rund 32000 Pixeln je Zelle
   *  war das Vollbild-Abtasten der teuerste Schritt der gesamten Analyse. */
  private const val STEP=2
- fun classify(width:Int,height:Int,argb:IntArray,b:GridBounds,allSprites:Boolean=true):Map<Cell,CellScores>{
+ fun classify(width:Int,height:Int,argb:IntArray,b:GridBounds,allSprites:Boolean=true,
+              legacyV4Core:Boolean=false):Map<Cell,CellScores>{
   require(argb.size==width*height)
   val out=mutableMapOf<Cell,CellScores>()
   val cw=(b.right-b.left)/5.0;val ch=(b.bottom-b.top)/5.0
@@ -67,7 +69,7 @@ object CellClassifier{
    // Rand unten). Fuer alle anderen Reihen ist der zweite Durchlauf Wort fuer Wort derselbe
    // Bereich und damit reine Doppelarbeit.
    val extra=if(row==4)playerScore(width,argb,x0,x1,y0,playerY1,allSprites) else 0.0
-   out[Cell(row,col)]=CellScores(maxOf(shadow,genericBody,extra),os,ps,gs,item,q(pyramid),q(hi),q(neutral))
+   out[Cell(row,col)]=CellScores(maxOf(shadow,genericBody,extra),os,ps,gs,item,q(pyramid),q(hi),q(neutral),legacyV4Core)
   }
   return out
  }

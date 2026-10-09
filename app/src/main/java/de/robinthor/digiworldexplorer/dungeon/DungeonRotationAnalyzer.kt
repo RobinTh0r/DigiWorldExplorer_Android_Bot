@@ -30,6 +30,8 @@ object DungeonRotationAnalyzer {
     private var noticeKind = ""
     private var noticeActions = 0
     private var passUsage = DungeonPassUsage()
+    private var cardDiagnostic = ""
+    private var cardDiagnosticAt = 0L
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!AutomationState.enabled || !DungeonRotationRequest.active()) return false
@@ -162,6 +164,8 @@ object DungeonRotationAnalyzer {
                 "network_confirm" -> tap(service,v,panel.target,now,"Confirming team notice")
                 "ad" -> {
                     if(!AutomationState.adSkipPassEnabled || !cfg.useAdAttempts || panel.remaining == 0 || used.ads >= 2) {
+                        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                            "DUNGEON.AD_SKIP", "key=$key pass=${AutomationState.adSkipPassEnabled} useAds=${cfg.useAdAttempts} remaining=${panel.remaining} recordedAds=${used.ads}")
                         finishCard(service,v,now); return true
                     }
                     if(panel.remaining == null) { park(service,"Ad counter unreadable: ${key!!.name}"); return true }
@@ -220,6 +224,15 @@ object DungeonRotationAnalyzer {
             if(returning) { activeKey=null; returning=false }
             else if(activeKey != null) { scheduler.releaseCurrent(); activeKey=null }
             val decision = scheduler.onList(reading) { cfg.budget(it,AutomationState.adSkipPassEnabled).adTickets > 0 }
+            val cardSnapshot = reading.cards.joinToString("; ") { card ->
+                "key=${card.key} tickets=${card.tickets} enabled=${card.key in cfg.enabledCards} adsAllowed=${cfg.budget(card.key,AutomationState.adSkipPassEnabled).adTickets > 0}"
+            }
+            if (cardSnapshot != cardDiagnostic || now - cardDiagnosticAt >= 5_000L) {
+                cardDiagnostic = cardSnapshot
+                cardDiagnosticAt = now
+                de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                    "DUNGEON.CARDS", cardSnapshot)
+            }
             (scheduler.completed()-daily.completed).filter { it !in DungeonPassPolicy.dailyLimited }
                 .forEach { DungeonDailyStore.markComplete(service,it) }
             Log.i("DigiWorldDungeonRotation","list=${reading.position} decision=$decision")
@@ -347,5 +360,6 @@ object DungeonRotationAnalyzer {
         noticeKind=""; noticeActions=0
         rewardFallbackAt=0L
         passUsage= DungeonPassUsage()
+        cardDiagnostic=""; cardDiagnosticAt=0L
     }
 }

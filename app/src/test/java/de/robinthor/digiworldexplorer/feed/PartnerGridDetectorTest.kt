@@ -6,6 +6,29 @@ import org.junit.Test
 import javax.imageio.ImageIO
 
 class PartnerGridDetectorTest {
+    @Test fun updatedGermanBlueStacksExpandedPartnerPageHasFullRoster() {
+        val image = ImageIO.read(javaClass.getResource("/bond_partner_1_5_bluestacks.png"))
+        val frame = PixelFrame(image.width, image.height, image::getRGB)
+        val viewport = de.robinthor.digiworldexplorer.vision.GameViewport.fit(image.width, image.height)
+        assertEquals(15, PartnerVisualLocator.detect(frame, viewport)?.cells?.size)
+        val grid = PartnerGridDetector.detect(frame)
+        assertTrue(grid.page)
+        assertTrue(grid.expanded)
+        assertEquals(15, grid.cells.size)
+        assertEquals(1, grid.raised)
+        assertEquals(1, grid.selected)
+    }
+
+    @Test fun updatedGermanBlueStacksCollapsedPartnerPageFindsVisiblePlus() {
+        val grid = read("bond_partner_collapsed_1_5_bluestacks.png")
+        assertTrue(grid.page)
+        assertFalse(grid.expanded)
+        assertTrue(grid.cells.isEmpty())
+        assertNotNull(grid.expandTarget)
+        assertEquals(.823, grid.expandTarget!!.x, .015)
+        assertEquals(.819, grid.expandTarget.y, .015)
+    }
+
     @Test fun expansionRetryNeedsFreshVisiblePlusAndIsBounded() {
         val tour = BondRotation()
         val collapsed = read("bond_partner_collapsed.png")

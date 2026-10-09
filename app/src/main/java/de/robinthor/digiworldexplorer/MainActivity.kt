@@ -270,7 +270,7 @@ class MainActivity : ComponentActivity() {
                     dwsProfile = selected.takeIf { it.availableFor(supporterLicense != null) }
                         ?: DwsNavigationProfile.V4_DASH
                     AutomationState.dwsNavigationSettings = dwsProfile.settings()
-                    AutoMoveController.reset()
+                    de.robinthor.digiworldexplorer.capture.CaptureFrameAnalyzer.resetCalibration()
                     settings.edit()
                         .putString("dws_profile", dwsProfile.name)
                         .apply()

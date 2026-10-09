@@ -95,7 +95,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         val icon = ImageView(service).apply {
             setImageResource(R.mipmap.ic_launcher_round)
             scaleType = ImageView.ScaleType.CENTER_CROP
-            contentDescription = "Open quick controls"
+            contentDescription = service.getString(R.string.quick_overlay_open_controls)
             background = GradientDrawable().apply {
                 shape = GradientDrawable.OVAL
                 setColor(Color.rgb(27, 30, 36))
@@ -253,7 +253,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             gravity = Gravity.CENTER
         }
         val label = TextView(service).apply {
-            text = "Copilot run"
+            text = service.getString(R.string.quick_copilot_badge)
             textSize = 9f
             setTextColor(Color.WHITE)
             gravity = Gravity.CENTER_VERTICAL
@@ -323,12 +323,13 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
     fun updateDirector(snapshot: DirectorSnapshot) {
         root?.post {
             val captureActive = CaptureSessionState.snapshot(AutomationState.enabled).captureActive
-            directorTitle?.text = if (!captureActive) "Screen capture stopped" else "${snapshot.copilot.ifBlank { snapshot.state }} · ${snapshot.screen.label}"
+            directorTitle?.text = if (!captureActive) service.getString(R.string.quick_capture_stopped) else "${snapshot.copilot.ifBlank { snapshot.state }} · ${snapshot.screen.label}"
             val idle = snapshot.action.isBlank() || snapshot.action == "No action"
             val value = when {
-                !captureActive -> "Start / Restart Bot"
+                !captureActive -> service.getString(R.string.quick_start_restart)
                 idle && de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() -> service.getString(R.string.quick_wait_next_rotation)
-                else -> snapshot.action.ifBlank { "No action" }
+                idle -> service.getString(R.string.quick_no_action)
+                else -> snapshot.action
             }
             directorAction?.text = if (value.length > 20) value.take(19) + "…" else value
             updateTimer()
@@ -341,18 +342,18 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         setPadding((8 * density).toInt(), (6 * density).toInt(), (8 * density).toInt(), (6 * density).toInt())
         background = rounded(Color.argb(248, 27, 30, 36), 16 * density)
         elevation = 10f * density
-        addView(featureToggle("Auto Summon", "auto_purchase", AutomationState.autoPurchaseEnabled, density))
-        addView(featureToggle("Bond & Friendship", "auto_feed", AutomationState.autoFeedEnabled, density))
-        addView(featureToggle("Network Defense Ops", "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
-        addView(featureToggle("VS / Tower Loop", "auto_dungeon", AutomationState.autoDungeonEnabled, density))
+        addView(featureToggle(service.getString(R.string.quick_auto_summon), "auto_purchase", AutomationState.autoPurchaseEnabled, density))
+        addView(featureToggle(service.getString(R.string.auto_feed), "auto_feed", AutomationState.autoFeedEnabled, density))
+        addView(featureToggle(service.getString(R.string.auto_network_defense), "auto_network_defense", AutomationState.autoNetworkDefenseEnabled, density))
+        addView(featureToggle(service.getString(R.string.auto_dungeon), "auto_dungeon", AutomationState.autoDungeonEnabled, density))
         addView(actionButton(service.getString(R.string.quick_status_toggle)) { toggleDirectorCard(); collapse() },
             LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (36 * density).toInt()).apply { bottomMargin = (4 * density).toInt() })
         val topRow = LinearLayout(service).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER
         }
-        topRow.addView(actionButton("Bot App") { openMainApp(); collapse() }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginEnd = (3 * density).toInt() })
-        topRow.addView(actionButton("Stop", danger = true) {
+        topRow.addView(actionButton(service.getString(R.string.quick_bot_app)) { openMainApp(); collapse() }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginEnd = (3 * density).toInt() })
+        topRow.addView(actionButton(service.getString(R.string.quick_stop), danger = true) {
             AutomationState.stop()
             ScreenCaptureService.stop(service)
             service.showStatusOnly("", false)
@@ -363,12 +364,12 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         addView(topRow)
         addView(statefulAutomationButton("dungeon", density) {
             if (SupporterLicenseManager.load(service) == null) {
-                service.showStatusOnly("Beta code required")
+                service.showStatusOnly(service.getString(R.string.quick_beta_code_required))
             } else if (!AutomationState.enabled) {
                 requestCaptureAndStart(CaptureConsentActivity.START_DUNGEON)
             } else if (DungeonRotationRequest.ownsFrames()) {
                 DungeonRotationRequest.cancel()
-                service.showStatusOnly("Dungeon Co-Pilot stopped")
+                service.showStatusOnly(service.getString(R.string.quick_dungeon_copilot_stopped))
             } else {
                 DungeonRotationRequest.start(service)
                 service.showStatusOnly("Dungeon: ${DungeonRotationRequest.apocalymonStatus}")
@@ -381,17 +382,17 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
             WindowManager.LayoutParams.WRAP_CONTENT,
         ).apply { topMargin = (4 * density).toInt() })
         val startRow = LinearLayout(service).apply { orientation = LinearLayout.HORIZONTAL }
-        startRow.addView(actionButton("Start / Restart Bot") {
+        startRow.addView(actionButton(service.getString(R.string.quick_start_restart)) {
             if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) reloadAutomation() else requestCaptureAndStart()
             collapse()
         }, LinearLayout.LayoutParams(0, (40 * density).toInt(), 1f).apply { marginEnd = (3 * density).toInt() })
-        startRow.addView(actionButton("Bond Reset", beta = true) {
+        startRow.addView(actionButton(service.getString(R.string.quick_bond_reset), beta = true) {
             de.robinthor.digiworldexplorer.automation.BondCycleTimer.resetCooldown()
             if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active() &&
                 AutomationState.autoBondRotationEnabled) {
                 de.robinthor.digiworldexplorer.feed.BondRotationRequest.start()
             }
-            service.showStatusOnly("Bond timer reset — ready")
+            service.showStatusOnly(service.getString(R.string.quick_bond_timer_reset))
             updateTimer()
             collapse()
         }, LinearLayout.LayoutParams((78 * density).toInt(), (40 * density).toInt()).apply { marginStart = (3 * density).toInt() })
@@ -409,16 +410,16 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         }
         addView(statefulAutomationButton("copilot", density) {
             if (SupporterLicenseManager.load(service) == null) {
-                service.showStatusOnly("Beta code required")
+                service.showStatusOnly(service.getString(R.string.quick_beta_code_required))
             } else if (!AutomationState.enabled) {
                 requestCaptureAndStart(CaptureConsentActivity.START_COPILOT)
             } else {
                 if (de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.active()) {
                     de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("Stopped by user")
                     de.robinthor.digiworldexplorer.feed.BondRotationRequest.cancel()
-                    service.showStatusOnly("Digi Co-Pilot stopped")
+                    service.showStatusOnly(service.getString(R.string.quick_digi_copilot_stopped))
                 } else if (DungeonRotationRequest.ownsFrames()) {
-                    service.showStatusOnly("Stop Dungeon Co-Pilot first")
+                    service.showStatusOnly(service.getString(R.string.quick_stop_dungeon_first))
                 } else {
                     de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.start()
                     if (AutomationState.autoBondRotationEnabled &&
@@ -433,26 +434,26 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
                         de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.start()
                     } else {
                         de.robinthor.digiworldexplorer.automation.DigiCopilotRequest.stop("No modules selected")
-                        service.showStatusOnly("Digi Co-Pilot: select at least one module")
+                        service.showStatusOnly(service.getString(R.string.quick_copilot_select_module))
                         collapse()
                         return@statefulAutomationButton
                     }
-                    service.showStatusOnly("Digi Co-Pilot: waiting for verified Home")
+                    service.showStatusOnly(service.getString(R.string.quick_copilot_wait_home))
                 }
             }
             updateAutomationControls()
             collapse()
         }, LinearLayout.LayoutParams(WindowManager.LayoutParams.MATCH_PARENT, (40 * density).toInt()))
         addView(TextView(service).apply {
-            text = "Digi Co-Pilot Module"
+            text = service.getString(R.string.quick_copilot_modules)
             textSize = 10f
             setTextColor(Color.rgb(255, 213, 110))
             setPadding((4 * density).toInt(), (4 * density).toInt(), 0, 0)
         })
-        addView(featureToggle("Bond Rotation", "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
-        addView(featureToggle("Meat Field", "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
+        addView(featureToggle(service.getString(R.string.bond_rotation_title), "auto_bond_rotation", AutomationState.autoBondRotationEnabled, density, beta = true))
+        addView(featureToggle(service.getString(R.string.meat_field_title), "auto_farm_harvest", AutomationState.autoFarmEnabled, density, beta = true))
         addView(featureToggle(service.getString(R.string.quick_home_rewards), "copilot_rewards", AutomationState.copilotRewardsEnabled, density, beta = true))
-        addView(featureToggle("DWS (max. 5 min)", "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
+        addView(featureToggle(service.getString(R.string.quick_dws_five_minutes), "copilot_dws", AutomationState.copilotDwsEnabled, density, beta = true))
     }
 
     @Suppress("DEPRECATION")
@@ -634,7 +635,7 @@ class QuickControlOverlay(private val service: DigiWorldAccessibilityService) {
         StageFailedFrameAnalyzer.reset()
         CaptureFrameAnalyzer.resetCalibration()
         AutoMoveController.reset()
-        service.showStatusOnly("Detection reloaded")
+        service.showStatusOnly(service.getString(R.string.quick_reloaded))
         if (CaptureSessionState.snapshot(AutomationState.enabled).captureActive) {
             AutomationState.enabled = true
             ScreenCaptureService.setAutomation(service, true)

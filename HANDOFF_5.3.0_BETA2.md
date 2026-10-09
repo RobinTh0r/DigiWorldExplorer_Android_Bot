@@ -1,5 +1,7 @@
 # DigiWorldExplorer handoff — 5.3.0 Beta 2
 
+**Paused follow-up (2026-10-09):** The user stopped unfinished Beta 3 work. Before resuming development or release preparation, read `HANDOFF_5.3.0_BETA3.md`. Beta 2 remains the last published release; the Beta 3 working tree is dirty and unverified after a critical Dash-target correction.
+
 Date: 2026-10-06. This repository and `main` are the authoritative source for `v5.3.0-beta.2`. Read the Beta 1 handoff for prior release history; do not treat older sibling worktrees as the current implementation.
 
 ## Release identity

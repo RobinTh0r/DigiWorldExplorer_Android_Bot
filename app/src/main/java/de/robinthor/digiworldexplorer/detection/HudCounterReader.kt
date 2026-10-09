@@ -11,7 +11,10 @@ data class HudCounters(
     val dashBox: HudBox? = null,
     /** Normalformen der Ziffern, die zu keiner Vorlage passten - Rohmaterial fuer neue Vorlagen. */
     val unknown: List<String> = emptyList(),
+    val updatedActionRow: Boolean = false,
 )
+
+enum class HudActionRowLayout { LEGACY, UPDATED, UNKNOWN }
 
 /**
  * Liest die Vorratszahlen fuer Angriffskrallen und Dash unter dem Spielfeld.
@@ -75,20 +78,93 @@ object HudCounterReader {
         "011000001110" +   // .##.....###.
         "001111111000"     // ..#######...
 
-    private val TEMPLATES: Map<Int, String> = mapOf(
+    private val TEMPLATES: List<Pair<Int, String>> = listOf(
         1 to ONE,
         2 to TWO,
+        2 to TWO_UPDATED,
         3 to THREE,
         5 to FIVE,
     )
 
-    fun read(width: Int, height: Int, argb: IntArray, bounds: GridBounds): HudCounters {
-        val claws = readBand(width, height, argb, bounds, CLAWS_CENTER)
-        val dash = readBand(width, height, argb, bounds, DASH_CENTER)
+    /** Distinguishes the fourth-row broom HUD from the old three-row HUD without using buttons. */
+    fun detectActionRowLayout(width: Int, height: Int, argb: IntArray, bounds: GridBounds): HudActionRowLayout {
+        if (width <= 0 || height <= 0 || argb.size.toLong() < width.toLong() * height)
+            return HudActionRowLayout.UNKNOWN
+        val gridWidth = (bounds.right - bounds.left).toDouble()
+        val gridHeight = (bounds.bottom - bounds.top).toDouble()
+        if (gridWidth <= 0 || gridHeight <= 0) return HudActionRowLayout.UNKNOWN
+
+        // The 1.5 fourth resource slot has a flat slate fill. Nine interior points avoid its
+        // broom icon and number, so a temporarily obscured icon does not imply the old layout.
+        var slate = 0
+        for (row in doubleArrayOf(.78, .80, .82)) for (column in doubleArrayOf(.22, .28, .35)) {
+            val x = (bounds.left + column * gridWidth).toInt().coerceIn(0, width - 1)
+            val y = (bounds.bottom + row * gridHeight).toInt().coerceIn(0, height - 1)
+            val pixel = argb[y * width + x]
+            val red = pixel shr 16 and 255
+            val green = pixel shr 8 and 255
+            val blue = pixel and 255
+            if (red in 105..170 && green in 125..195 && blue in 150..220 &&
+                green - red in 8..35 && blue - green in 10..40) slate++
+        }
+        if (slate >= 7) return HudActionRowLayout.UPDATED
+
+        // The orange broom is a second positive marker for the updated fourth resource row.
+        val x0 = (bounds.left + .02 * gridWidth).toInt().coerceIn(0, width - 1)
+        val x1 = (bounds.left + .15 * gridWidth).toInt().coerceIn(x0 + 1, width)
+        val y0 = (bounds.bottom + .74 * gridHeight).toInt().coerceIn(0, height - 1)
+        val y1 = (bounds.bottom + .90 * gridHeight).toInt().coerceIn(y0 + 1, height)
+        val required = maxOf(12, (x1 - x0) * (y1 - y0) / 150)
+        var orange = 0
+        for (y in y0 until y1) for (x in x0 until x1) {
+            val pixel = argb[y * width + x]
+            val red = pixel shr 16 and 255
+            val green = pixel shr 8 and 255
+            val blue = pixel and 255
+            if (red > 170 && green in 71..214 && blue < 140 &&
+                red > green + 35 && green > blue + 25 && ++orange >= required)
+                return HudActionRowLayout.UPDATED
+        }
+
+        // The old green Dash icon sits farther right than the 1.5 icon. Absence of a broom alone
+        // cannot confirm legacy: the icon or whole fourth row may be covered or desaturated.
+        val oldX0 = (bounds.left + .13 * gridWidth).toInt().coerceIn(0, width - 1)
+        val oldX1 = (bounds.left + .23 * gridWidth).toInt().coerceIn(oldX0 + 1, width)
+        val oldY0 = (bounds.bottom + .65 * gridHeight).toInt().coerceIn(0, height - 1)
+        val oldY1 = (bounds.bottom + .76 * gridHeight).toInt().coerceIn(oldY0 + 1, height)
+        val oldRequired = maxOf(12, (oldX1 - oldX0) * (oldY1 - oldY0) / 50)
+        var oldGreen = 0
+        for (y in oldY0 until oldY1) for (x in oldX0 until oldX1) {
+            val pixel = argb[y * width + x]
+            val red = pixel shr 16 and 255
+            val green = pixel shr 8 and 255
+            val blue = pixel and 255
+            if (green > 150 && green > red + 30 && green > blue + 20 &&
+                ++oldGreen >= oldRequired) return HudActionRowLayout.LEGACY
+        }
+        return HudActionRowLayout.UNKNOWN
+    }
+
+    fun hasUpdatedActionRow(width: Int, height: Int, argb: IntArray, bounds: GridBounds): Boolean =
+        detectActionRowLayout(width, height, argb, bounds) == HudActionRowLayout.UPDATED
+
+    fun read(width: Int, height: Int, argb: IntArray, bounds: GridBounds, updatedActionRow: Boolean = false): HudCounters =
+        read(width, height, argb, bounds, if (updatedActionRow) HudActionRowLayout.UPDATED else HudActionRowLayout.LEGACY)
+
+    fun read(width: Int, height: Int, argb: IntArray, bounds: GridBounds, layout: HudActionRowLayout): HudCounters {
+        if (layout == HudActionRowLayout.UNKNOWN) return HudCounters()
+        val updatedActionRow = layout == HudActionRowLayout.UPDATED
+        val clawsCenter = if (updatedActionRow) .57 else CLAWS_CENTER
+        // The fourth row at .82 contains broom stock, not Dash. Dash stays in the green third row.
+        val dashCenter = if (updatedActionRow) .68 else DASH_CENTER
+        val xFrom = if (updatedActionRow) .13 else X_FROM
+        val xTo = if (updatedActionRow) .44 else X_TO
+        val claws = readBand(width, height, argb, bounds, clawsCenter, xFrom, xTo)
+        val dash = readBand(width, height, argb, bounds, dashCenter, xFrom, xTo)
         val unknown = mutableListOf<String>()
-        if (claws?.first == null) unknown += glyphs(width, height, argb, bounds, CLAWS_CENTER).map { it.bits }
-        if (dash?.first == null) unknown += glyphs(width, height, argb, bounds, DASH_CENTER).map { it.bits }
-        return HudCounters(claws?.first, claws?.second, dash?.first, dash?.second, unknown)
+        if (claws?.first == null) unknown += glyphs(width, height, argb, bounds, clawsCenter, xFrom, xTo).map { it.bits }
+        if (dash?.first == null) unknown += glyphs(width, height, argb, bounds, dashCenter, xFrom, xTo).map { it.bits }
+        return HudCounters(claws?.first, claws?.second, dash?.first, dash?.second, unknown, updatedActionRow)
     }
 
     /**
@@ -101,8 +177,10 @@ object HudCounterReader {
         argb: IntArray,
         bounds: GridBounds,
         center: Double,
+        xFrom: Double = X_FROM,
+        xTo: Double = X_TO,
     ): Pair<Int?, HudBox>? {
-        val glyphs = glyphs(width, height, argb, bounds, center)
+        val glyphs = glyphs(width, height, argb, bounds, center, xFrom, xTo)
         if (glyphs.isEmpty()) return null
         var value: Int? = 0
         var left = Int.MAX_VALUE
@@ -126,13 +204,15 @@ object HudCounterReader {
         argb: IntArray,
         bounds: GridBounds,
         center: Double,
+        xFrom: Double = X_FROM,
+        xTo: Double = X_TO,
     ): List<Glyph> {
         val gridHeight = (bounds.bottom - bounds.top).toDouble()
         val gridWidth = (bounds.right - bounds.left).toDouble()
         val y0 = (bounds.bottom + (center - BAND_HALF) * gridHeight).toInt().coerceIn(0, height - 1)
         val y1 = (bounds.bottom + (center + BAND_HALF) * gridHeight).toInt().coerceIn(y0 + 1, height)
-        val x0 = (bounds.left + X_FROM * gridWidth).toInt().coerceIn(0, width - 1)
-        val x1 = (bounds.left + X_TO * gridWidth).toInt().coerceIn(x0 + 1, width)
+        val x0 = (bounds.left + xFrom * gridWidth).toInt().coerceIn(0, width - 1)
+        val x1 = (bounds.left + xTo * gridWidth).toInt().coerceIn(x0 + 1, width)
         val w = x1 - x0
         val h = y1 - y0
 
@@ -204,17 +284,13 @@ object HudCounterReader {
     }
 
     private fun classify(bits: String): Int? {
-        var best = Int.MAX_VALUE
-        var second = Int.MAX_VALUE
-        var digit: Int? = null
-        for ((value, template) in TEMPLATES) {
-            var distance = 0
-            for (i in bits.indices) if (bits[i] != template[i]) distance++
-            if (distance < best) { second = best; best = distance; digit = value }
-            else if (distance < second) second = distance
-        }
+        val ranked=TEMPLATES.groupBy { it.first }.map { (value, variants) ->
+            value to variants.minOf { (_, template) -> bits.indices.count { bits[it] != template[it] } }
+        }.sortedBy { it.second }
+        val (digit,best)=ranked.firstOrNull() ?: return null
+        val second=ranked.getOrNull(1)?.second ?: Int.MAX_VALUE
         if (best > MAX_DISTANCE) return null
-        if (TEMPLATES.size > 1 && second - best < MIN_MARGIN) return null
+        if (ranked.size > 1 && second - best < MIN_MARGIN) return null
         return digit
     }
 
@@ -257,6 +333,25 @@ object HudCounterReader {
         "110000000001" +   // ##.........#
         "110000000001" +   // ##.........#
         "011111111110"     // .##########.
+
+    /** Updated game's outline glyph variant, recorded from the separate broom counter. */
+    private const val TWO_UPDATED =
+        "000011111000" +
+        "001100000110" +
+        "010000000001" +
+        "100000000001" +
+        "100001000001" +
+        "110010100001" +
+        "011100100001" +
+        "000001000001" +
+        "000001000001" +
+        "000110000110" +
+        "001000001100" +
+        "010000011111" +
+        "100000000001" +
+        "000000000001" +
+        "000000000001" +
+        "111111111111"
 
     private const val THREE =
         "000111110000" +   // ...####.....

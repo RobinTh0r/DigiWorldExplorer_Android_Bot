@@ -37,6 +37,10 @@ object PersistentDiagnosticLog {
     @Volatile private var enabled = false
     private var sessionDir: File? = null
     private var pendingScreenshot: String? = null
+    private data class ActionShot(val reason: String, val dueAt: Long)
+    private val actionShots = ArrayDeque<ActionShot>()
+    private var lastActionSampleAt = 0L
+    private var actionSequence = 0
     private var lastScreenshotAt = 0L
     private var lastArea = ""
     private var lastMessage = ""
@@ -58,6 +62,7 @@ object PersistentDiagnosticLog {
         enabled = value
         sessionDir = null
         pendingScreenshot = null
+        actionShots.clear()
         if (value) { ensureSessionLocked(); record("SESSION", "diagnostic mode enabled") }
     }
     @Synchronized fun record(area: String, message: String) {
@@ -73,13 +78,28 @@ object PersistentDiagnosticLog {
         }
     }
     @Synchronized fun requestScreenshot(reason: String) { if (enabled) pendingScreenshot = reason.take(80) }
-    @Synchronized fun captureIfRequested(image: Image, width: Int, height: Int) {
-        val reason = pendingScreenshot ?: return
+    /** Sparse frames correlated with a tap dispatch; the first frame is not guaranteed pre-tap. */
+    @Synchronized fun sampleAction(kind: String, x: Int, y: Int) {
+        if (!enabled) return
         val now = SystemClock.elapsedRealtime()
-        if (!enabled || now - lastScreenshotAt < SCREENSHOT_COOLDOWN) return
+        if (now - lastActionSampleAt < 8_000L || actionShots.isNotEmpty()) return
+        lastActionSampleAt = now
+        val id = ++actionSequence
+        val label = "action-$id-$kind-$x-$y"
+        actionShots.addLast(ActionShot("$label-first-frame", now))
+        actionShots.addLast(ActionShot("$label-followup", now + 900L))
+        record("ACTION_EVIDENCE", "id=$id kind=$kind target=$x,$y first=next-frame followup=900ms")
+    }
+    @Synchronized fun captureIfRequested(image: Image, width: Int, height: Int) {
+        val now = SystemClock.elapsedRealtime()
+        if (!enabled) return
+        val requested = pendingScreenshot
+        val action = actionShots.firstOrNull()?.takeIf { now >= it.dueAt }
+        val urgent = requested != null && now - lastScreenshotAt >= SCREENSHOT_COOLDOWN
+        val reason = when { urgent -> requested!!; action != null -> action.reason; else -> return }
         val dir = ensureSessionLocked() ?: return
         val shots = File(dir, "screens").also { it.mkdirs() }
-        if ((shots.listFiles()?.size ?: 0) >= MAX_SCREENSHOTS) { pendingScreenshot = null; return }
+        if ((shots.listFiles()?.size ?: 0) >= MAX_SCREENSHOTS) { pendingScreenshot = null; actionShots.clear(); return }
         val plane = image.planes.firstOrNull() ?: return
         if (plane.pixelStride < 3) return
         val sourceW = minOf(width, image.width); val sourceH = minOf(height, image.height)
@@ -94,7 +114,9 @@ object PersistentDiagnosticLog {
         bitmap.setPixels(pixels, 0, targetW, 0, 0, targetW, targetH)
         val safe = reason.replace(Regex("[^A-Za-z0-9_.-]"), "_").take(36)
         runCatching { FileOutputStream(File(shots, "${stamp.format(Instant.now())}-$safe.jpg")).use { bitmap.compress(Bitmap.CompressFormat.JPEG, 68, it) }
-            lastScreenshotAt = now; pendingScreenshot = null; record("SCREENSHOT", "saved reason=$reason size=${targetW}x$targetH") }
+            lastScreenshotAt = now
+            if (urgent) pendingScreenshot = null else actionShots.removeFirstOrNull()
+            record("SCREENSHOT", "saved reason=$reason size=${targetW}x$targetH") }
         bitmap.recycle()
     }
     @Synchronized fun sessions(context: Context): List<DiagnosticSession> {

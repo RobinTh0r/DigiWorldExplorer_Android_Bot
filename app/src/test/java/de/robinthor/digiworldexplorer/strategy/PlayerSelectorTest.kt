@@ -11,6 +11,15 @@ class PlayerSelectorTest{
   val proven=Cell(3,2);val spill=Cell(3,3)
   assertEquals(proven,PlayerSelector.select(mapOf(proven to s(.14),spill to s(.20)),proven,null,emptySet())?.key)
  }
+ @Test fun v4UsesOriginalFixedPreviousCellBonus(){
+  val proven=Cell(3,2);val spill=Cell(3,3)
+  assertEquals(spill,PlayerSelector.select(mapOf(proven to s(.14),spill to s(.20)),proven,null,emptySet(),legacyV4Core=true)?.key)
+ }
+ @Test fun unreadableDashStockDoesNotInventChargesOnAnyHud(){
+  assertEquals(0,safeDashCharges(null))
+  assertEquals(0,safeDashCharges(0))
+  assertEquals(2,safeDashCharges(2))
+ }
 
  /**
   * Regression: das eigene Sprite faerbt die Zelle als Item ein, wodurch die Spielerzelle in
