@@ -18,4 +18,6 @@ Final 5.3.0 build: **326 tests, 0 failures/errors/skips**, release build and vit
 
 ## Remaining work
 
+Publication confirmed: source commit/tag target `62d4d8b`, `main` and annotated `v5.3.0` pushed. GitHub release is public (`draft=false`, `prerelease=false`) and `/releases/latest` resolves to `v5.3.0`. Asset `DigiWorldExplorer-Bot-v5.3.0.apk` is uploaded (25,695,736 bytes); GitHub digest matches the verified local SHA-256 above. Release notes include the test limits. No final-release device installation was performed, preserving the ongoing DWS run. This confirmation is a documentation-only follow-up; code tag remains at `62d4d8b`.
+
 Fresh uninterrupted Dungeon pass with both Network ad tickets, real phones and all aspect ratios/fonts remain unverified. The resource progress detector sometimes reports no Dash progress before animation settles; unchanged, investigate with paired frames if reported. Bond bubbles, other Copilot stages and remaining Metal Sea/Auto Summon reports are not certified by this release. The root latest_detection.txt can retain an older/unknown frame; use current action logs + screenshots, not that file alone. On physical phones keep USB debugging off during the game and use in-app diagnostics.
