@@ -1,6 +1,6 @@
 # BlueStacks live calibration — 9 October 2026
 
-Completed 9 October test record, NOT universal phone compatibility certification. The historical development builds below used local code85/name5.4.1-beta.1; the published Beta artifact was not replaced. On 10 October the user authorized packaging these fixes as the regular 5.5.0 release. Read `HANDOFF_5.5.0.md` for current publication state; dated local-build and restoration statements below describe the earlier test session.
+Completed 9 October test record, NOT universal phone compatibility certification. The historical development builds below used local code85/name5.4.1-beta.1; the published Beta artifact was not replaced. On 10 October the user authorized packaging these fixes as the regular 5.5.0 release; publication is complete with710 fresh version86 tests and matching signed APK/GitHub asset digest. Read `HANDOFF_5.5.0.md` for publication verification; dated local-build and restoration statements below describe the earlier test session.
 
 ## Native live matrix
 
