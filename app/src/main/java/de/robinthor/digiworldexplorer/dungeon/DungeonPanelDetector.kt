@@ -7,10 +7,15 @@ data class DungeonPanel(val kind: String, val target: NormalizedPoint, val remai
 /** Reads the foreground action and its counter, independently of the list behind the modal. */
 object DungeonPanelDetector {
     fun detect(frame: PixelFrame, key: DungeonKey, v: GameViewport = GameViewport.detect(frame)): DungeonPanel? {
+        // The dimmed entry behind a loss guide is never a returned foreground panel.
+        if(de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.detect(frame.width,frame.height,frame::argbAt))return null
         if(de.robinthor.digiworldexplorer.automation.HomeScreenDetector.detect(frame.width,frame.height,frame::argbAt))return null
         val foregroundBody=frame.ratioInViewportPatch(v,NormalizedPoint(.5,.55),.30,.14) {
             val hsv=it.hsv();hsv.hue in 95..120 && hsv.saturation>=90 && hsv.value in 20..130
         }>.55
+        // This proof also gates the legacy fixed-band fallback. Cyan combat effects
+        // and illuminated hand cards must not become a returned Challenge panel.
+        if(key!=DungeonKey.NETWORK_DEFENSE && !foregroundBody)return null
         fun color(x: Double, y: Double, purple: Boolean = false, rx: Double = .018, ry: Double = .010): Double = frame.ratioInViewportPatch(v, NormalizedPoint(x,y), rx,ry) {
             val h = it.hsv()
             h.value >= 150 && h.saturation >= 100 && if (purple) h.hue in 120..155 else h.hue in 90..115

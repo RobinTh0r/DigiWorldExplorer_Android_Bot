@@ -51,7 +51,8 @@ object FeedFrameAnalyzer {
         mainScreenFrames++
 
         val frame = de.robinthor.digiworldexplorer.vision.PixelFrame(width, height) { x,y -> rgb(x,y) }
-        val bubble = BondBubbleDetector.detect(frame)
+        val reading = BondBubbleDetector.observe(frame)
+        val bubble = reading?.center
         if (bubble == null) {
             // The animated bubble can disappear for individual capture frames. Once Home has
             // already been proven by BondRotation, retain nearby evidence briefly instead of
@@ -70,8 +71,8 @@ object FeedFrameAnalyzer {
             return true
         }
         rotationBubbleAbsentSince = 0L
-        val tapTarget = BondBubbleDetector.tapTarget(bubble) ?: return true
-        val (px,py) = de.robinthor.digiworldexplorer.vision.GameViewport.fit(width,height).pixel(tapTarget)
+        val tapTarget = BondBubbleDetector.tapTarget(reading) ?: return true
+        val (px,py) = reading.viewport.pixel(tapTarget)
         val cx = px.toFloat(); val cy = py.toFloat()
         val recentConfirmedBubble = homeAlreadyConfirmed && now - lastBubbleSeenAt <= 1_500L
         if (recentConfirmedBubble ||
@@ -87,13 +88,13 @@ object FeedFrameAnalyzer {
                     lastX = cx; lastY = cy
                     android.util.Log.i("DigiWorldBond", "collect detected bubble=$bubble target=$tapTarget attempt=$rotationTapAttempts")
                     de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
-                        "BOND.BUBBLE_TAP", "bubble=$bubble target=$tapTarget attempt=$rotationTapAttempts")
+                        "BOND.BUBBLE_TAP", "bubble=$bubble bounds=${reading.bounds} viewport=${reading.viewport} target=$tapTarget zone=upper-right-interior attempt=$rotationTapAttempts")
                     service.dispatchValidatedTap(cx, cy) { }
                 }
             }
             return true
         }
-        if (progressSequence(now)) return true
+        if (progressSequence(now, reading, cx, cy)) return true
         // The bubble can be exposed for only one sampled frame while a failed stage restarts.
         // In this branch both the caller and the Home detector have already established the
         // bounded COLLECT state, so the bubble detector itself is sufficient authorization.
@@ -122,7 +123,7 @@ object FeedFrameAnalyzer {
         nextTapAt = 0L
         tapsLeft = 0
     }
-    private fun progressSequence(now:Long):Boolean {
+    private fun progressSequence(now:Long, reading:BondBubbleReading, x:Float, y:Float):Boolean {
         if (tapsLeft > 0) {
             if (now > tappingUntil) { tapsLeft=0; cooldownUntil=now+60_000L; return true }
             if (now >= nextTapAt) {
@@ -130,13 +131,17 @@ object FeedFrameAnalyzer {
                 nextTapAt=now+SafeTapRandomizer.delay(520L,230L)
                 DigiWorldAccessibilityService.instance?.apply {
                     updateStatusKeepingGrid(getString(R.string.overlay_auto_feed),true)
-                    android.util.Log.i("DigiWorldBond", "collect bubble=$lastX,$lastY")
+                    android.util.Log.i("DigiWorldBond", "collect current bubble=$x,$y")
+                    de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                        "BOND.BUBBLE_TAP", "classic bubble=${reading.center} bounds=${reading.bounds} viewport=${reading.viewport} target=${BondBubbleDetector.tapTarget(reading)} zone=upper-right-interior")
                     // Android may report a cancelled gesture when the accepted tap immediately
                     // changes the game window. The positive bubble detection is the visual proof;
                     // record dispatch now so BondRotation advances after its one-second settle
                     // instead of re-tapping the same animated bubble.
                     lastCollectedAt = now
-                    dispatchSafeRandomizedTap(lastX,lastY) { ok ->
+                    // Only this frame's measured interior target may be dispatched. No stored
+                    // center fallback and no jitter toward the figure below the tiny bubble.
+                    dispatchValidatedTap(x,y) { ok ->
                         if (!ok) android.util.Log.w("DigiWorldBond", "bubble gesture callback cancelled; keeping visual confirmation")
                     }
                 }

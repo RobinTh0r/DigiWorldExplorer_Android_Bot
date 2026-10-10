@@ -33,6 +33,7 @@ object DungeonRotationAnalyzer {
     private var cardDiagnostic = ""
     private var cardDiagnosticAt = 0L
     private var networkAdInspections = 0
+    private var battleEvidence = DungeonBattleEvidence()
 
     fun analyze(image: Image, width: Int, height: Int): Boolean {
         if (!AutomationState.enabled || !DungeonRotationRequest.active()) return false
@@ -58,9 +59,12 @@ object DungeonRotationAnalyzer {
         // Failure recovery belongs to this run; unrelated entry analyzers stay excluded.
         if (key == DungeonKey.NETWORK_DEFENSE && waiting == "battle" &&
             de.robinthor.digiworldexplorer.network.NetworkDefenseFrameAnalyzer.analyze(image, w, h, rotationOwned = true)) return true
-        if (key != null && key != DungeonKey.NETWORK_DEFENSE && waiting == "battle" &&
+        if (key != null && key != DungeonKey.NETWORK_DEFENSE &&
             de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.detect(w, h, frame::argbAt)) {
+            // A returned-panel transition can clear waiting before the loss guide finishes
+            // fading in. The foreground failure still owns this frame, including after result.
             onLoss()
+            unknownAt=0L;candidate="";matches=0
             tap(service, v, NormalizedPoint(.5, .84), now, "Closing dungeon loss")
             return true
         }
@@ -106,10 +110,16 @@ object DungeonRotationAnalyzer {
             if(retryPanel == null) waitingSawTransition = true
             val returnDelay = if(waiting == "ad") 2_500L else 15_000L
             val grantedTicket = waiting == "ad" && DungeonAdReturnPolicy.ticketGranted(retryPanel?.kind, retryPanel?.remaining)
-            if(returnedToPanel && now-waitingAt > returnDelay && (waitingSawTransition || grantedTicket)) {
+            if(returnedToPanel && now-waitingAt > returnDelay && (waitingSawTransition || grantedTicket) &&
+                stable("returned:${key}:${retryPanel?.kind}:${retryPanel?.remaining}")) {
                 val completed = waiting
                 waiting=""; startRetries=0; retryAt=0; unknownAt=0; waitingSawTransition=false
-                if(completed=="battle") confirmBattle(service, key!!, won = true)
+                // The panel proves return, not WIN. A victory needs its reward/result frame.
+                if(completed=="battle" && battleEvidence.returnedWithoutResult()) {
+                    de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                        "DUNGEON.RESULT_UNCONFIRMED", "key=$key returned panel without positive victory evidence count=${battleEvidence.consecutiveUnconfirmed}")
+                    DungeonDailyStore.record(service,key!!) { it.copy(unknown=it.unknown+1) }
+                }
                 if(completed=="ad") {
                     passUsage.reserveAd(key!!)
                     DungeonDailyStore.record(service,key) { it.copy(ads=it.ads+1) }
@@ -117,7 +127,7 @@ object DungeonRotationAnalyzer {
                 Log.i("DigiWorldDungeonRotation","RESUME $key $completed confirmed by returned panel ${retryPanel!!.kind}:${retryPanel.remaining}")
                 de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
                     "DUNGEON.TRANSACTION", "key=$key completed=$completed panel=${retryPanel.kind} remaining=${retryPanel.remaining} grantedTicket=$grantedTicket elapsed=${now-waitingAt}")
-                status(service,"${key!!.name}: ${if(completed=="ad") "Ad ticket received" else "battle complete"}")
+                status(service,"${key!!.name}: ${if(completed=="ad") "Ad ticket received" else "returned; victory not confirmed"}")
                 candidate=""; matches=0
                 return true
             }
@@ -128,6 +138,7 @@ object DungeonRotationAnalyzer {
                 return true
             }
             if(waiting == "battle" && now-waitingAt > 4_000L && now-retryAt > 4_000L &&
+                battleEvidence.canRetryStart(waitingSawTransition) &&
                 retryPanel?.kind in setOf("challenge", "network_challenge", "network_matching", "destroy") && retryPanel?.remaining == 1 && startRetries < 3) {
                 startRetries++; retryAt=now
                 tap(service,v,retryPanel!!.target,now,"Retrying unaccepted Start ($startRetries)")
@@ -161,7 +172,7 @@ object DungeonRotationAnalyzer {
                 return true
             }
             if(returning) {
-                tap(service,v,NormalizedPoint(.94,.87),now,"Closing ${key!!.name}")
+                tap(service,v,NormalizedPoint(.985,.50),now,"Closing ${key!!.name}")
                 return true
             }
             val used = DungeonDailyStore.snapshot(service).progress[key] ?: DungeonDailyProgress()
@@ -183,10 +194,17 @@ object DungeonRotationAnalyzer {
                     if(passUsage.attempts(key!!) >= 1) { finishCard(service,v,now); return true }
                     waiting="battle"; waitingAt=now
                     startRetries=0; retryAt=now
+                    battleEvidence.begin()
                     passUsage.reserveAttempt(key)
                     tap(service,v,panel.target,now,"${key.name}: daily Destroy")
                 }
                 "challenge", "network_challenge", "network_matching" -> {
+                    // Unknown returns are not victories and do not authorize an endless loop.
+                    // Park without marking this card complete; diagnostics can recover it later.
+                    if(battleEvidence.consecutiveUnconfirmed>=cfg.normalAttempts) {
+                        park(service,"${key!!.name}: ${battleEvidence.consecutiveUnconfirmed} results not confirmed")
+                        return true
+                    }
                     val configuredLimit = attemptLimit(key!!, cfg.normalAttempts)
                     val limit = if (key in setOf(DungeonKey.DEMIDEVIMON, DungeonKey.BAKEMON))
                         configuredLimit else passUsage.limit(key!!, configuredLimit)
@@ -196,7 +214,10 @@ object DungeonRotationAnalyzer {
                     // button is authoritative; the normal ticket counter remains authoritative
                     // for every repeatable dungeon.
                     val noTickets = panel.remaining == 0 && key != DungeonKey.APOCALYMON_WALL
-                    if(noTickets || spent >= limit) {
+                    val lossLimitReached=!battleEvidence.canStart(cfg.normalAttempts)
+                    if(lossLimitReached) de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                        "DUNGEON.LOSS_LIMIT", "key=$key consecutiveLosses=${battleEvidence.consecutiveLosses} limit=${cfg.normalAttempts}; returning to list")
+                    if(noTickets || spent >= limit || lossLimitReached) {
                         // Network's retained team can show a Challenge sheet instead of the
                         // available Ad button. Leave that team and reopen the entry, without
                         // marking the card complete or spending another normal ticket.
@@ -217,6 +238,7 @@ object DungeonRotationAnalyzer {
                     }
                     val target = panel.target
                     waiting="battle"; waitingAt=now
+                    battleEvidence.begin()
                     startRetries=0; retryAt=now
                     // Daily actions are persisted only after visual proof of a battle/result. This
                     // keeps an unaccepted Start tap from suppressing Apocalymon for the entire day.
@@ -257,6 +279,7 @@ object DungeonRotationAnalyzer {
             when(decision.command) {
                 DungeonRotationCommand.SELECT_CARD -> {
                     activeKey=decision.card!!.key
+                    battleEvidence= DungeonBattleEvidence()
                     tap(service,v,decision.card.center,now,"Opening ${activeKey!!.name}")
                 }
                 DungeonRotationCommand.SWIPE_TOP, DungeonRotationCommand.SWIPE_BOTTOM -> {
@@ -326,7 +349,7 @@ object DungeonRotationAnalyzer {
             DungeonDailyStore.markComplete(service,key)
         controller?.finishCurrent()
         returning=true
-        tap(service,v,NormalizedPoint(.94,.87),now,"${key.name}: done, returning to list")
+        tap(service,v,NormalizedPoint(.985,.50),now,"${key.name}: done, returning to list")
     }
     fun onReward() {
         val key=activeKey ?: return
@@ -346,11 +369,13 @@ object DungeonRotationAnalyzer {
     }
     fun onLoss() {
         val key=activeKey ?: return
-        if(waiting!="battle") return
         DigiWorldAccessibilityService.instance?.let { service -> confirmBattle(service, key, won = false) }
         waiting=""
     }
     private fun confirmBattle(service: DigiWorldAccessibilityService, key: DungeonKey, won: Boolean) {
+        if(!battleEvidence.result(if(won)BattleOutcome.WIN else BattleOutcome.LOSS))return
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+            "DUNGEON.RESULT", "key=$key outcome=${if(won)"WIN" else "LOSS"} consecutiveLosses=${battleEvidence.consecutiveLosses}")
         DungeonDailyStore.record(service,key) {
             it.copy(
                 attempts = if (key in DungeonPassPolicy.dailyLimited) it.attempts + 1 else it.attempts,
@@ -382,5 +407,6 @@ object DungeonRotationAnalyzer {
         passUsage= DungeonPassUsage()
         cardDiagnostic=""; cardDiagnosticAt=0L
         networkAdInspections=0
+        battleEvidence= DungeonBattleEvidence()
     }
 }

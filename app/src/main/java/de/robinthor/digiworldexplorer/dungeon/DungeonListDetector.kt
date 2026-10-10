@@ -97,16 +97,12 @@ object DungeonListDetector {
             return CounterAvailability.UNREADABLE
         val digits = glyphs.filter { it.right < tallest.left }
         val leading = digits.firstOrNull() ?: return CounterAvailability.UNREADABLE
-        return if (hasEnclosedHole(mask, width, height, leading)) CounterAvailability.ZERO else CounterAvailability.POSITIVE
-    }
-
-    private fun hasEnclosedHole(mask: BooleanArray, width: Int, height: Int, glyph: ColorComponent): Boolean {
-        val gw = glyph.width + 2; val gh = glyph.height + 2
-        val background = BooleanArray(gw * gh) { true }
-        for (y in 0 until glyph.height) for (x in 0 until glyph.width) {
-            background[(y + 1) * gw + x + 1] = !mask[(glyph.top + y) * width + glyph.left + x]
+        // 4/6/8/9 also have enclosed holes. The old shortcut marked valid tickets
+        // exhausted; use the same normalized glyph shape reader as modal counters.
+        return when(ShapeDigitReader.classify(mask,width,leading)) {
+            0 -> CounterAvailability.ZERO
+            in 1..9 -> CounterAvailability.POSITIVE
+            else -> CounterAvailability.UNREADABLE
         }
-        val regions = ColorComponents.find(background, gw, gh)
-        return regions.any { it.left > 0 && it.top > 0 && it.right < gw - 1 && it.bottom < gh - 1 && it.pixels >= 2 }
     }
 }

@@ -3,8 +3,14 @@ package de.robinthor.digiworldexplorer.feed
 import de.robinthor.digiworldexplorer.vision.*
 
 /** Closed cyan speech frame containing a pale panel and icon; never a projectile core. */
+data class BondBubbleReading(val bounds: NormalizedRect, val viewport: GameViewport) {
+    val center: NormalizedPoint get() = bounds.center
+}
+
 object BondBubbleDetector {
-    fun detect(frame: PixelFrame): NormalizedPoint? {
+    fun detect(frame: PixelFrame): NormalizedPoint? = observe(frame)?.center
+
+    fun observe(frame: PixelFrame): BondBubbleReading? {
         val viewport = GameViewport.detect(frame)
         val w = 360; val h = 640
         val cyan = BooleanArray(w*h)
@@ -51,13 +57,20 @@ object BondBubbleDetector {
             count>0 && pale.toDouble()/count>=.20 && ink.toDouble()/count>=.08
         }
         val panel = panels.maxByOrNull { it.width*it.height } ?: return null
-        return NormalizedPoint((panel.left+panel.width/2.0)/w, (panel.top+panel.height/2.0)/h)
-            .takeIf { it.y in .35.. .48 }
+        val bounds=NormalizedRect(panel.left.toDouble()/w,panel.top.toDouble()/h,
+            (panel.right+1.0)/w,(panel.bottom+1.0)/h)
+        // Preserve the historical detection center while carrying the actual hitbox/viewport.
+        val centerY=(panel.top+panel.height/2.0)/h
+        return BondBubbleReading(bounds,viewport).takeIf { centerY in .35.. .48 }
     }
 
     /** Tap the verified bubble itself. Tapping the figure underneath opens its Partner popup on
      * physical phones once the bubble disappears between scheduled taps. */
-    fun tapTarget(bubble: NormalizedPoint): NormalizedPoint? {
-        return bubble.takeIf { it.x in .30.. .72 && it.y in .25.. .52 }
+    fun tapTarget(bubble: BondBubbleReading): NormalizedPoint? {
+        if(bubble.center.x !in .30.. .72 || bubble.center.y !in .35.. .48)return null
+        // Gently above/right of the bubble center, well inside its measured body. Never
+        // substitute the screen/figure center or an arbitrary fixed Home coordinate.
+        return NormalizedPoint(bubble.bounds.left+bubble.bounds.width*.65,
+            bubble.bounds.top+bubble.bounds.height*.35)
     }
 }

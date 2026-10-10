@@ -38,7 +38,7 @@ object StageFailedFrameAnalyzer {
             for (y in (height * y0).toInt() until (height * y1).toInt() step step) {
                 for (x in (width * x0).toInt() until (width * x1).toInt() step step) {
                     val c = pixel(x.coerceIn(0, width - 1), y.coerceIn(0, height - 1))
-                    if (match(Color.red(c), Color.green(c), Color.blue(c))) hits++
+                    if (match(c shr 16 and 255, c shr 8 and 255, c and 255)) hits++
                     total++
                 }
             }
@@ -46,7 +46,7 @@ object StageFailedFrameAnalyzer {
         }
 
         val headerRed = ratio(.08, .11, .92, .23) { r, g, b -> r > 120 && r > g * 1.30 && r > b * 1.15 }
-        val panelGray = ratio(.08, .21, .92, .30) { r, g, b -> r > 90 && kotlin.math.abs(r-g) < 28 && kotlin.math.abs(g-b) < 28 }
+        val panelGray = ratio(.08, .21, .92, .30) { r, g, b -> r in 90..180 && kotlin.math.abs(r-g) < 28 && kotlin.math.abs(g-b) < 28 }
         val guideRed = ratio(.10, .28, .90, .82) { r, g, b -> r > 105 && r > g * 1.25 && r > b * 1.10 }
         // The dismiss area differs widely between devices and game layouts (including the
         // VS/Tower loss screen), so it must not be used as a recognition requirement.
@@ -83,14 +83,14 @@ object StageFailedFrameAnalyzer {
             for (y in (height * y0).toInt() until (height * y1).toInt() step step) {
                 for (x in (width * x0).toInt() until (width * x1).toInt() step step) {
                     val c = pixel(x.coerceIn(0, width - 1), y.coerceIn(0, height - 1))
-                    if (match(Color.red(c), Color.green(c), Color.blue(c))) hits++
+                    if (match(c shr 16 and 255, c shr 8 and 255, c and 255)) hits++
                     total++
                 }
             }
             return hits / total.coerceAtLeast(1).toDouble()
         }
         val headerRed = ratio(.08, .11, .92, .23) { r, g, b -> r > 120 && r > g * 1.30 && r > b * 1.15 }
-        val panelGray = ratio(.08, .21, .92, .30) { r, g, b -> r > 90 && kotlin.math.abs(r-g) < 28 && kotlin.math.abs(g-b) < 28 }
+        val panelGray = ratio(.08, .21, .92, .30) { r, g, b -> r in 90..180 && kotlin.math.abs(r-g) < 28 && kotlin.math.abs(g-b) < 28 }
         val guideRed = ratio(.10, .28, .90, .82) { r, g, b -> r > 105 && r > g * 1.25 && r > b * 1.10 }
         return headerRed >= .08 && panelGray >= .28 && guideRed >= .02
     }

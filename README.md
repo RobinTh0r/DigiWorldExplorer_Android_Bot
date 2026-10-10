@@ -14,6 +14,8 @@
 
 _Version 5.5.0 is the current regular release._
 
+**Optional test beta:** [5.5.1 Beta 1 — Dungeon recovery & safer Bond taps](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v5.5.1-beta.1). This is not a stable replacement or all-phone certification; read the [verified tests and remaining limits](RELEASE_NOTES_5.5.1_BETA1.md).
+
 Version 5.5.0 improves shared game-area calibration, Partner/bond bubbles, Farm/rewards, Dungeon navigation and DWS rechecks. Four native BlueStacks formats were tested after real client restarts; this is not physical-phone or all-device certification. Classic / Bota Walk remains free; All-Sprite Test remains Beta. See [release notes and test limitations](RELEASE_NOTES_5.5.0.md).
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
