@@ -78,9 +78,10 @@ object DungeonRotationAnalyzer {
             val orphanPanel = DungeonKey.entries.firstNotNullOfOrNull { DungeonPanelDetector.detect(frame,it,v) }
             if(orphanPanel != null) {
                 unknownAt=0L; settleUntil=now+1_300L; candidate=""; matches=0
-                status(service,"Closing open dungeon window to resume")
                 Log.i("DigiWorldDungeonRotation","RESUME closing orphan panel ${orphanPanel.kind}")
-                service.dispatchBack { ok -> if(!ok) park(service,"Could not close open dungeon window") }
+                // Android Back on a misclassified Home frame opens "return to title".
+                // Close a positively observed modal through its outside right backdrop instead.
+                tap(service,v,NormalizedPoint(.985,.50),now,"Closing open dungeon window to resume")
                 return true
             }
         }
@@ -228,11 +229,8 @@ object DungeonRotationAnalyzer {
             return true
         }
         // Modal overlays dim the page header. Background cards never authorize navigation.
-        val headerY = if (v.usesTallPhoneLayout) .128 else .095
-        val header = frame.ratioInViewportPatch(v,NormalizedPoint(.65,headerY),.10,.012) {
-            val hsv=it.hsv(); hsv.hue in 90..115 && hsv.value >= 180 && hsv.saturation >= 90
-        }
-        val reading = if(header > .5) DungeonListDetector.detect(frame,v) else DungeonListReading(DungeonListPosition.NONE,emptyList())
+        val header = DungeonListDetector.visibleHeader(frame,v)
+        val reading = if(header) DungeonListDetector.detect(frame,v) else DungeonListReading(DungeonListPosition.NONE,emptyList())
         if(reading.position != DungeonListPosition.NONE) {
             noticeKind=""; noticeActions=0
             unknownAt=0L

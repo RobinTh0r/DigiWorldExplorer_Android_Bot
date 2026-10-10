@@ -5,6 +5,19 @@ import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class GameEntryDetectorTest {
+    @Test fun recordedNetworkDwsAndHomeFramesNeverBecomeUpdatedTitle() {
+        for(name in listOf("network_defense_start","network_defense_boss","live_dws_stock_1220x2712","live_home_stage_1220x2712")) {
+            val img=javax.imageio.ImageIO.read(javaClass.getResource("/$name.png"))
+            val reading=GameEntryDetector.detect(PixelFrame(img.width,img.height,img::getRGB))
+            org.junit.Assert.assertFalse("$name $reading",reading.screen in setOf(EntryScreen.LOGIN_READY,EntryScreen.LOGIN_LOADING))
+        }
+    }
+    @Test fun nativeUpdatedTitleWithPublisherLogoCoveredStillFindsRealStartStrip() {
+        val img=javax.imageio.ImageIO.read(javaClass.getResource("/live_game_title_1080x2340.png"))
+        val reading=GameEntryDetector.detect(PixelFrame(img.width,img.height,img::getRGB))
+        assertEquals(reading.toString(),EntryScreen.LOGIN_READY,reading.screen)
+        org.junit.Assert.assertEquals(.843,reading.target!!.y,.025)
+    }
     @Test fun `live dark city home is recognized while blocking menus remain excluded`() {
         fun read(name: String): EntryScreen {
             val image = javax.imageio.ImageIO.read(javaClass.getResource("/$name.png"))

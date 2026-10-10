@@ -4,6 +4,21 @@ import de.robinthor.digiworldexplorer.vision.*
 import kotlin.math.abs
 
 object PlotTimerReader {
+    /** Growing-state proof does not require perfect OCR of every second. Locate the dark
+     * timer plate and aligned pale digit row relative to the observed soil centre. */
+    fun visible(frame:PixelFrame,viewport:GameViewport,center:NormalizedPoint):Boolean {
+        val area=NormalizedRect((center.x-.20).coerceAtLeast(0.0),(center.y-.025).coerceAtLeast(0.0),
+            (center.x+.20).coerceAtMost(1.0),(center.y+.12).coerceAtMost(1.0))
+        return ColorRegionLocator.find(frame,viewport,area,(viewport.width/540).coerceAtLeast(1)) {
+            val hsv=it.hsv();hsv.value<85 && hsv.saturation<150
+        }.filter { it.width in .12.. .28 && it.height in .007.. .026 }.any { plate ->
+            val dark=frame.ratioInViewportPatch(viewport,plate.center,plate.width*.4,plate.height*.3,1) { it.hsv().value<100 }
+            val letters=frame.ratioInViewportPatch(viewport,plate.center,plate.width*.4,plate.height*.3,1) {
+                val hsv=it.hsv();hsv.value>180 && hsv.saturation<80
+            }
+            dark>.40 && letters in .06.. .55
+        }
+    }
     /** Reads HH:MM:SS or MM:SS. Any incomplete/invalid row remains null. */
     fun read(frame: PixelFrame, plot: Int, viewport: GameViewport = GameViewport.detect(frame)): Int? {
         val center = FarmHarvestDetector.centers.getOrNull(plot) ?: return null

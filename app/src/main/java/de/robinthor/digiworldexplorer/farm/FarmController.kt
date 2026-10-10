@@ -108,8 +108,18 @@ class FarmController(private val timeoutMillis: Long = 30_000) {
                     return issue(FarmCommand(FarmOperation.SELECT_WATER, waiting.plot), now)
                 }
                 FarmOperation.SELECT_WATER -> {
-                    if (frame.view != FarmView.WATER) return if (expired) park() else FarmCommand(FarmOperation.WAIT)
-                    return issue(FarmCommand(FarmOperation.CONFIRM_WATER, waiting.plot), now)
+                    if(frame.view==FarmView.FIELD) {
+                        // Some water/ad-skip paths complete directly from Choose. A returned
+                        // field AND a changed target (ripe or water bubble gone) prove completion.
+                        val targetState=frame.plots.getOrNull(waiting.plot ?: -1)
+                        val completed=targetState==PlotState.RIPE ||
+                            (targetState==PlotState.GROWING && waiting.plot !in frame.wateringPriorities)
+                        if(!completed)return if(expired)park() else FarmCommand(FarmOperation.WAIT)
+                        pending=null
+                    } else {
+                        if (frame.view != FarmView.WATER) return if (expired) park() else FarmCommand(FarmOperation.WAIT)
+                        return issue(FarmCommand(FarmOperation.CONFIRM_WATER, waiting.plot), now)
+                    }
                 }
                 FarmOperation.CONFIRM_WATER -> {
                     if (frame.view != FarmView.FIELD) return if (expired) park() else FarmCommand(FarmOperation.WAIT)

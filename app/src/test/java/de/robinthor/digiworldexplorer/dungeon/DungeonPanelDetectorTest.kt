@@ -6,6 +6,19 @@ import org.junit.Test
 import org.junit.Assert.*
 
 class DungeonPanelDetectorTest {
+    @Test fun homeStageBannerAndBattleEffectsNeverAuthorizeDungeonModalRecovery() {
+        val img=ImageIO.read(javaClass.getResource("/live_home_stage_1220x2712.png"))
+        val frame=PixelFrame(img.width,img.height,img::getRGB)
+        for(key in DungeonKey.entries)assertNull(key.toString(),DungeonPanelDetector.detect(frame,key))
+    }
+    @Test fun nativeTallFactoryAdButtonAndZeroFollowMeasuredTitleAndAction() {
+        val img=ImageIO.read(javaClass.getResource("/live_dungeon_factory_zero_1220x2712.png"))
+        val result=DungeonPanelDetector.detect(PixelFrame(img.width,img.height,img::getRGB),DungeonKey.DIGIFACTORY)
+        assertEquals(result.toString(),"ad",result?.kind)
+        assertEquals(0,result?.remaining)
+        assertEquals(.50,result!!.target.x,.02)
+        assertEquals(.683,result.target.y,.025)
+    }
     private fun check(file: String, key: DungeonKey, kind: String, count: Int?) {
         val img = ImageIO.read(javaClass.getResource("/$file.png"))
         val result = DungeonPanelDetector.detect(PixelFrame(img.width,img.height,img::getRGB),key)

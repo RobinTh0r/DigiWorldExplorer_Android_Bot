@@ -31,6 +31,7 @@ object FarmHarvestAnalyzer {
     private var parkedUntil = 0L
     private var epoch = 0L
     private var unresolvedFieldSince = 0L
+    private var lastObservation=""
 
     @Synchronized
     fun analyze(image: Image, width: Int, height: Int): Boolean {
@@ -94,6 +95,12 @@ object FarmHarvestAnalyzer {
         // dispatched an action. Standalone dialog-like colours on unrelated screens must not claim
         // ownership or start a farm flow.
         val recognized = field.field || (flowActive && observation.view != FarmView.UNKNOWN)
+        val detail="view=${observation.view} plots=${observation.plots} seeds=${observation.seedCounts} " +
+            "water=${observation.wateringPriorities} centers=${field.plotCenters}"
+        if(detail!=lastObservation) {
+            lastObservation=detail
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("FARM.OBSERVE",detail)
+        }
         ownsFrame = recognized || flowActive
         if (!AutomationState.enabled) { reset(); return recognized }
         if (recognized) AutoMoveController.pauseForPurchaseScreen()
@@ -146,8 +153,9 @@ object FarmHarvestAnalyzer {
             }
             else -> Unit
         }
-        if (command.operation == FarmOperation.CLOSE_WATER) lastDispatched = null else verifyPriorAction()
-        val target = command.target(dialog) ?: run {
+        if (command.operation == FarmOperation.CLOSE_WATER) lastDispatched = null
+        else if(command!=lastDispatched)verifyPriorAction()
+        val target = command.target(dialog,field) ?: run {
             controller.cancel()
             parked = true
             AutomationEventLog.record(AutomationEventKind.PARKED, "FARM_TARGET_MISSING")
@@ -166,6 +174,9 @@ object FarmHarvestAnalyzer {
                 "seedCounts=${observation.seedCounts} water=${observation.wateringPriorities} " +
                 "cans=${observation.wateringCans} target=$target",
         )
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("FARM.ACTION",
+            "operation=$action view=${observation.view} plots=${observation.plots} seedCounts=${observation.seedCounts} " +
+                "slot=${observation.freeSlot} selected=${observation.selectedSlot} cans=${observation.wateringCans} adSkipPass=${observation.adSkipPass} target=$target")
         ScreenDirector.noteAction(action.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() }, de.robinthor.digiworldexplorer.automation.ObservedScreen.MEAT_FIELD)
         val dispatchEpoch = epoch
         AutomationEventLog.record(AutomationEventKind.ACTION_DISPATCHED, action)
@@ -209,9 +220,13 @@ object FarmHarvestAnalyzer {
         ).joinToString("|")
     }
 
-    private fun FarmCommand.target(dialog: FarmDialogDetection): NormalizedPoint? = when (operation) {
-        FarmOperation.HARVEST, FarmOperation.OPEN_SEEDS -> plot?.let(FarmHarvestDetector::target)
-        FarmOperation.OPEN_WATER -> plot?.let(FarmHarvestDetector::waterTarget)
+    private fun FarmCommand.target(dialog: FarmDialogDetection,field:FarmHarvestDetection): NormalizedPoint? = when (operation) {
+        FarmOperation.HARVEST, FarmOperation.OPEN_SEEDS -> plot?.let { index ->
+            field.actionTargets[index] ?: field.plotCenters.getOrNull(index)?.let {
+                it.copy(x=it.x+if(index%2==0).07 else -.07)
+            }
+        }
+        FarmOperation.OPEN_WATER -> plot?.let { field.waterTargets[it] }
         FarmOperation.SELECT_FREE_SEED -> slot?.let { dialog.slots.getOrNull(it) }
         FarmOperation.CONFIRM_SEED, FarmOperation.SELECT_WATER, FarmOperation.CONFIRM_WATER -> dialog.selectButton
         FarmOperation.CLOSE_WATER, FarmOperation.CLOSE_ERROR -> dialog.closeTarget
@@ -241,5 +256,6 @@ object FarmHarvestAnalyzer {
         parked = false
         parkedUntil = 0L
         unresolvedFieldSince = 0L
+        lastObservation=""
     }
 }

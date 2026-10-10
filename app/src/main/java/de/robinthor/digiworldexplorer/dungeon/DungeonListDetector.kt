@@ -12,6 +12,13 @@ object DungeonListDetector {
     private const val W = 180
     private const val H = 320
 
+    /** A bright, wide page header measured at its actual vertical position. Dimmed
+     * background headers behind a modal cannot authorize list navigation. */
+    fun visibleHeader(frame:PixelFrame,viewport:GameViewport=GameViewport.detect(frame)):Boolean =
+        ColorRegionLocator.find(frame,viewport,NormalizedRect(0.0,.03,1.0,.20)) {
+            val hsv=it.hsv();hsv.hue in 90..115 && hsv.value>=180 && hsv.saturation>=90
+        }.any { it.width>.60 && it.height in .018.. .085 }
+
     fun detect(frame: PixelFrame, viewport: GameViewport = GameViewport.detect(frame)): DungeonListReading {
         val tallPhone = viewport.usesTallPhoneLayout
         val cyan = BooleanArray(W * H)
@@ -19,13 +26,29 @@ object DungeonListDetector {
             val hsv = frame.rgbAt(viewport.left + x * viewport.width / W, viewport.top + y * viewport.height / H).hsv()
             cyan[y * W + x] = hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 115
         }
-        val components = ColorComponents.find(cyan, W, H).filter {
+        val candidates = ColorComponents.find(cyan, W, H).filter {
             // Dungeon cards are at least about 9% of the viewport high. The shorter cyan
             // DUNGEON header can otherwise be mistaken for card zero at the bottom position,
             // shifting DAILY onto Metal Sea.
             it.pixels >= 75 && it.width.toDouble() / W in (if (tallPhone) .82.. .98 else .66.. .86) &&
                 it.height.toDouble() / H in .09.. .24
         }.sortedBy { it.top }
+        // Cyan border and its offset shadow may form two disconnected contours around
+        // the SAME card. Count observed rectangles, not connected color islands; adjacent
+        // cards do not overlap. Otherwise one duplicate shifts every subsequent key.
+        val components = mutableListOf<ColorComponent>()
+        for(component in candidates) {
+            val duplicate=components.indexOfFirst { existing ->
+                val intersectionWidth=(minOf(existing.right,component.right)-maxOf(existing.left,component.left)+1).coerceAtLeast(0)
+                val intersectionHeight=(minOf(existing.bottom,component.bottom)-maxOf(existing.top,component.top)+1).coerceAtLeast(0)
+                intersectionWidth.toDouble()*intersectionHeight/minOf(existing.width*existing.height,component.width*component.height)>.65
+            }
+            if(duplicate<0) components.add(component) else {
+                val previous=components[duplicate]
+                components[duplicate]=ColorComponent(minOf(previous.left,component.left),minOf(previous.top,component.top),
+                    maxOf(previous.right,component.right),maxOf(previous.bottom,component.bottom),previous.pixels+component.pixels)
+            }
+        }
         if (components.size < 3) return DungeonListReading(DungeonListPosition.NONE, emptyList())
         val firstHeight = components.first().height.toDouble() / H
         val firstCenter = (components.first().top + components.first().height / 2.0) / H

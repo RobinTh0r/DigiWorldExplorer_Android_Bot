@@ -163,6 +163,8 @@ object HudCounterReader {
 
     fun read(width: Int, height: Int, argb: IntArray, bounds: GridBounds, layout: HudActionRowLayout): HudCounters {
         if (layout == HudActionRowLayout.UNKNOWN) return HudCounters()
+        if(layout == HudActionRowLayout.UPDATED)
+            observedUpdatedRows(width, height, argb, bounds)?.let { return it }
         val updatedActionRow = layout == HudActionRowLayout.UPDATED
         val clawsCenter = if (updatedActionRow) .57 else CLAWS_CENTER
         // The fourth row at .82 contains broom stock, not Dash. Dash stays in the green third row.
@@ -177,6 +179,48 @@ object HudCounterReader {
         if (claws?.first == null) unknown += glyphs(width, height, argb, bounds, clawsCenter, xFrom, xTo).map { it.bits }
         if (dash?.first == null) unknown += glyphs(width, height, argb, bounds, dashCenter, xFrom, xTo).map { it.bits }
         return HudCounters(claws?.first, claws?.second, dash?.first ?: minimum, dash?.second, unknown, updatedActionRow, minimum!=null)
+    }
+
+    /** Measure the four actual resource plates. Their spacing changes with game UI reflow;
+     * grid-relative legacy row constants must not truncate a stock digit on tall displays. */
+    private fun observedUpdatedRows(width:Int,height:Int,argb:IntArray,bounds:GridBounds):HudCounters? {
+        val gw=(bounds.right-bounds.left).toDouble(); val gh=(bounds.bottom-bounds.top).toDouble()
+        if(gw<=0 || gh<=0)return null
+        val step=maxOf(1,width/360)
+        val x0=bounds.left.coerceAtLeast(0)
+        val x1=minOf(width,(bounds.left+gw*.47).toInt())
+        val y0=(bounds.bottom+gh*.35).toInt().coerceIn(0,height-1)
+        val y1=(height*.97).toInt()
+        if(x1<=x0 || y1<=y0)return null
+        val sw=(x1-x0+step-1)/step;val sh=(y1-y0+step-1)/step
+        val mask=BooleanArray(sw*sh)
+        for(y in 0 until sh)for(x in 0 until sw){
+            val px=minOf(x0+x*step,width-1);val py=minOf(y0+y*step,height-1)
+            val p=argb[py*width+px];val r=p shr 16 and 255;val g=p shr 8 and 255;val b=p and 255
+            mask[y*sw+x]=r in 105..170 && g in 125..195 && b in 150..220 && g-r in 8..35 && b-g in 10..40
+        }
+        val rows=de.robinthor.digiworldexplorer.vision.ColorComponents.find(mask,sw,sh).filter {
+            it.width*step/gw in .24.. .46 && it.height*step/gw in .025.. .10 &&
+                it.pixels.toDouble()/(it.width*it.height)>.45
+        }.sortedBy { it.top }
+        if(rows.size!=4)return null
+        val centers=rows.map { y0+(it.top+it.height/2.0)*step }
+        val gaps=centers.zipWithNext().map { (a,b)->b-a }
+        if(gaps.minOrNull()!!<gw*.05 || gaps.maxOrNull()!!>gaps.minOrNull()!!*1.4)return null
+        fun readRow(index:Int):Pair<Pair<Int?,HudBox>?,List<Glyph>> {
+            val row=rows[index]
+            val center=(centers[index]-bounds.bottom)/gh
+            val from=(x0+(row.left+row.width*.25)*step-bounds.left)/gw
+            val to=(x0+(row.left+row.width*.65)*step-bounds.left)/gw
+            val half=row.height*step*.42/gh
+            return readBand(width,height,argb,bounds,center,from,to,half) to
+                glyphs(width,height,argb,bounds,center,from,to,half)
+        }
+        val (claws,cg)=readRow(1);val (dash,dg)=readRow(2)
+        val minimum=if(dash?.first==null)positivePrefixMinimum(dg) else null
+        return HudCounters(claws?.first,claws?.second,dash?.first?:minimum,dash?.second,
+            (if(claws?.first==null)cg.map { it.bits } else emptyList())+
+                (if(dash?.first==null)dg.map { it.bits } else emptyList()),true,minimum!=null)
     }
 
     /** A confidently read leading 2 in a three-digit stock proves at least 200, even
@@ -203,8 +247,9 @@ object HudCounterReader {
         center: Double,
         xFrom: Double = X_FROM,
         xTo: Double = X_TO,
+        measuredBandHalf: Double? = null,
     ): Pair<Int?, HudBox>? {
-        val glyphs = glyphs(width, height, argb, bounds, center, xFrom, xTo)
+        val glyphs = glyphs(width, height, argb, bounds, center, xFrom, xTo, measuredBandHalf)
         if (glyphs.isEmpty()) return null
         var value: Int? = 0
         var left = Int.MAX_VALUE
@@ -230,12 +275,13 @@ object HudCounterReader {
         center: Double,
         xFrom: Double = X_FROM,
         xTo: Double = X_TO,
+        measuredBandHalf: Double? = null,
     ): List<Glyph> {
         val gridHeight = (bounds.bottom - bounds.top).toDouble()
         val gridWidth = (bounds.right - bounds.left).toDouble()
         // Updated compact-grid fits vary by a few pixels. Keep the full glyph baseline;
         // truncating its bottom changed the apparent aspect and split 71 into three pieces.
-        val bandHalf = if (xFrom < .20) .042 else BAND_HALF
+        val bandHalf = measuredBandHalf ?: if (xFrom < .20) .042 else BAND_HALF
         val y0 = (bounds.bottom + (center - bandHalf) * gridHeight).toInt().coerceIn(0, height - 1)
         val y1 = (bounds.bottom + (center + bandHalf) * gridHeight).toInt().coerceIn(y0 + 1, height)
         val x0 = (bounds.left + xFrom * gridWidth).toInt().coerceIn(0, width - 1)

@@ -14,6 +14,16 @@ import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import java.io.File
 import java.io.FileOutputStream
 
+/** Small antialias/edge changes are measured against cell size, not a fixed device pixel count.
+ * A meaningful board translation/resize must still revoke calibration. */
+internal fun compatibleGridBounds(a:de.robinthor.digiworldexplorer.detection.GridBounds,
+    b:de.robinthor.digiworldexplorer.detection.GridBounds):Boolean {
+    val cell=minOf(a.right-a.left,a.bottom-a.top,b.right-b.left,b.bottom-b.top)/5.0
+    val tolerance=maxOf(4.0,cell*.08)
+    return kotlin.math.abs(a.left-b.left)<=tolerance && kotlin.math.abs(a.top-b.top)<=tolerance &&
+        kotlin.math.abs(a.right-b.right)<=tolerance && kotlin.math.abs(a.bottom-b.bottom)<=tolerance
+}
+
 object CaptureFrameAnalyzer {
     /** Kandidatenschwelle. [GridDetector] prueft bereits Aequidistanz, Seitenverhaeltnis, Abdeckung
      *  und ein Kontrastverhaeltnis von >=5 zum Hintergrund. Die Konfidenz misst nur, wie klar die
@@ -23,8 +33,6 @@ object CaptureFrameAnalyzer {
     private const val CANDIDATE_MIN = .55
     /** So viele aufeinanderfolgende Analysen muessen dieselben Bounds liefern, bevor kalibriert wird. */
     private const val STABLE_FRAMES = 3
-    /** Zulaessige Abweichung je Kante zwischen zwei Frames in Pixeln. */
-    private const val BOUNDS_TOLERANCE = 4
     /** Mindestabstand zwischen zwei Diagnose-PNGs in Millisekunden. */
     private const val DIAGNOSTIC_INTERVAL = 60_000L
     @Volatile private var lastDiagnostic = 0L
@@ -43,11 +51,7 @@ object CaptureFrameAnalyzer {
 
     private fun stable(candidate: de.robinthor.digiworldexplorer.detection.GridDetection): Boolean {
         val previous = pending
-        val same = previous != null &&
-            Math.abs(previous.bounds.left - candidate.bounds.left) <= BOUNDS_TOLERANCE &&
-            Math.abs(previous.bounds.top - candidate.bounds.top) <= BOUNDS_TOLERANCE &&
-            Math.abs(previous.bounds.right - candidate.bounds.right) <= BOUNDS_TOLERANCE &&
-            Math.abs(previous.bounds.bottom - candidate.bounds.bottom) <= BOUNDS_TOLERANCE
+        val same = previous != null && compatibleGridBounds(previous.bounds,candidate.bounds)
         if (same) pendingCount++ else { pending = candidate; pendingCount = 1 }
         return pendingCount >= STABLE_FRAMES
     }
@@ -74,11 +78,7 @@ object CaptureFrameAnalyzer {
             verifyCleanFrame=false;lastGridVerification=frameNow
             val fresh=GridDetector.detect(width,height,pixels)?.takeIf { it.confidence>=CANDIDATE_MIN }
             val previous=calibrated
-            val same=fresh!=null && previous!=null &&
-                kotlin.math.abs(previous.bounds.left-fresh.bounds.left)<=BOUNDS_TOLERANCE &&
-                kotlin.math.abs(previous.bounds.top-fresh.bounds.top)<=BOUNDS_TOLERANCE &&
-                kotlin.math.abs(previous.bounds.right-fresh.bounds.right)<=BOUNDS_TOLERANCE &&
-                kotlin.math.abs(previous.bounds.bottom-fresh.bounds.bottom)<=BOUNDS_TOLERANCE
+            val same=fresh!=null && previous!=null && compatibleGridBounds(previous.bounds,fresh.bounds)
             if(same)unverifiableFrames=0 else unverifiableFrames++
             if(fresh!=null && !same || unverifiableFrames>=3) {
                 de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.GRID","revoked previous=${previous?.bounds} fresh=${fresh?.bounds} misses=$unverifiableFrames")

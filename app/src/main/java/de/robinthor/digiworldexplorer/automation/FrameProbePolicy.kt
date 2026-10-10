@@ -10,12 +10,14 @@ object FrameProbePolicy {
         featureFrame: Boolean,
         networkDefenseSessionActive: Boolean,
         worldSearchCalibrated: Boolean = false,
+        worldSearchSessionActive: Boolean = false,
         digiCopilotOwns: Boolean,
         awaitingFarm: Boolean,
         rewardSequenceActive: Boolean,
     ): Boolean = featureFrame &&
         !networkDefenseSessionActive &&
         !worldSearchCalibrated &&
+        !worldSearchSessionActive &&
         (!digiCopilotOwns || !awaitingFarm) &&
         !rewardSequenceActive
 }

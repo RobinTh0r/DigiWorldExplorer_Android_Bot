@@ -97,10 +97,12 @@ class ScreenCaptureService : Service() {
 
     override fun onConfigurationChanged(newConfig:android.content.res.Configuration) {
         super.onConfigurationChanged(newConfig)
-        FrameGeometryRegistry.calibration.reset()
+        resetGeometry()
         refreshCaptureSize()
     }
 
+    private val contentStability=GameContentStability()
+    private fun resetGeometry() { contentStability.reset();FrameGeometryRegistry.calibration.reset() }
     private fun physicalDisplay()=PhysicalDisplay.bounds(this,AutomationState.forceLegacyCaptureMetrics)
     private fun refreshCaptureSize() {
         if(projection==null || shuttingDown)return
@@ -113,7 +115,7 @@ class ScreenCaptureService : Service() {
             if(shuttingDown || width<1 || height<1)return@post
             val density=resources.configuration.densityDpi
             if(imageReader?.width==width && imageReader?.height==height && captureDensity==density)return@post
-            FrameGeometryRegistry.calibration.reset();CaptureFrameAnalyzer.resetCalibration()
+            resetGeometry();CaptureFrameAnalyzer.resetCalibration()
             val previous=imageReader
             val next=createReader(width,height)
             display.resize(width,height,density)
@@ -128,26 +130,26 @@ class ScreenCaptureService : Service() {
     private fun observeGeometry(image:android.media.Image):GeometrySnapshot? {
         val service=DigiWorldAccessibilityService.instance
         if(service?.isGameForeground()!=true){
-            FrameGeometryRegistry.calibration.reset();CaptureFrameAnalyzer.resetCalibration()
+            resetGeometry();CaptureFrameAnalyzer.resetCalibration()
             GameEntryAnalyzer.reset();publishDirector(ObservedScreen.UNKNOWN)
             return null
         }
         val display=physicalDisplay()
         val window=service.gameWindowBounds()?.intersect(display)
-            ?: run { FrameGeometryRegistry.calibration.reset();return null }
+            ?: run { resetGeometry();return null }
         val metadata=DisplayGeometry(display,window,resources.configuration.densityDpi,
             @Suppress("DEPRECATION") getSystemService(WindowManager::class.java).defaultDisplay.rotation)
         val size=PixelSize(image.width,image.height)
         // Uniform fitting is guaranteed by Android from 12L onwards. On older versions
         // a stale mismatched surface after rotation must be resized, never guessed/stretched.
         if(Build.VERSION.SDK_INT<32 && kotlin.math.abs(size.width.toLong()*display.height-size.height.toLong()*display.width)>maxOf(display.width,display.height)*2L) {
-            FrameGeometryRegistry.calibration.reset();refreshCaptureSize();return null
+            resetGeometry();refreshCaptureSize();return null
         }
-        val projected=ProjectionTransform(size,display).captureRect(window) ?: run {FrameGeometryRegistry.calibration.reset();return null}
-        val plane=image.planes.firstOrNull() ?: run {FrameGeometryRegistry.calibration.reset();return null}
+        val projected=ProjectionTransform(size,display).captureRect(window) ?: run {resetGeometry();return null}
+        val plane=image.planes.firstOrNull() ?: run {resetGeometry();return null}
         val data=plane.buffer
         val required=(image.height-1L)*plane.rowStride+(image.width-1L)*plane.pixelStride+3
-        if(plane.pixelStride<4 || required>=data.limit()) { FrameGeometryRegistry.calibration.reset();return null }
+        if(plane.pixelStride<4 || required>=data.limit()) { resetGeometry();return null }
         val pixels=de.robinthor.digiworldexplorer.vision.PixelFrame(image.width,image.height) { x,y ->
             val at=y*plane.rowStride+x*plane.pixelStride
             Color.rgb(data.get(at).toInt() and 255,data.get(at+1).toInt() and 255,data.get(at+2).toInt() and 255)
@@ -157,8 +159,9 @@ class ScreenCaptureService : Service() {
             PixelRect(maxOf(0,it.left-2),maxOf(0,it.top-2),minOf(size.width,it.right+2),minOf(size.height,it.bottom+2))
         }
         val content=VisibleGameArea.detect(pixels,projected,occlusions)
-        val geometry=content?.let { FrameGeometry(size,metadata,it) }
-        val snapshot=FrameGeometryRegistry.calibration.observe(geometry,SystemClock.elapsedRealtime())
+        val now=SystemClock.elapsedRealtime()
+        val geometry=contentStability.observe(content?.let { FrameGeometry(size,metadata,it) },now)
+        val snapshot=FrameGeometryRegistry.calibration.observe(geometry,now)
         if(snapshot==null){
             CaptureFrameAnalyzer.resetCalibration()
             return null
@@ -167,10 +170,10 @@ class ScreenCaptureService : Service() {
             observedGeneration=snapshot.generation
             CaptureFrameAnalyzer.resetCalibration()
             val details=mapOf("generation" to "${snapshot.generation}","capture" to "$size",
-                "display" to "$metadata","gameInCapture" to "$content","analysis" to "${geometry!!.analysisSize}",
+                "display" to "$metadata","gameInCapture" to "${geometry!!.gameInCapture}","analysis" to "${geometry.analysisSize}",
                 "displayOrigin" to "${geometry.displayOrigin}","scaleToDisplay" to "${geometry.scaleToDisplay}")
             de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.recordCalibration(details)
-            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.CONFIRMED","generation=${snapshot.generation} capture=${size.width}x${size.height} analysis=${geometry.analysisSize.width}x${geometry.analysisSize.height} crop=$content origin=${geometry.displayOrigin} scale=${geometry.scaleToDisplay}")
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.CONFIRMED","generation=${snapshot.generation} capture=${size.width}x${size.height} analysis=${geometry.analysisSize.width}x${geometry.analysisSize.height} crop=${geometry.gameInCapture} origin=${geometry.displayOrigin} scale=${geometry.scaleToDisplay}")
         }
         return snapshot
     }
@@ -251,7 +254,7 @@ class ScreenCaptureService : Service() {
 
     private fun beginCapture(resultCode: Int, resultData: Intent) {
         shuttingDown = false
-        FrameGeometryRegistry.calibration.reset();observedGeneration=-1L
+        resetGeometry();observedGeneration=-1L
         CaptureFrameAnalyzer.resetCalibration()
         lastRecognizedContent = SystemClock.elapsedRealtime()
         missingStatusShown = false
@@ -407,6 +410,7 @@ class ScreenCaptureService : Service() {
                             featureFrame = featureFrame,
                             networkDefenseSessionActive = NetworkDefenseFrameAnalyzer.isSessionActive(),
                             worldSearchCalibrated = CaptureFrameAnalyzer.isCalibrated,
+                            worldSearchSessionActive = DwsExcursionRequest.active(),
                             digiCopilotOwns = digiCopilotOwns,
                             awaitingFarm = BondCycleTimer.awaitingFarm(),
                             rewardSequenceActive = de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer.isSequenceActive(),
@@ -508,7 +512,7 @@ class ScreenCaptureService : Service() {
                 if (recognized) markContentRecognized() else checkRecognitionTimeouts()
                 }
             } }.onFailure {
-                FrameGeometryRegistry.calibration.reset()
+                resetGeometry()
                 android.util.Log.w("DigiWorldCapture","Frame discarded while capture changed",it)
                 de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GEOMETRY.FRAME_REJECTED",it.javaClass.simpleName)
             }
@@ -601,7 +605,7 @@ class ScreenCaptureService : Service() {
 
     private fun releaseCapture() {
         shuttingDown = true
-        FrameGeometryRegistry.calibration.reset();frameScratch=null;observedGeneration=-1L
+        resetGeometry();frameScratch=null;observedGeneration=-1L
         geometryPendingSince=0L
         getSystemService(DisplayManager::class.java).unregisterDisplayListener(displayListener)
         AutomationEventLog.record(AutomationEventKind.CAPTURE_STOPPED, "CAPTURE_STOPPED")

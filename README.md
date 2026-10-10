@@ -4,17 +4,17 @@
 
 **Native, local grid-navigation automation for Android 9+**
 
-[![Version](https://img.shields.io/badge/version-5.1.0-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
+[![Version](https://img.shields.io/badge/version-5.5.0-green?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Android](https://img.shields.io/badge/Android-9%2B-3DDC84?style=for-the-badge&logo=android&logoColor=white)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 [![Status](https://img.shields.io/badge/status-stable-2ea44f?style=for-the-badge)](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v5.1.0/DigiWorldExplorer-Bot-v5.1.0.apk)
+## 📱 [DOWNLOAD THE SIGNED APK](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/download/v5.5.0/DigiWorldExplorer-Bot-v5.5.0.apk)
 
 ### 📦 [OPEN ALL RELEASES](https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases)
 
-_Version 5.1.0 is the current public release._
+_Version 5.5.0 is the current regular release._
 
-Version 5.1.0 adds image-driven Dungeon and Digi Co-Pilot reliability work, offline diagnostic ZIPs for real-phone testing, tall-phone Partner/Farm fixes, and restores the proven classic Auto-Summon behavior from 4.0.0.
+Version 5.5.0 improves shared game-area calibration, Partner/bond bubbles, Farm/rewards, Dungeon navigation and DWS rechecks. Four native BlueStacks formats were tested after real client restarts; this is not physical-phone or all-device certification. Classic / Bota Walk remains free; All-Sprite Test remains Beta. See [release notes and test limitations](RELEASE_NOTES_5.5.0.md).
 
 `Local processing` · `Deterministic` · `No root` · `No cloud AI` · `Safety first`
 
@@ -106,7 +106,7 @@ The **Network Defense Ops Loop** starts an attempt, waits through all five waves
 
 The mode is **off by default** and must only be enabled inside Network Defense Ops. Its stricter session tracking prevents ordinary battles and the general dungeon overview from triggering the loop. Button positions are detected dynamically for different resolutions and Android display mappings. The loop has also been successfully tested with the game running at **x2 battle speed**.
 
-Partner rotation and automatic feeding across the full partner list are shown in the app as a **Coming Soon** preview and are intentionally not active yet.
+Partner rotation is available through Digi Co-Pilot; see the current release notes for verified flows and remaining device-test limits.
 
 ### 🛡️ Global Stage Failed Recovery
 

@@ -32,7 +32,12 @@ object PartnerGridDetector {
         val heroY = if (tallPhone) .318 else .285
         val heroHalfHeight = if (tallPhone) .145 else .14
         val heroBottom = if (tallPhone) .472 else .4515
-        val header = cyan(.5, headerY, .36, .012) > .45
+        // Native game reflow moves this band vertically; aspect ratio does not select its Y.
+        val observedHeader = ColorRegionLocator.find(frame, viewport,
+            NormalizedRect(.02, .045, .98, .23), (viewport.width / 540).coerceAtLeast(1)) {
+            val hsv = it.hsv(); hsv.hue in 85..110 && hsv.saturation > 100 && hsv.value > 130
+        }.any { it.width > .75 && it.height in .02.. .085 }
+        val header = observedHeader || cyan(.5, headerY, .36, .012) > .45
         // The selected Digimon bottom-navigation button has a large white mascot tile. Home,
         // Explore and Dungeon keep this area blue, which prevents their cyan headers from being
         // mistaken for a Buddy/Support/Partner subpage.
@@ -55,17 +60,19 @@ object PartnerGridDetector {
             digimonSection = digimonSection,
             partnerTabTarget = partnerTab.takeIf { digimonSection },
         )
-        val expanded = geometry?.cells?.isNotEmpty() == true || if (tallPhone) {
+        val visiblePlus = PartnerVisualLocator.expandTarget(frame, viewport)
+        // A proved '+' wins over passive-skill icons at historical roster coordinates.
+        val expanded = visiblePlus == null && (geometry?.cells?.isNotEmpty() == true || if (tallPhone) {
             // The adaptive phone layout keeps the roster's first-row position occupied by
             // passive-skill icons while collapsed, so a blue-frame probe is ambiguous. The
             // bottom-right control is unambiguous: '+' has a bright vertical stroke, '−' has not.
             pale(.883, .827, .006, .018) < .30 && pale(.883, .827, .018, .006) > .30
-        } else cyan(.159, .642, .003, .025) > .45
+        } else cyan(.159, .642, .003, .025) > .45)
         if (!expanded) return PartnerGrid(
             page = true,
             digimonSection = true,
             partnerTabTarget = partnerTab,
-            expandTarget = PartnerVisualLocator.expandTarget(frame, viewport),
+            expandTarget = visiblePlus,
         )
         val cells = geometry?.cells?.takeIf { it.isNotEmpty() } ?: (0 until 15).map { i ->
             // Real 1080x2376 OnePlus captures use a tighter roster than the earlier Oppo

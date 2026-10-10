@@ -35,12 +35,11 @@ object BondCycleTimer {
             // Farm/rewards run inside the Bond cooldown, never restart its deadline.
         }
     }
-    /** Explicit Co-Pilot restart during cooldown rechecks the safe Farm/Home tail. */
+    /** Explicit Co-Pilot start requests Farm even when Bond is disabled or its timer expired.
+     * This is NOT an automatic restart triggered by a clock or restored preferences. */
     fun requestFarmRecovery() {
-        if (remainingMillis() > 0L) {
-            awaitingFarm = true
-            preferences?.edit()?.putBoolean("awaiting_farm", true)?.apply()
-        }
+        awaitingFarm = true
+        preferences?.edit()?.putBoolean("awaiting_farm", true)?.apply()
     }
     fun canStartBond(now: Long) = !awaitingFarm && now >= cooldownUntil
     fun remainingMillis(now: Long) = (cooldownUntil - now).coerceAtLeast(0L)

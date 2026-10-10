@@ -4,6 +4,35 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class FarmControllerTest {
+    @Test fun singleWaterActionCanReturnDirectlyToProvenChangedField() {
+        for(ripe in listOf(false,true)) {
+            val start=FarmObservation(FarmView.FIELD,List(6){PlotState.GROWING},freeSeeds=0,
+                wateringCans=0,wateringPriorities=mapOf(0 to 3),wateringEnabled=true,adSkipPass=true)
+            val controller=FarmController()
+            assertEquals(FarmOperation.OPEN_WATER,controller.tick(start,0).operation)
+            assertEquals(FarmOperation.SELECT_WATER,controller.tick(FarmObservation(FarmView.WATER),1).operation)
+            val result=start.copy(plots=List(6){if(it==0 && ripe)PlotState.RIPE else PlotState.GROWING},
+                wateringPriorities=emptyMap())
+            assertEquals(if(ripe)FarmOperation.HARVEST else FarmOperation.COMPLETE,controller.tick(result,2).operation)
+        }
+    }
+    @Test fun returningFieldWithoutWaterTargetChangeDoesNotProveWatering() {
+        val start=FarmObservation(FarmView.FIELD,List(6){PlotState.GROWING},freeSeeds=0,
+            wateringCans=1,wateringPriorities=mapOf(0 to 3),wateringEnabled=true)
+        val controller=FarmController()
+        controller.tick(start,0)
+        controller.tick(FarmObservation(FarmView.WATER),1)
+        assertEquals(FarmOperation.WAIT,controller.tick(start,2).operation)
+    }
+    @Test fun missingWaterBubbleOnAnUnknownPlotIsNotSuccessfulWatering() {
+        val start=FarmObservation(FarmView.FIELD,List(6){PlotState.GROWING},freeSeeds=0,
+            wateringCans=1,wateringPriorities=mapOf(0 to 3),wateringEnabled=true)
+        val controller=FarmController()
+        controller.tick(start,0)
+        controller.tick(FarmObservation(FarmView.WATER),1)
+        val covered=start.copy(plots=List(6){if(it==0)PlotState.UNKNOWN else PlotState.GROWING},wateringPriorities=emptyMap())
+        assertEquals(FarmOperation.WAIT,controller.tick(covered,2).operation)
+    }
     private fun field(first: PlotState, seeds: Int? = 1) =
         FarmObservation(FarmView.FIELD, listOf(first) + List(5) { PlotState.GROWING }, seeds)
 

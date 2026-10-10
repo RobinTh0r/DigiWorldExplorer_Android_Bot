@@ -10,10 +10,20 @@ data class FarmHarvestDetection(
     val visiblePlots: Int = 0,
     val waterablePlots: Set<Int> = emptySet(),
     val wateringPriorities: Map<Int, Int> = emptyMap(),
+    val plotCenters: List<NormalizedPoint> = emptyList(),
+    val actionTargets: Map<Int,NormalizedPoint> = emptyMap(),
+    val waterTargets: Map<Int,NormalizedPoint> = emptyMap(),
 )
 
 /** Component/number-shape recognition for harvest only. No OCR result is treated as a free seed. */
 object FarmHarvestDetector {
+    fun closeTarget(frame:PixelFrame,viewport:GameViewport=GameViewport.detect(frame)):NormalizedPoint? =
+        ColorRegionLocator.find(frame,viewport,NormalizedRect(.76,.89,.99,.999),(viewport.width/540).coerceAtLeast(1)) {
+            val hsv=it.hsv();hsv.saturation<90 && hsv.value>170
+        }.filter {
+            val aspect=it.width*viewport.width/(it.height*viewport.height)
+            it.width in .055.. .18 && it.height in .025.. .09 && aspect in .75..1.25
+        }.singleOrNull()?.center
     private const val W = 360
     private const val H = 640
     val centers = listOf(.507, .653, .810).flatMap { y -> listOf(.313, .640).map { x -> NormalizedPoint(x, y) } }
@@ -39,6 +49,26 @@ object FarmHarvestDetector {
             ripeBubbles[i] = hsv.saturation <= 85 && hsv.value >= 180
         }
         val plots = ColorComponents.find(ground, W, H).filter { it.pixels.toDouble() / ground.size in .01.. .15 }
+        // Derive the two columns and three rows from visible soil. One column may have two
+        // joined plots, but the other must still prove all three distinct row positions.
+        val soil=plots.filter { it.top.toDouble()/H>.35 && it.width.toDouble()/W in .18.. .44 }
+        val columns=listOf(soil.filter { (it.left+it.right)/2.0/W<.5 },soil.filter { (it.left+it.right)/2.0/W>=.5 })
+        val rows=columns.firstOrNull { it.size==3 }?.sortedBy { it.top }
+        val observedCenters=if(rows!=null && columns.all { it.size in 2..3 }) {
+            rows.flatMap { row -> columns.map { column ->
+                val cy=(row.top+row.bottom)/2.0/H
+                val nearest=column.minBy { abs((it.top+it.bottom)/2.0/H-cy) }
+                NormalizedPoint((nearest.left+nearest.right)/2.0/W,cy)
+            } }
+        } else if(columns.all { it.isNotEmpty() }) {
+            val top=soil.minOf { it.top }.toDouble()/H
+            val bottom=soil.maxOf { it.bottom }.toDouble()/H
+            if(bottom-top>=.30 && bottom>.72) (0 until 3).flatMap { row -> columns.map { column ->
+                val xs=column.map { (it.left+it.right)/2.0/W }.sorted()
+                NormalizedPoint(xs[xs.size/2],top+(bottom-top)*(row+.5)/3)
+            } } else centers
+        } else centers
+        val centers=observedCenters
         // Each expected plot must have its own component; a plain orange screen is not a field.
         val matched = centers.map { center -> plots.withIndex().filter { (_, blob) ->
             center.x in (blob.left.toDouble() / W - .06)..((blob.right + 1.0) / W + .06) &&
@@ -57,6 +87,7 @@ object FarmHarvestDetector {
             it.pixels.toDouble() / ripeBubbles.size in .003.. .035 &&
                 it.width.toDouble() / W in .10.. .30 && it.height.toDouble() / H in .045.. .18
         }
+        val actionTargets=mutableMapOf<Int,NormalizedPoint>()
         val selected = centers.map { center -> badgeBlobs.filter { badge ->
             abs((badge.left + badge.width / 2.0) / W - center.x) <= .12 &&
                 (badge.top + badge.height / 2.0) / H in (center.y - .16)..(center.y + .02)
@@ -75,6 +106,7 @@ object FarmHarvestDetector {
                 abs((bubble.left + bubble.width / 2.0) / W - center.x) <= .09 &&
                     (bubble.top + bubble.height / 2.0) / H in (center.y - .11)..(center.y - .015)
             val bubble = fieldBubbleBlobs.firstOrNull(::pointsAtPlot)
+            if(bubble!=null)actionTargets[index]=NormalizedPoint((bubble.left+bubble.width/2.0)/W,(bubble.top+bubble.height/2.0)/H)
             val harvestInkRatio = bubble?.let {
                 var ink = 0
                 for (y in it.top..it.bottom) for (x in it.left..it.right) if (ground[y * W + x]) ink++
@@ -104,8 +136,8 @@ object FarmHarvestDetector {
             val emptyBubble = bubble != null && !ripeBubble
             if (ripeBubble) PlotState.RIPE
             else if (emptyBubble) PlotState.EMPTY
-            else if (badge == null && progressPixels >= 12) PlotState.GROWING
             else if (badge == null && lockPixels >= 100) PlotState.LOCKED
+            else if (badge == null && progressPixels >= 12) PlotState.GROWING
             else if (badge == null || selected.count { it == badge } > 1) PlotState.UNKNOWN
             else {
                 val crop = BooleanArray(badge.width * badge.height) { i -> bright[(badge.top + i / badge.width) * W + badge.left + i % badge.width] }
@@ -117,21 +149,26 @@ object FarmHarvestDetector {
                 if (hasNumber) PlotState.RIPE else if (crop.none { it }) PlotState.EMPTY else PlotState.UNKNOWN
             }
         }.mapIndexed { index, state ->
-            if (state == PlotState.UNKNOWN && selected[index] == null && PlotTimerReader.read(frame, index, viewport) != null)
+            if (state == PlotState.UNKNOWN && selected[index] == null &&
+                (PlotTimerReader.visible(frame,viewport,centers[index]) || PlotTimerReader.read(frame,index,viewport)!=null))
                 PlotState.GROWING else state
         }
         val minBubblePixels = (90.0 * W * H / (viewport.width.toDouble() * viewport.height)).toInt().coerceAtLeast(4)
         val bubbleCenters = ColorComponents.find(bubbles, W, H)
-            .filter { it.pixels >= minBubblePixels }
+            .filter { it.pixels >= minBubblePixels && it.width.toDouble()/W in .02.. .14 &&
+                it.height.toDouble()/H in .01.. .10 }
             .map { NormalizedPoint((it.left + it.width / 2.0) / W, (it.top + it.height / 2.0) / H) }
         val blocked = centers.indices.filterTo(mutableSetOf()) { index ->
-            val target = target(index)
+            val target = actionTargets[index] ?: centers[index].let { it.copy(x=it.x+if(index%2==0).07 else -.07) }
             bubbleCenters.any { point -> kotlin.math.hypot(point.x - target.x, point.y - target.y) < .06 }
         }
-        val waterable = centers.indices.filterTo(mutableSetOf()) { index ->
-            val target = waterTarget(index)
-            bubbleCenters.any { point -> kotlin.math.hypot(point.x - target.x, point.y - target.y) < .075 }
-        }
+        val waterTargets=centers.indices.mapNotNull { index ->
+            val center=centers[index]
+            val target=NormalizedPoint(center.x+if(index%2==0)-.105 else .15,center.y-.08)
+            bubbleCenters.minByOrNull { kotlin.math.hypot(it.x-target.x,it.y-target.y) }
+                ?.takeIf { kotlin.math.hypot(it.x-target.x,it.y-target.y)<.09 }?.let { index to it }
+        }.toMap()
+        val waterable=waterTargets.keys
         val wateringPriorities = waterable.associateWith { index ->
             val center = centers[index]
             var purple = 0
@@ -166,6 +203,9 @@ object FarmHarvestDetector {
             visiblePlots = visiblePlots,
             waterablePlots = waterable,
             wateringPriorities = wateringPriorities,
+            plotCenters=centers,
+            actionTargets=actionTargets,
+            waterTargets=waterTargets,
         )
     }
 

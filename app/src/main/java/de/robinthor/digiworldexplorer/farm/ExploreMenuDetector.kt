@@ -57,12 +57,14 @@ object ExploreMenuDetector {
                 NormalizedPoint(.5, .09), .35, .012) {
                 it.blue > 170 && it.green > 100 && it.red < 130
             }
-            return ExploreMenuDetection(menu = true, meatFieldTarget =
-                fieldBlob?.center()?.takeIf { header > .5 }?.copy(y = .52))
+            val fieldTarget=fieldBlob?.center()?.takeIf { header > .5 }?.copy(y = .52)
+            // A blue loading/terms screen is not Explore. Missing World artwork needs
+            // two independent positive markers (page header AND the field card).
+            return ExploreMenuDetection(menu = fieldTarget != null, meatFieldTarget = fieldTarget)
         }
         val worldCenter = worldBlob.center()
         if (abs(worldCenter.x - .294) > .06 || abs(worldCenter.y - .214) > .06)
-            return ExploreMenuDetection(menu = true)
+            return ExploreMenuDetection()
         val worldTarget = worldCenter.copy(y = worldCenter.y + .072)
         if (fieldBlob == null) return ExploreMenuDetection(menu = true, worldSearchTarget = worldTarget)
         val fieldCenter = fieldBlob.center()

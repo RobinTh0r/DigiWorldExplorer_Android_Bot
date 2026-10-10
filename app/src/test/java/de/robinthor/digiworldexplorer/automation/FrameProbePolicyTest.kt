@@ -5,6 +5,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FrameProbePolicyTest {
+    @Test fun `active world search keeps entry excluded during clean grid rechecks`() {
+        assertFalse(FrameProbePolicy.allowGenericGameEntry(
+            featureFrame=true, networkDefenseSessionActive=false,
+            worldSearchCalibrated=false, worldSearchSessionActive=true,
+            digiCopilotOwns=true, awaitingFarm=false, rewardSequenceActive=false))
+    }
     @Test fun `calibrated world search blocks generic title taps`() {
         assertFalse(FrameProbePolicy.allowGenericGameEntry(
             featureFrame = true,

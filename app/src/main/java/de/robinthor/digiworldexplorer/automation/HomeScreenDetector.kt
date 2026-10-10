@@ -13,8 +13,13 @@ object HomeScreenDetector {
         if (width < 1 || height < 1) return null
         val frame=de.robinthor.digiworldexplorer.vision.PixelFrame(width,height) { x,y -> argbAt(x,y) }
         val candidates = listOf(GameViewport.detect(frame))
-        return candidates.firstOrNull { bounds ->
+        val matched=candidates.firstOrNull { bounds ->
             controlsMatch(bounds.width, bounds.height) { x, y -> argbAt(bounds.left + x, bounds.top + y) }
+        }
+        // Tall native layouts can leave Home icons visible above the Partner sheet.
+        // Those background controls must not authorize Home-only taps through a foreground page.
+        return matched?.takeUnless {
+            de.robinthor.digiworldexplorer.feed.PartnerGridDetector.detect(frame).digimonSection
         }
     }
 

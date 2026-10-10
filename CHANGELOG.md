@@ -1,5 +1,16 @@
 # Changelog
 
+## 5.5.0 — 10 October 2026
+
+- Stabilize the observed game area across dark transition seams, while real display/window/DPI/capture changes still invalidate the shared image/input transformation. Keep one canonical analyzer viewport and device-independent coordinate mapping.
+- Measure the actual Partner header/Plus/roster and veto background Home controls. Verify cyan-framed Bond bubbles instead of tapping bright battle projectiles; record collection evidence.
+- Measure Meat Field soil, shovel/yield/water targets, seed-slot counters, timer plates and close controls. Accept positively verified direct watering-to-field transitions; explicit Farm starts no longer depend on Bond cooldown.
+- Measure Dungeon headers and foreground actions, merge duplicate card-outline/shadow contours, exclude Home from orphan-modal recovery and avoid Android Back opening the quit prompt.
+- Protect active DWS sessions from generic login detection during grid rechecks. Measure updated resource plates and retain Classic/Bota Walk movement rules, positive Dash-stock checks and broom exclusion.
+- Use a centered rotating Co-Pilot arrow, hide the large right status card during Co-Pilot and show a compact phase/timer beneath its badge without changing the idle visibility preference.
+- Verified 710 automated tests, signed release build and vital lint. Actual BlueStacks framebuffer/density changes and restarts tested 1080×2340/420, 1080×2424/420, 1220×2712/480 and 1440×3168/560. See `docs/BLUESTACKS_LIVE_CALIBRATION_20261009.md` for actual outcomes and interruptions.
+- Known limits: no physical-phone gameplay certification, no fresh positive Dungeon battle/ad-attempt test, imperfect resource OCR, intermittent DWS grid-check pauses, and no live extra zoom/navigation/tablet matrix. Existing experimental features/access gates, app ID, signing identity, settings and user data retained.
+
 ## 5.4.1 Beta 1 — 9 October 2026
 
 - Share one observed game-local coordinate system across image recognition, physical taps/swipes and grid rendering. Use Android's real display/game-window bounds and observed black borders, not device profiles or a guessed 9:16 canvas.

@@ -50,7 +50,12 @@ object FarmDialogDetector {
             (blob.top + blob.height / 2.0) / HEIGHT,
         )
         val seedSlots = blobs(slots, .003).filter { center(it).y in .44.. .52 }.sortedBy { it.left }
-        val greenButtons = blobs(buttons, .003)
+        // An inventory watering-can icon is green too, but is not a modal action button.
+        val greenButtons = blobs(buttons, .003).filter {
+            it.width.toDouble()/WIDTH in .16.. .65 && it.height.toDouble()/HEIGHT in .025.. .09 &&
+                it.width.toDouble()*viewport.width*HEIGHT/(it.height.toDouble()*viewport.height*WIDTH)>2.2 &&
+                center(it).y in .45.. .85
+        }
         if (trustedFarmFlow) {
             val panel = blobs(errorPanels, .05).maxByOrNull { it.pixels }
             val confirm = blobs(errorButtons, .002).maxByOrNull { it.pixels }
@@ -77,7 +82,9 @@ object FarmDialogDetector {
             return FarmDialogDetection(
                 view = FarmView.SEEDS,
                 slots = slotCenters,
-                seedCounts = FarmResourceReaders.dialogSeeds(frame, viewport, slotCenters),
+                seedCounts = FarmResourceReaders.dialogSeeds(frame, viewport, slotCenters,
+                    seedSlots.map { NormalizedRect(it.left.toDouble()/WIDTH,it.top.toDouble()/HEIGHT,
+                        (it.right+1.0)/WIDTH,(it.bottom+1.0)/HEIGHT) }),
                 selectedSlot = selected,
                 selectButton = center(select),
             )

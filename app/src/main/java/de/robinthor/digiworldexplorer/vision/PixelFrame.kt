@@ -27,6 +27,8 @@ class PixelFrame(
         return Rgb(value shr 16 and 255, value shr 8 and 255, value and 255)
     }
     val observedViewport:GameViewport by lazy {
+        val canonical=de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.callerAnalysisSize()
+        if(canonical?.width==width && canonical.height==height) return@lazy GameViewport.fit(width,height)
         val area=de.robinthor.digiworldexplorer.capture.VisibleGameArea.detect(this)
         if(area==null)GameViewport.fit(width,height) else GameViewport(area.left,area.top,area.width,area.height)
     }

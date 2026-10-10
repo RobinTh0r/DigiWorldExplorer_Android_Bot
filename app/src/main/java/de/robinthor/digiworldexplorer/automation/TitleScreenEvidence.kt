@@ -50,6 +50,11 @@ object TitleScreenEvidence {
         "...................................................................."))
 
     fun viewport(frame: PixelFrame): GameViewport? {
+        // A bright Network battle also satisfies broad white publisher/logo ratios.
+        // Its independently proven battle/challenge chrome vetoes every title fallback.
+        if(de.robinthor.digiworldexplorer.network.NetworkDefenseScreenDetector.detect(
+                frame.width,frame.height,frame::argbAt).screen !=
+            de.robinthor.digiworldexplorer.network.NetworkDefenseScreen.NONE)return null
         val full = GameViewport(0, 0, frame.width, frame.height)
         if (adaptiveTitleChrome(frame, full)) return full
         return listOf(
@@ -62,7 +67,17 @@ object TitleScreenEvidence {
         if (!v.usesTallPhoneLayout) return false
         val leftLogo = ratio(frame, v, .035, .045, .22, .115) { it.red > 210 && it.green > 210 && it.blue > 210 }
         val rightLogo = ratio(frame, v, .64, .045, .96, .105) { it.red > 190 && it.green > 190 && it.blue > 190 }
-        return leftLogo > .20 && rightLogo > .12
+        if(leftLogo > .20 && rightLogo > .12)return true
+        // Updated title artwork puts the white brand closer to the top. The overlay may hide
+        // the left publisher logo, so require the independent central cyan/yellow game logo.
+        val observedBrand=ratio(frame,v,.64,.005,.98,.065) { it.red>210 && it.green>210 && it.blue>210 }
+        val centralCyan=ratio(frame,v,.15,.28,.90,.56) {
+            val hsv=it.hsv();hsv.hue in 80..115 && hsv.saturation>60 && hsv.value>120
+        }
+        val centralYellow=ratio(frame,v,.32,.44,.71,.64) {
+            val hsv=it.hsv();hsv.hue in 15..35 && hsv.saturation>100 && hsv.value>150
+        }
+        return observedBrand>.10 && centralCyan>.16 && centralYellow>.12
     }
 
     private fun adaptiveTouchStartTarget(frame: PixelFrame, v: GameViewport): NormalizedPoint? {

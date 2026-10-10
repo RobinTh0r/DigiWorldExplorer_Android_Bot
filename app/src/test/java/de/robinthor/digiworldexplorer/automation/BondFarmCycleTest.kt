@@ -1,9 +1,23 @@
 package de.robinthor.digiworldexplorer.automation
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BondFarmCycleTest {
+    @Test fun explicitFarmStartWorksWithoutAnActiveBondCooldown() {
+        BondCycleTimer.resetForTest()
+        try {
+            assertTrue(BondCycleTimer.canStartBond(0))
+            BondCycleTimer.requestFarmRecovery()
+            assertTrue(BondCycleTimer.awaitingFarm())
+            assertFalse(BondCycleTimer.canStartBond(0))
+            BondCycleTimer.farmReturnedHome(1)
+            assertFalse(BondCycleTimer.awaitingFarm())
+            assertEquals(0L,BondCycleTimer.remainingMillis(1))
+        } finally {BondCycleTimer.resetForTest()}
+    }
     @Test fun completedTourRequestsOneImmediateVisitAtSafeHome() {
         BondCycleTimer.resetForTest()
         val cycle = BondFarmCycle()

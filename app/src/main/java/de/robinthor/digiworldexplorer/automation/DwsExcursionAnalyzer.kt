@@ -5,6 +5,8 @@ import android.os.SystemClock
 import de.robinthor.digiworldexplorer.accessibility.DigiWorldAccessibilityService
 import de.robinthor.digiworldexplorer.capture.CaptureFrameAnalyzer
 import de.robinthor.digiworldexplorer.farm.ExploreMenuDetector
+import de.robinthor.digiworldexplorer.farm.FarmHarvestDetector
+import de.robinthor.digiworldexplorer.strategy.AutomationState
 import de.robinthor.digiworldexplorer.strategy.AutoMoveController
 import de.robinthor.digiworldexplorer.vision.GameViewport
 import de.robinthor.digiworldexplorer.vision.NormalizedPoint
@@ -21,8 +23,17 @@ object DwsExcursionRequest {
         private set
     @Synchronized fun start() { phase = Phase.OPEN_EXPLORE; reason = "Opening Digital World Search"; runStartedAt = 0 }
     @Synchronized fun openingDws() { phase = Phase.OPEN_DWS; reason = "Opening Digital World Search" }
-    @Synchronized fun entered(now: Long) { phase = Phase.RUNNING; reason = "Digital World Search"; if (runStartedAt == 0L) runStartedAt = now }
-    @Synchronized fun requestReturn(why: String) { if (active()) { phase = Phase.RETURNING; reason = why } }
+    @Synchronized fun entered(now: Long) {
+        phase = Phase.RUNNING; reason = "Digital World Search"
+        if (runStartedAt == 0L) runStartedAt = now
+        de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DWS.ENTER", "startedElapsed=$runStartedAt")
+    }
+    @Synchronized fun requestReturn(why: String) {
+        if (active()) {
+            de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DWS.RETURN", "from=$phase reason=$why startedElapsed=$runStartedAt")
+            phase = Phase.RETURNING; reason = why
+        }
+    }
     @Synchronized fun complete() { phase = Phase.COMPLETE; reason = "DWS complete — Home"; runStartedAt = 0 }
     @Synchronized fun park(why: String) { phase = Phase.PARKED; reason = why }
     @Synchronized fun reset() { phase = Phase.IDLE; reason = ""; runStartedAt = 0 }
@@ -80,16 +91,16 @@ object DwsExcursionAnalyzer {
                     return false
                 }
                 if (!stable("explore:${explore.menu}:${explore.worldSearchTarget != null}")) return true
-                // Explore itself is already confirmed twice. The animated card artwork or the
-                // draggable status bubble can hide its colour anchor, but the first card keeps a
-                // stable normalized position on phones and BlueStacks.
-                val target = explore.worldSearchTarget ?: NormalizedPoint(.294, .286)
+                // Both the page and card anchor must be present; page colour alone never
+                // authorizes a blind card tap while an animation or overlay hides the target.
+                if(!explore.menu)return waitOrPark(now,service,"Explore not confirmed for DWS")
+                val target = explore.worldSearchTarget ?: return waitOrPark(now,service,"DWS card not confirmed")
                 deadline = now + 30_000L
                 tap(service, viewport, target, "Opening Digital World Search")
                 return true
             }
             DwsExcursionRequest.Phase.RUNNING -> {
-                if (BondCycleTimer.remainingMillis(now) == 0L)
+                if (AutomationState.autoBondRotationEnabled && BondCycleTimer.remainingMillis(now) == 0L)
                     DwsExcursionRequest.requestReturn("Bond timer ready")
                 else if (now - DwsExcursionRequest.runStartedAt >= DwsExcursionRequest.MAX_RUN_MILLIS)
                     DwsExcursionRequest.requestReturn("Five-minute DWS limit reached")
@@ -113,7 +124,9 @@ object DwsExcursionAnalyzer {
             AutoMoveController.reset(); CaptureFrameAnalyzer.resetCalibration()
             // Android Back may return to the previously opened Partner page. The in-game X is
             // the deterministic DWS → Explore transition across BlueStacks and phones.
-            tap(service, viewport, NormalizedPoint(.843, .948), "Leaving Digital World Search")
+            val close=FarmHarvestDetector.closeTarget(frame,viewport)
+                ?: return waitOrPark(now,service,"DWS close control not confirmed")
+            tap(service, viewport, close, "Leaving Digital World Search")
             deadline = now + 30_000L
             return true
         }

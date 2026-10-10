@@ -96,6 +96,44 @@ data class FrameGeometry(val capture:PixelSize,val display:DisplayGeometry,val g
 }
 data class GeometrySnapshot(val generation:Long,val geometry:FrameGeometry,val observedAt:Long)
 
+/** Dark rendering seams are not display changes. Keep the conservative union while a
+ * smaller content rect is still flickering; adopt a shrink only after continuous proof.
+ * Display/window/surface changes still invalidate immediately, without this debounce. */
+class GameContentStability(private val shrinkProofMs:Long=3_000) {
+    private var established:FrameGeometry?=null
+    private var candidate:PixelRect?=null
+    private var candidateSince=0L
+    private var lastAt:Long?=null
+    fun reset() { established=null;candidate=null;lastAt=null }
+    fun observe(value:FrameGeometry?,now:Long):FrameGeometry? {
+        if(value==null){reset();return null}
+        val old=established
+        if(old==null || old.capture!=value.capture || old.display!=value.display ||
+            lastAt?.let { now-it !in 0..2_000 }==true) {
+            established=value;candidate=null;lastAt=now;return value
+        }
+        lastAt=now
+        val a=old.gameInCapture;val b=value.gameInCapture
+        val union=PixelRect(minOf(a.left,b.left),minOf(a.top,b.top),maxOf(a.right,b.right),maxOf(a.bottom,b.bottom))
+        if(union!=a) { established=value.copy(gameInCapture=union);candidate=null }
+        val retained=established!!
+        if(b==retained.gameInCapture) {candidate=null;return retained}
+        // A one/two-pixel antialiased outer seam must not create a new coordinate system.
+        // This is a capture-pixel error bound, not a handset/resolution-specific crop.
+        val r=retained.gameInCapture
+        if(maxOf(kotlin.math.abs(b.left-r.left),kotlin.math.abs(b.top-r.top),
+                kotlin.math.abs(b.right-r.right),kotlin.math.abs(b.bottom-r.bottom))<=2) {
+            candidate=null;return retained
+        }
+        // Network/menu transitions can keep a black edge for over a second. Three
+        // continuous seconds distinguish these from a newly persistent letterbox;
+        // actual Android display/window changes still bypass this content debounce.
+        if(candidate!=b) {candidate=b;candidateSince=now}
+        if(now-candidateSince>=shrinkProofMs) {established=value;candidate=null}
+        return established
+    }
+}
+
 /** A changed geometry revokes the old mapping immediately, before waiting for stability.
  * Every new session starts empty. Nothing is restored from preferences or persisted. */
 class GeometryCalibration(private val stableFrames:Int=3,private val maxAgeMs:Long=2_000) {
@@ -121,6 +159,8 @@ class GeometryCalibration(private val stableFrames:Int=3,private val maxAgeMs:Lo
 object FrameGeometryRegistry {
     val calibration=GeometryCalibration()
     private val caller=ThreadLocal<GeometrySnapshot?>()
+    /** Analyzers see an already-cropped AnalysisImage, never recrop its transient dark edge. */
+    fun callerAnalysisSize():PixelSize?=caller.get()?.geometry?.analysisSize
     fun current(now:Long)=calibration.current(now)
     fun forCaller(now:Long)=caller.get() ?: current(now)
     fun <T> withSnapshot(snapshot:GeometrySnapshot,block:()->T):T {

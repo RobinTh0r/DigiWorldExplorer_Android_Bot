@@ -94,7 +94,7 @@ object BondFarmAnalyzer {
         val target = when (step) {
             CycleStep.OPEN_EXPLORE -> NormalizedPoint(.75, .955)
             CycleStep.OPEN_FIELD -> explore.meatFieldTarget
-            CycleStep.CLOSE_FIELD -> NormalizedPoint(.835, .955)
+            CycleStep.CLOSE_FIELD -> FarmHarvestDetector.closeTarget(frame,viewport)
             CycleStep.HOME -> NormalizedPoint(.5, .947)
             else -> null
         } ?: return true

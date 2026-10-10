@@ -16,11 +16,16 @@ object FarmResourceReaders {
         frame: PixelFrame,
         viewport: GameViewport = GameViewport.detect(frame),
         slotCenters: List<NormalizedPoint> = emptyList(),
+        slotBounds: List<NormalizedRect> = emptyList(),
     ): List<Int?> {
         // Emulator and tall-phone dialogs use different outer padding. The brown slot panels are
         // already detected, so read each counter relative to its actual centre instead of fixed X.
         if (slotCenters.size != 3)
             return listOf(.306, .500, .694).map { readNumber(frame, viewport, it - .022, it + .022, .485, .501) }
+        if(slotBounds.size==3)return slotBounds.map { slot ->
+            readNumber(frame,viewport,slot.center.x-slot.width*.28,slot.center.x+slot.width*.28,
+                slot.bottom-slot.height*.28,slot.bottom+slot.height*.02)
+        }
         return slotCenters.map { center ->
             readNumber(frame, viewport, center.x - .030, center.x + .030, center.y + .006, center.y + .035)
         }

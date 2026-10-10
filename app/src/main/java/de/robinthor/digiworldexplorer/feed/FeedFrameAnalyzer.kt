@@ -62,6 +62,8 @@ object FeedFrameAnalyzer {
                 if (rotationBubbleAbsentSince == 0L) rotationBubbleAbsentSince = now
                 if (now - rotationBubbleAbsentSince >= 700L && lastCollectedAt == 0L) {
                     lastCollectedAt = now
+                    de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                        "BOND.BUBBLE_VERIFIED", "proved panel absent for 700ms after ${rotationTapAttempts} taps")
                     android.util.Log.i("DigiWorldBond", "collect verified: tapped bubble disappeared")
                 }
             }
@@ -84,6 +86,8 @@ object FeedFrameAnalyzer {
                     rotationTapAttempts++
                     lastX = cx; lastY = cy
                     android.util.Log.i("DigiWorldBond", "collect detected bubble=$bubble target=$tapTarget attempt=$rotationTapAttempts")
+                    de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record(
+                        "BOND.BUBBLE_TAP", "bubble=$bubble target=$tapTarget attempt=$rotationTapAttempts")
                     service.dispatchValidatedTap(cx, cy) { }
                 }
             }

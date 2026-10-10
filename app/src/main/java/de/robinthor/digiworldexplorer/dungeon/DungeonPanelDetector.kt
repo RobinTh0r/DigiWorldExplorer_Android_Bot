@@ -7,6 +7,10 @@ data class DungeonPanel(val kind: String, val target: NormalizedPoint, val remai
 /** Reads the foreground action and its counter, independently of the list behind the modal. */
 object DungeonPanelDetector {
     fun detect(frame: PixelFrame, key: DungeonKey, v: GameViewport = GameViewport.detect(frame)): DungeonPanel? {
+        if(de.robinthor.digiworldexplorer.automation.HomeScreenDetector.detect(frame.width,frame.height,frame::argbAt))return null
+        val foregroundBody=frame.ratioInViewportPatch(v,NormalizedPoint(.5,.55),.30,.14) {
+            val hsv=it.hsv();hsv.hue in 95..120 && hsv.saturation>=90 && hsv.value in 20..130
+        }>.55
         fun color(x: Double, y: Double, purple: Boolean = false, rx: Double = .018, ry: Double = .010): Double = frame.ratioInViewportPatch(v, NormalizedPoint(x,y), rx,ry) {
             val h = it.hsv()
             h.value >= 150 && h.saturation >= 100 && if (purple) h.hue in 120..155 else h.hue in 90..115
@@ -25,15 +29,16 @@ object DungeonPanelDetector {
         val knownTitle = frame.ratioInViewportPatch(v,NormalizedPoint(.5,titleY),.22,.018) {
             val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
         }
-        val networkTitle = if (key == DungeonKey.NETWORK_DEFENSE) ColorRegionLocator.find(
-            frame,v,NormalizedRect(.10,.17,.90,.32)) {
+        val observedTitle = ColorRegionLocator.find(
+            frame,v,NormalizedRect(.10,.16,.90,.34)) {
             val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
-        }.filter { it.width > .45 && it.height in .018.. .09 }.maxByOrNull { it.width * it.height } else null
-        val adaptiveTitle = frame.ratioInViewportPatch(v,NormalizedPoint(.5,networkTitle?.center?.y ?: titleY),.22,.018) {
+        }.filter { it.width > .45 && it.height in .018.. .09 }
+            .takeIf { key==DungeonKey.NETWORK_DEFENSE || foregroundBody }?.maxByOrNull { it.width * it.height }
+        val adaptiveTitle = frame.ratioInViewportPatch(v,NormalizedPoint(.5,observedTitle?.center?.y ?: titleY),.22,.018) {
             val hsv=it.hsv(); hsv.hue in 90..115 && hsv.saturation >= 90 && hsv.value >= 100
         }
         if(maxOf(knownTitle, adaptiveTitle) < .35) return null
-        val effectiveTitleY = if (networkTitle != null && adaptiveTitle >= .35) networkTitle.center.y else titleY
+        val effectiveTitleY = if (observedTitle != null && adaptiveTitle >= .35) observedTitle.center.y else titleY
         if (key == DungeonKey.NETWORK_DEFENSE) {
             fun cyanButton(rgb: Rgb): Boolean = rgb.blue > 120 && rgb.green > 75 &&
                 rgb.blue > rgb.red * 1.15 && rgb.green > rgb.red * .90
@@ -69,7 +74,7 @@ object DungeonPanelDetector {
                 .maxByOrNull { it.width * it.height }
             val tickets = if (counter != null) number(frame,v,counter.left,counter.right,counter.center.y) else
                 number(frame,v,if(v.usesTallPhoneLayout).80 else .802,
-                    if(v.usesTallPhoneLayout).955 else .880,if(networkTitle != null && adaptiveTitle >= .35) effectiveTitleY-.05 else if(v.usesTallPhoneLayout).181 else .145)
+                    if(v.usesTallPhoneLayout).955 else .880,if(observedTitle != null && adaptiveTitle >= .35) effectiveTitleY-.05 else if(v.usesTallPhoneLayout).181 else .145)
             val matching = cyanButtons.filter { it.center.x in .35..0.65 && it.center.y > .70 }
                 .maxByOrNull { it.width*it.height }
             if (matching != null) return DungeonPanel("network_matching", matching.center, tickets)
@@ -108,6 +113,32 @@ object DungeonPanelDetector {
             x to (x + .078)
         }
         val tickets = number(frame, v, ticketRange.first, ticketRange.second, ticketY)
+        if (key != DungeonKey.NETWORK_DEFENSE && observedTitle != null) {
+            // The foreground title and action move together when the game reflows its UI.
+            // Locate wide modal actions; small resource/level HUD icons cannot qualify.
+            fun action(p:Rgb,purple:Boolean):Boolean {
+                val hsv=p.hsv()
+                return hsv.value>=150 && hsv.saturation>=100 &&
+                    if(purple)hsv.hue in 120..155 else hsv.hue in 90..115
+            }
+            val area=NormalizedRect(.10,.45,.90,.86)
+            fun buttons(purple:Boolean)=ColorRegionLocator.find(frame,v,area) { action(it,purple) }
+                .filter { it.width in .20.. .82 && it.height in .025.. .09 && it.center.y>.52 }
+            val purple=buttons(true).filter { it.width>.50 && it.center.x in .40.. .60 }
+                .maxByOrNull { it.width*it.height }
+            if(purple!=null)return DungeonPanel(if(key==DungeonKey.DAILY)"destroy" else "ad",purple.center,
+                if(key==DungeonKey.DAILY)tickets else number(frame,v,.514,.582,purple.center.y))
+            val challenge=buttons(false).filter { it.center.x>=.48 }
+                .maxByOrNull { it.width*it.height }
+            if(challenge!=null) {
+                val counter=ColorRegionLocator.find(frame,v,NormalizedRect(.34,.45,.68,challenge.top-.012)) {
+                    val hsv=it.hsv();hsv.hue in 90..115 && hsv.saturation>=90 && hsv.value>=100
+                }.filter { it.width in .10.. .30 && it.height in .012.. .045 &&
+                    challenge.center.y-it.center.y in .025.. .12 }.maxByOrNull { it.top }
+                val observedTickets=counter?.let { number(frame,v,it.left+it.width*.10,it.right-it.width*.10,it.center.y) }
+                return DungeonPanel("challenge",challenge.center,observedTickets?:tickets)
+            }
+        }
         if (key == DungeonKey.DAILY && color(.41,y,true) > .45)
             return DungeonPanel("destroy", NormalizedPoint(.5,y), tickets)
         val adLeftX = if (v.usesTallPhoneLayout) .50 else .41
