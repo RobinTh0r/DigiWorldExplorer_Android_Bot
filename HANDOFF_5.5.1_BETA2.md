@@ -3,7 +3,7 @@
 Authoritative checkout remains this folder. Read HANDOFF_5.5.1_BETA1.md and its
 referenced HANDOFF_5.5.0.md for earlier live testing and device/data constraints.
 The user explicitly requested publication: "Neue beta raushauen". Current candidate
-code88/name5.5.1-beta.2, planned prerelease v5.5.1-beta.2; stable5.5.0 stays unchanged.
+code88/name5.5.1-beta.2, published prerelease v5.5.1-beta.2; stable5.5.0 stays unchanged.
 
 Packages the previously local diagnostic/DWS and global Growth Guide fixes. Read
 docs/DIAGNOSTIC_HARDENING_20261012.md and docs/GROWTH_GUIDE_RECOVERY_20261012.md
@@ -35,4 +35,18 @@ APK C:/Users/thor/AppData/Local/Temp/dwe-release-20261010/build/app/outputs/rele
 Copy in artifacts under the same new name; original beta.1/stable files unchanged.
 Built through release-build.init.gradle, outputs outside Nextcloud. No new live
 test, installation or diagnosis-export validation. Prior remote mainb35e4e8e6962d4196351876a0113e7a7d4f46153;
-v5.5.1-beta.2 absent before preparation. Publication confirmation follows.
+v5.5.1-beta.2 absent before preparation.
+
+## Publication completed
+
+Source/tag target084c4009eef08371cf60f933083b517f497407b0. Main and annotated
+v5.5.1-beta.2 pushed atomically. Created a draft, verified uploaded asset size/hash,
+then published as prerelease (explicitly not latest). Public URL:
+https://github.com/RobinTh0r/DigiWorldExplorer_Android_Bot/releases/tag/v5.5.1-beta.2.
+GitHub release410325972 verified draft=false/prerelease=true, published
+2026-10-12T07:42:28Z. AssetDigiWorldExplorer-Bot-v5.5.1-beta.2.apk uploaded,
+25,812,504bytes, digestsha256:ce5a4294fd749681433aede918e5c0e5784eaff817e4017261c5089a37cde711
+matches verified local APK/artifacts copy. /releases/latest remains v5.5.0
+(prerelease=false); prior releases/tags/assets unchanged. No device installation.
+This final confirmation is documentation-only; the release tag stays on the verified
+code commit. Further releases require new user authorization.
