@@ -85,6 +85,7 @@ object HudCounterReader {
     private val TEMPLATES: List<Pair<Int, String>> = listOf(
         1 to ONE,
         1 to ONE_UPDATED,
+        1 to ONE_THOUSANDS_UPDATED,
         2 to TWO,
         2 to TWO_UPDATED,
         2 to TWO_GREEN_UPDATED,
@@ -211,7 +212,9 @@ object HudCounterReader {
             val row=rows[index]
             val center=(centers[index]-bounds.bottom)/gh
             val from=(x0+(row.left+row.width*.25)*step-bounds.left)/gw
-            val to=(x0+(row.left+row.width*.65)*step-bounds.left)/gw
+            // Read the whole number area, not only its left 40%: thousands separators
+            // and four/five-digit stocks otherwise truncate the final glyph.
+            val to=(x0+(row.left+row.width*.94)*step-bounds.left)/gw
             val half=row.height*step*.42/gh
             return readBand(width,height,argb,bounds,center,from,to,half) to
                 glyphs(width,height,argb,bounds,center,from,to,half)
@@ -299,9 +302,38 @@ object HudCounterReader {
             }
         }
 
-        val groups = columnGroups(ink, w, h).flatMap { (left, right) ->
+        val originalGroups = columnGroups(ink, w, h)
+        val bodyTop=(0 until h).firstOrNull {y->(0 until w).any {x->ink[y*w+x]}} ?: return emptyList()
+        val bottoms = originalGroups.mapNotNull { (left,right) ->
+            val rows=(0 until h).filter { y -> (left..right).any { x -> ink[y*w+x] } }
+            if(rows.isEmpty() || rows.last()-rows.first()+1<MIN_HEIGHT) null else rows.last()
+        }.sorted()
+        val baseline = bottoms.firstOrNull()
+        val bodyHeight=(baseline ?: bodyTop)-bodyTop+1
+        val groups = originalGroups.flatMap { (left, originalRight) ->
+            var right=originalRight
             val rows = (0 until h).filter { y -> (left..right).any { x -> ink[y*w+x] } }
             val inkHeight = if (rows.isEmpty()) 0 else rows.last()-rows.first()+1
+            // A detached comma/dot must not inflate four digits to five (and turn
+            // a 1000 minimum into 10000). It sits below the main number body.
+            if(rows.isNotEmpty() && inkHeight<bodyHeight*.55 && rows.first()>bodyTop+bodyHeight*.50)
+                return@flatMap emptyList()
+            // A thousands comma can touch a digit's bottom outline. It is not a digit:
+            // require a lower tail beyond OTHER glyphs' baseline, then separate only
+            // the right-hand punctuation lacking any upper-body ink. Single glyphs
+            // and ordinary broad digit bases are never trimmed by this rule.
+            if(baseline!=null && bottoms.size>=2 && rows.isNotEmpty() &&
+                rows.last()-baseline>inkHeight*.08) {
+                val upperEnd=rows.first()+(baseline-rows.first())*55/100
+                val upperRight=(left..right).lastOrNull { x -> (rows.first()..upperEnd).any { y -> ink[y*w+x] } }
+                if(upperRight!=null && upperRight-left+1>=inkHeight*.30 &&
+                    upperRight-left+1<(right-left+1)*.85) {
+                    // A 1 has a wider lower serif than its upper stem. Preserve that
+                    // serif, but neither the comma's descender nor its outer columns.
+                    right=minOf(right,upperRight+(inkHeight*.18).toInt())
+                    for(y in baseline+1 until h)for(x in left..right)ink[y*w+x]=false
+                }
+            }
             val span = right-left+1
             // Current outlined digits can touch at their bottom strokes (notably 7+1).
             // A single digit is narrower than its height; split only genuinely wide groups.
@@ -404,6 +436,9 @@ object HudCounterReader {
 
     // Recorded from the verified green stock 271, never from the broom resource.
     private const val ONE_UPDATED = "000000110000000011001000000110001000111000001000100000001000100000001000010000001000001100001000000000001000000000001000000000001000000000001000011100001111010000000001010000000001011111111111"
+    // Full first digit of the native 1,148 stock after separating its comma, not
+    // a template of the merged digit+punctuation. Shared glyph variant, no device rule.
+    private const val ONE_THOUSANDS_UPDATED = "000001110000000010001000001100001000010000001000100000001000010000001000011110001000001110001000000010001000000010001000000010001000001110001110010000000001010000000001010000000001001111111111"
     private const val SEVEN_UPDATED = "111111111111100000000001100000000001100000000001111111100001000001000001000001000010000010000110000100001000000100001000000100000000000100010000001000010000001000010000001000010000001111100000"
     private const val TWO_GREEN_UPDATED = "000011111000001100001110010000000011100000000001100000000001100011100001011110100001000001000001000001000001000110000010001000000100010000011111100000000001000000000001000000000001111111111111"
     private const val TWO_SHORT_UPDATED = "000011111000001100000110010000000011100000000001100000000001100011100001010110100001001100100001000001000001000001000001000110000110001000001100010000011111100000000001000000000001000000000001"

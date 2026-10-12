@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import de.robinthor.digiworldexplorer.BuildConfig
@@ -30,6 +31,7 @@ import java.util.TimeZone
 @Composable
 fun SupportExportButton(modifier: Modifier = Modifier) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val scope = rememberCoroutineScope()
     var report by rememberSaveable { mutableStateOf<String?>(null) }
     var preview by rememberSaveable { mutableStateOf(false) }
@@ -60,7 +62,7 @@ fun SupportExportButton(modifier: Modifier = Modifier) {
             "manufacturer" to Build.MANUFACTURER,
             "model" to Build.MODEL,
             "displayPixels" to "${metrics.widthPixels}x${metrics.heightPixels}",
-            "language" to context.resources.configuration.locales[0].toLanguageTag(),
+            "language" to configuration.locales[0].toLanguageTag(),
             "timezone" to TimeZone.getDefault().id,
             "mode" to if (AutomationState.mode == AutomationMode.SEMI_AUTO) "Manual" else "Co-Pilot",
             "automationEnabled" to AutomationState.enabled.toString(),

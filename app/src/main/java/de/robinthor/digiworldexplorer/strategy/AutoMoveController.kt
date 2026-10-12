@@ -79,7 +79,17 @@ object AutoMoveController{
   *  ohne dieses Wissen laesst sich kein zweiter Tap im Voraus berechnen, also wird auch nicht
   *  gebuendelt, solange der Wert `null` ist. */
  private var rightScrolls:Boolean?=null;private var probeFrom:Cell?=null;private var expectedRight:Cell?=null
- fun onAnalysis(confidence:Double,bounds:GridBounds,cells:Map<Cell,CellScores>,preview:Map<Cell,CellScores>,dashButton:Pair<Float,Float>?=null,hud:HudCounters=HudCounters()){
+ @Volatile private var burstEpoch=0L
+ private var lastScheduledActionFrame:Long?=null
+ fun onAnalysis(confidence:Double,bounds:GridBounds,cells:Map<Cell,CellScores>,preview:Map<Cell,CellScores>,dashButton:Pair<Float,Float>?=null,hud:HudCounters=HudCounters(),diagnostic:((Map<String,Any?>)->Unit)?=null,sourceFrameId:Long=0){
+  fun evidence(state:String,extra:Map<String,Any?> = emptyMap()):Unit {
+   diagnostic?.invoke(linkedMapOf<String,Any?>("state" to state,"previous" to previous?.toString(),
+    "expected" to expected?.toString(),"pendingInput" to pending,"unsettledFrames" to unsettledFrames,
+    "trackingConfirmed" to trackingConfirmed,"rightScrolls" to rightScrolls,
+    "lastScheduledActionFrame" to lastScheduledActionFrame,
+    "actionsWithoutProgress" to actionsWithoutProgress,"dashUnavailable" to dashUnavailable,
+    "dashFailures" to dashFailures,"attackUnavailable" to attackUnavailable)+extra)
+  }
   val dwsSettings=AutomationState.dwsNavigationSettings
   // Die Zelle, auf der die Figur steht (bzw. gleich stehen wird), darf nie als Item gesperrt
   // werden - ihr eigenes Sprite haelt den Item-Score sonst dauerhaft oben und die Figur
@@ -103,6 +113,7 @@ object AutoMoveController{
   // Zellwerte wertlos. Wird hier weitergetippt, verschiebt sich die Verfolgung endgueltig.
   val texty=cells.count{it.value.text>DIALOG_TEXT}
   if(texty>=DIALOG_CELLS){
+   evidence("WAIT_DIALOG",mapOf("textCells" to texty))
    val now=SystemClock.elapsedRealtime()
    if(AutomationState.dwsNavigationSettings.blindStageFailedTap&&now-lastDwsGridSeen<=DWS_CONTEXT_TTL&&now-lastBlindStageTap>=BLIND_STAGE_INTERVAL&&service!=null){
     lastBlindStageTap=now;dispatchBlindStageDismiss(service,bounds)
@@ -120,6 +131,7 @@ object AutoMoveController{
    }
    val reason=when{cells.isEmpty()->"kein Spielbild";confidence<MIN_GRID->"Raster unsicher %.2f".format(confidence);else->"Spieler unsicher (%d Kandidaten, best %.3f)".format(cells.count{it.value.player>=MIN_PLAYER},cells.values.maxOf{it.player})}
    Log.i("DigiWorldAuto","pause reason=$reason previous=$previous expected=$expected recentItems=${recentItems.keys}")
+   evidence("WAIT_RECOGNITION",mapOf("reason" to reason,"selectedPlayer" to player?.toString()))
    val overlayStatus=when{cells.isEmpty()->service?.getString(R.string.overlay_no_game)?:reason;confidence<MIN_GRID->service?.getString(R.string.overlay_grid_uncertain)?:reason;else->service?.getString(R.string.overlay_player_uncertain)?:reason}
    // Ein einzelner unsicherer Analyseframe darf das zuletzt stabile Raster nicht loeschen.
    // ScreenCaptureService entfernt es weiterhin nach drei Sekunden ohne erkannten Spielinhalt.
@@ -132,12 +144,14 @@ object AutoMoveController{
   // Markierungen zwischen zwei Zellen und werden voellig falsch klassifiziert. Gehandelt wird
   // deshalb nur, wenn zwei aufeinanderfolgende Analysen dasselbe Brett zeigen.
   val signature=(0..4).flatMap{r->(0..4).map{c->cells[Cell(r,c)]?.pyramid?:0.0}}
-  val quiet=lastSignature.size==signature.size&&signature.indices.all{kotlin.math.abs(signature[it]-lastSignature[it])<=SETTLE_TOLERANCE}
+  val motionDelta=if(lastSignature.size==signature.size)signature.indices.maxOf {kotlin.math.abs(signature[it]-lastSignature[it])} else null
+  val quiet=motionDelta!=null&&motionDelta<=SETTLE_TOLERANCE
   lastSignature=signature
   if(quiet)unsettledFrames=0 else unsettledFrames++
   val settled=quiet||unsettledFrames>=SETTLE_LIMIT
   if(settled&&!quiet)Log.w("DigiWorldAuto","Bild nach $unsettledFrames Analysen nie ruhig - handle trotzdem")
   if(!settled){
+   evidence("WAIT_MOTION",mapOf("motionMaxDelta" to motionDelta,"motionTolerance" to SETTLE_TOLERANCE,"selectedPlayer" to player.toString()))
    service?.updateOverlay(bounds,player,items,obstacles,null,service.getString(R.string.overlay_wait_motion),AutomationState.overlayEnabled,hud,dashButton)
    candidate=null;stable=0;return
   }
@@ -177,11 +191,14 @@ object AutoMoveController{
   } else noProgressFrames++
   lastResourceKind?.let{kind->
    if(progressed||player!=resourcePlayer){
+    evidence("RESOURCE_RESULT",mapOf("kind" to kind.name,"result" to "visual_change_observed",
+     "boardSignatureChanged" to advanced,"playerChanged" to (player!=resourcePlayer),"successProven" to false))
     Log.i("DigiWorldAuto","$kind brachte Fortschritt")
     lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0
    }else{
     resourceUnchangedFrames++
     if(resourceUnchangedFrames>=2){
+     evidence("RESOURCE_RESULT",mapOf("kind" to kind.name,"result" to "no_visual_progress","successProven" to false))
      if(kind==ActionKind.ATTACK)attackUnavailable=true else if(kind==ActionKind.DASH)dashUnavailable=true
      Log.w("DigiWorldAuto","$kind brachte keinen Fortschritt - versuche Alternative")
      lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0
@@ -201,6 +218,7 @@ object AutoMoveController{
   val looping=history.size>=4&&history.takeLast(4).let{it[0]==it[2]&&it[1]==it[3]}
   val stuck=AutomationState.enabled&&(looping||actionsWithoutProgress>=3||sameCellFrames>=STUCK_FRAMES||noProgressFrames>=NO_PROGRESS_LIMIT)
   if(AutomationState.enabled&&actionsWithoutProgress>=MAX_FAILED_ACTIONS){
+   evidence("STOP_NO_PROGRESS")
    Log.w("DigiWorldAuto","Stopp nach $actionsWithoutProgress Aktionen ohne Fortschritt")
    if(de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.running()){
     de.robinthor.digiworldexplorer.automation.DwsExcursionRequest.requestReturn("DWS has no safe progress")
@@ -225,11 +243,15 @@ object AutoMoveController{
   val action=plan.firstOrNull()
   val actionLabel=when(action?.kind){ActionKind.MOVE->service?.getString(R.string.overlay_action_move);ActionKind.ATTACK->service?.getString(R.string.overlay_action_attack);ActionKind.DASH->service?.getString(R.string.overlay_action_dash);null->service?.getString(R.string.overlay_action_stop)};val status=if(AutomationState.enabled)service?.getString(R.string.overlay_auto_action,actionLabel?:"")+(if(plan.size>1)" x${plan.size}" else "") else service?.getString(R.string.overlay_paused).orEmpty()
   service?.updateOverlay(bounds,player,items,obstacles,action?.target,status,AutomationState.overlayEnabled,hud,dashButton)
-  if(!AutomationState.enabled||pending||action==null)return
+  val planned=mapOf("selectedPlayer" to player.toString(),"kind" to action?.kind?.name,
+   "targetCell" to action?.target?.toString(),"reason" to action?.reason,"energyVisible" to energyVisible,
+   "safeDashCharges" to dashCharges,"boardSignatureChanged" to advanced,"motionMaxDelta" to motionDelta)
+  if(!AutomationState.enabled||pending||action==null){evidence(when { !AutomationState.enabled->"PAUSED";pending->"WAIT_INPUT";else->"NO_SAFE_ACTION"},planned);return}
   // Nach einem bestaetigten Zug reicht eine Analyse zur Bestaetigung, sonst zwei.
   val needed=if(trackingConfirmed)1 else 2
-  if(candidate==player)stable++ else{candidate=player;stable=1};if(stable<needed||SystemClock.elapsedRealtime()-lastTap<nextTapDelay)return
-  if(service==null)return
+  if(candidate==player)stable++ else{candidate=player;stable=1}
+  if(stable<needed||SystemClock.elapsedRealtime()-lastTap<nextTapDelay){evidence("WAIT_CADENCE",planned+mapOf("stablePlayerFrames" to stable,"neededPlayerFrames" to needed,"sinceLastTapMs" to SystemClock.elapsedRealtime()-lastTap,"tapDelayMs" to nextTapDelay));return}
+  if(service==null){evidence("WAIT_SERVICE",planned);return}
   val taps=mutableListOf<Pair<Float,Float>>()
   if(action.kind==ActionKind.DASH){
    val button=dashButton?:return;taps+=button
@@ -257,8 +279,13 @@ object AutoMoveController{
    ActionKind.ATTACK->{expected=null;lastAttackTarget=action.target;lastAttackPlayer=player;unchangedAttackFrames=0;lastResourceKind=ActionKind.ATTACK;resourcePlayer=player;resourceUnchangedFrames=0}
    ActionKind.DASH->{expected=null;expectedAge=0;sameCellFrames=0;dashFailures++;lastResourceKind=ActionKind.DASH;resourcePlayer=player;resourceUnchangedFrames=0}
   }
-  val info="kind=${action.kind} player=$player target=${action.target} direction=${action.direction} reason=${action.reason}"
-  main.post(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){dispatchBurst(service,taps,0,info)})
+  val info="frame=$sourceFrameId kind=${action.kind} player=$player target=${action.target} direction=${action.direction} reason=${action.reason}"
+  evidence("ACTION",planned+mapOf("direction" to action.direction.name,"analysisTargets" to taps.map {listOf(it.first,it.second)},
+   "displayTargets" to taps.map {p->de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.forCaller(SystemClock.elapsedRealtime())?.geometry?.map(p.first.toDouble(),p.second.toDouble())?.let {listOf(it.x,it.y)}},
+   "inputEvidence" to "scheduled_not_delivered"))
+  lastScheduledActionFrame=sourceFrameId
+  val epoch=burstEpoch
+  main.post(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){dispatchBurst(service,taps,0,info,epoch)})
  }
 
  private fun dispatchBlindStageDismiss(service:DigiWorldAccessibilityService,bounds:GridBounds){
@@ -282,20 +309,28 @@ object AutoMoveController{
   return SafeTapRandomizer.point(bounds.left+(col+.5f)*cw,bounds.top+(row+.5f)*ch,cw*.08f,ch*.08f)
  }
 
- private fun dispatchBurst(service:DigiWorldAccessibilityService,taps:List<Pair<Float,Float>>,index:Int,info:String){
+ private fun dispatchBurst(service:DigiWorldAccessibilityService,taps:List<Pair<Float,Float>>,index:Int,info:String,epoch:Long){
+  if(epoch!=burstEpoch || !AutomationState.enabled || dialogActive){
+   de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DWS.INPUT_ABORTED","$info step=${index+1} calibration/dialog/automation changed")
+   return
+  }
   val (x,y)=taps[index]
   service.dispatchValidatedTap(x,y){ok->
    Log.i("DigiWorldAuto","tap=$ok schritt=${index+1}/${taps.size} $info")
+   de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("DWS.INPUT","completed=$ok step=${index+1}/${taps.size} $info; input callback is not game success")
+   if(epoch!=burstEpoch)return@dispatchValidatedTap
    if(!ok||index+1>=taps.size){
     lastTap=SystemClock.elapsedRealtime();nextTapDelay=SafeTapRandomizer.delay(TAP_DELAY,60L);pending=false
     if(!ok){expected=null;trackingConfirmed=false;probeFrom=null}
    } else main.postDelayed(de.robinthor.digiworldexplorer.capture.FrameGeometryRegistry.bind(SystemClock.elapsedRealtime()){
     if(dialogActive){Log.i("DigiWorldAuto","Burst abgebrochen: Meldung im Bild");lastTap=SystemClock.elapsedRealtime();nextTapDelay=SafeTapRandomizer.delay(TAP_DELAY,60L);pending=false}
-    else dispatchBurst(service,taps,index+1,info)
+    else dispatchBurst(service,taps,index+1,info,epoch)
    },SafeTapRandomizer.delay(
     if(AutomationState.dwsNavigationSettings.phoneSafeMovement)BURST_DELAY_PHONE_SAFE else BURST_DELAY_V4,60L))
   }
  }
- fun pauseForPurchaseScreen(){dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
- fun reset(){candidate=null;stable=0;pending=false;nextTapDelay=TAP_DELAY;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0;lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0;attackUnavailable=false;dashUnavailable=false;dashBlockedUntil=0L;lastDwsGridSeen=0L;lastBlindStageTap=0L}
+ fun pauseForPurchaseScreen(){burstEpoch++;dialogActive=true;pending=false;expected=null;expectedAge=0;candidate=null;stable=0;probeFrom=null}
+ /** Suspend outstanding input, retaining navigation evidence until the clean recheck resolves. */
+ fun pauseForGridRecheck(){burstEpoch++;dialogActive=true;pending=false;candidate=null;stable=0}
+ fun reset(){burstEpoch++;lastScheduledActionFrame=null;candidate=null;stable=0;pending=false;nextTapDelay=TAP_DELAY;history.clear();recentItems.clear();forbiddenObstacles.clear();lastAttackTarget=null;lastAttackPlayer=null;unchangedAttackFrames=0;previous=null;expected=null;sameCellFrames=0;furthestCol=-1;trackingConfirmed=false;lostFrames=0;lastSignature=emptyList();lastSettledSignature=emptyList();expectedAge=0;unsettledFrames=0;probeFrom=null;expectedRight=null;noProgressFrames=0;dashFailures=0;actionsWithoutProgress=0;lastResourceKind=null;resourcePlayer=null;resourceUnchangedFrames=0;attackUnavailable=false;dashUnavailable=false;dashBlockedUntil=0L;lastDwsGridSeen=0L;lastBlindStageTap=0L}
 }

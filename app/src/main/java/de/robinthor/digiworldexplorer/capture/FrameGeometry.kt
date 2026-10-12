@@ -104,15 +104,27 @@ class GameContentStability(private val shrinkProofMs:Long=3_000) {
     private var candidate:PixelRect?=null
     private var candidateSince=0L
     private var lastAt:Long?=null
-    fun reset() { established=null;candidate=null;lastAt=null }
+    private var sessionGeometry:FrameGeometry?=null
+    fun reset() { established=null;candidate=null;lastAt=null;sessionGeometry=null }
     fun observe(value:FrameGeometry?,now:Long):FrameGeometry? {
         if(value==null){reset();return null}
+        if(sessionGeometry?.let { it.capture!=value.capture || it.display!=value.display }==true ||
+            lastAt?.let { now-it !in 0..2_000 }==true)reset()
+        sessionGeometry=value;lastAt=now
         val old=established
-        if(old==null || old.capture!=value.capture || old.display!=value.display ||
-            lastAt?.let { now-it !in 0..2_000 }==true) {
-            established=value;candidate=null;lastAt=now;return value
+        if(old==null) {
+            val window=value.projection.captureRect(value.display.gameWindow) ?: return null
+            val b=value.gameInCapture
+            val narrow=maxOf(kotlin.math.abs(b.left-window.left),kotlin.math.abs(b.top-window.top),
+                kotlin.math.abs(b.right-window.right),kotlin.math.abs(b.bottom-window.bottom))>2
+            // The first frame after projection startup can be only partially rendered.
+            // Never authorize input using that crop, or a guessed full-window mapping.
+            if(narrow) {
+                if(candidate!=b){candidate=b;candidateSince=now}
+                if(now-candidateSince<shrinkProofMs)return null
+            }
+            established=value;candidate=null;return value
         }
-        lastAt=now
         val a=old.gameInCapture;val b=value.gameInCapture
         val union=PixelRect(minOf(a.left,b.left),minOf(a.top,b.top),maxOf(a.right,b.right),maxOf(a.bottom,b.bottom))
         if(union!=a) { established=value.copy(gameInCapture=union);candidate=null }

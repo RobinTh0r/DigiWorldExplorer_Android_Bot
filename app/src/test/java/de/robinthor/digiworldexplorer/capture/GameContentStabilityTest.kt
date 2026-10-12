@@ -51,8 +51,29 @@ class GameContentStabilityTest {
         assertEquals(geometry(dpi=560),stability.observe(geometry(dpi=560),1))
         assertEquals(geometry(h=2400),stability.observe(geometry(h=2400),2))
         assertNull(stability.observe(null,3))
-        assertEquals(geometry(27),stability.observe(geometry(27),4))
+        assertNull(stability.observe(geometry(27),4))
         stability.reset();assertEquals(geometry(),stability.observe(geometry(),5))
+    }
+    @Test fun partialFirstFrameNeverBecomesAClickMapping() {
+        val stability=GameContentStability();val calibration=GeometryCalibration()
+        val full=geometry(h=3088)
+        val partial=full.copy(gameInCapture=PixelRect(469,69,1080,3019))
+        for(i in 0..5)assertNull(calibration.observe(stability.observe(partial,i*150L),i*150L))
+        for(i in 6..8)calibration.observe(stability.observe(full,i*150L),i*150L)
+        assertEquals(full,calibration.current(1200)!!.geometry)
+    }
+    @Test fun realInitialLetterboxNeedsContinuousProofAndThenNormalCalibration() {
+        val stability=GameContentStability();val calibration=GeometryCalibration()
+        for(i in 0..29)assertNull(calibration.observe(stability.observe(geometry(100),i*100L),i*100L))
+        for(i in 30..32)calibration.observe(stability.observe(geometry(100),i*100L),i*100L)
+        assertEquals(geometry(100),calibration.current(3200)!!.geometry)
+    }
+    @Test fun changedDensityDiscardsEvenPendingLetterboxProof() {
+        val stability=GameContentStability()
+        for(i in 0..29)assertNull(stability.observe(geometry(100),i*100L))
+        assertNull(stability.observe(geometry(100,dpi=560),3000))
+        for(i in 31..59)assertNull(stability.observe(geometry(100,dpi=560),i*100L))
+        assertEquals(geometry(100,dpi=560),stability.observe(geometry(100,dpi=560),6000))
     }
     @Test fun runtimeRecognitionCannotRecropTheAlreadyCanonicalImage() {
         val snapshot=GeometrySnapshot(1,geometry(),0)

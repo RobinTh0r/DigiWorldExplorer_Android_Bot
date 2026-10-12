@@ -386,7 +386,15 @@ class ScreenCaptureService : Service() {
                     // Otherwise those guards either tap cards as notices or swallow animation taps.
                     val classicSummon = !digiCopilotOwns && AutomationState.autoPurchaseEnabled &&
                         !de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.ownsFrames()
-                    val owner = if (activeSession != null) {
+                    val owner = FrameOrchestrator.withForeground(FrameProbe(FrameOwner.STAGE_FAILED) {
+                        val found=StageFailedFrameAnalyzer.analyze(image,width,height)
+                        if(found) {
+                            if(de.robinthor.digiworldexplorer.dungeon.DungeonRotationRequest.active())
+                                de.robinthor.digiworldexplorer.dungeon.DungeonRotationAnalyzer.onGrowthGuideHandled()
+                            else if(AutomationState.autoDungeonEnabled)DungeonFrameAnalyzer.onFailureDialogHandled()
+                        }
+                        found
+                    }) { if (activeSession != null) {
                         FrameOrchestrator.resolve(false, emptyList(), activeSession)
                     } else if (classicSummon &&
                         RewardPurchaseFrameAnalyzer.analyze(image, width, height)) {
@@ -416,13 +424,6 @@ class ScreenCaptureService : Service() {
                             rewardSequenceActive = de.robinthor.digiworldexplorer.purchase.RewardPurchaseFrameAnalyzer.isSequenceActive(),
                         )) {
                             GameEntryAnalyzer.analyze(image, width, height)
-                        },
-                        // Persistent failure dialogs outrank every task. Network Defense is excluded
-                        // because its battle layout may contain similar red/gray regions.
-                        FrameProbe(FrameOwner.STAGE_FAILED, enabled = !AutomationState.autoNetworkDefenseEnabled) {
-                            val found = StageFailedFrameAnalyzer.analyze(image, width, height)
-                            if (found && AutomationState.autoDungeonEnabled) DungeonFrameAnalyzer.onFailureDialogHandled()
-                            found
                         },
                         // Active Network runs inspect every frame because the boss banner is brief.
                         FrameProbe(FrameOwner.NETWORK_DEFENSE, enabled = networkFrame && !digiCopilotOwns) {
@@ -480,6 +481,7 @@ class ScreenCaptureService : Service() {
                             found
                         },
                     ))
+                    }
                     if (owner != lastFrameOwner) {
                         AutomationEventLog.record(AutomationEventKind.OWNER_CHANGED, "${lastFrameOwner.name}:${owner.name}")
                         if (owner == FrameOwner.DUNGEON || lastFrameOwner == FrameOwner.DUNGEON || owner == FrameOwner.CAPTURE_BLOCKED)

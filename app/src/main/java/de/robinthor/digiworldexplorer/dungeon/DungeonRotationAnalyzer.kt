@@ -63,9 +63,8 @@ object DungeonRotationAnalyzer {
             de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.detect(w, h, frame::argbAt)) {
             // A returned-panel transition can clear waiting before the loss guide finishes
             // fading in. The foreground failure still owns this frame, including after result.
-            onLoss()
-            unknownAt=0L;candidate="";matches=0
-            tap(service, v, NormalizedPoint(.5, .84), now, "Closing dungeon loss")
+            onGrowthGuideHandled()
+            de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.analyze(image,w,h)
             return true
         }
         if (key == DungeonKey.APOCALYMON_WALL && apocalymonResultVisible(frame, v)) {
@@ -366,6 +365,12 @@ object DungeonRotationAnalyzer {
         Log.i("DigiWorldDungeonRotation","RESULT $key $waiting")
         if(waiting=="battle") DigiWorldAccessibilityService.instance?.let { service -> confirmBattle(service, key, won = true) }
         waiting=""
+    }
+    /** Called by the global foreground interrupt even before a dungeon was selected.
+     * BattleEvidence accounts for an owned loss once, never a stale startup guide. */
+    fun onGrowthGuideHandled() {
+        onLoss()
+        unknownAt=0L;candidate="";matches=0;waitingSawTransition=false;startRetries=0;retryAt=0
     }
     fun onLoss() {
         val key=activeKey ?: return

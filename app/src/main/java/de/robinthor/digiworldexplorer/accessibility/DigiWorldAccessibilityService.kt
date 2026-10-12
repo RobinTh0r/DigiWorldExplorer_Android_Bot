@@ -60,32 +60,39 @@ class DigiWorldAccessibilityService:AccessibilityService(){
   return origin
  }
  fun dispatchValidatedTap(x:Float,y:Float,onComplete:(Boolean)->Unit) {
+  if(de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.blocksOtherInput){PersistentDiagnosticLog.record("GESTURE","tap rejected: Growth Guide foreground recovery owns input local=$x,$y");onComplete(false);return}
   val origin=validOrigin();val point=origin?.geometry?.map(x.toDouble(),y.toDouble())
-  if(origin==null || point==null || controlOverlayBounds().any { it.contains(point.x,point.y) }){PersistentDiagnosticLog.record("GESTURE","tap rejected: stale/missing geometry, outside game or overlay-covered target x=$x y=$y");onComplete(false);return}
-  PersistentDiagnosticLog.sampleAction("tap",x.toInt(),y.toInt())
-  PersistentDiagnosticLog.record("GESTURE","tap local=$x,$y display=${point.x},${point.y} generation=${origin.generation}")
+  val overlayBounds=controlOverlayBounds()
+  if(origin==null || point==null || overlayBounds.any { it.contains(point.x,point.y) }){
+   val reason=when {origin==null->"stale_missing_geometry_or_changed_display";point==null->"outside_game";else->"overlay_covered"}
+   PersistentDiagnosticLog.record("GESTURE","tap rejected reason=$reason local=$x,$y display=$point overlays=$overlayBounds generation=${origin?.generation}");onComplete(false);return
+  }
+  val sample=PersistentDiagnosticLog.sampleAction("tap",x.toInt(),y.toInt())
+  val evidence="local=$x,$y display=${point.x},${point.y} sample=$sample"
+  PersistentDiagnosticLog.record("GESTURE","tap $evidence generation=${origin.generation}")
   val path=Path().apply { moveTo(point.x.toFloat(),point.y.toFloat()) }
-  dispatchMappedGesture(path,80,origin,onComplete)
+  dispatchMappedGesture(path,80,origin,onComplete,evidence)
  }
- private fun dispatchMappedGesture(path:Path,duration:Long,origin:GeometrySnapshot,onComplete:(Boolean)->Unit) {
+ private fun dispatchMappedGesture(path:Path,duration:Long,origin:GeometrySnapshot,onComplete:(Boolean)->Unit,evidence:String="swipe") {
   val gesture=GestureDescription.Builder().addStroke(GestureDescription.StrokeDescription(path,0,duration)).build()
   fun finish(ok:Boolean)=FrameGeometryRegistry.withSnapshot(origin) {
    // Completion confirms Android input delivery, NOT the game's desired action.
    onComplete(ok && FrameGeometryRegistry.calibration.valid(origin,SystemClock.elapsedRealtime()))
   }
   val accepted=dispatchGesture(gesture,object:GestureResultCallback() {
-   override fun onCompleted(d:GestureDescription?){PersistentDiagnosticLog.record("GESTURE","input completed generation=${origin.generation}; visual confirmation required");finish(true)}
-   override fun onCancelled(d:GestureDescription?){PersistentDiagnosticLog.record("GESTURE","input cancelled");finish(false)}
+   override fun onCompleted(d:GestureDescription?){PersistentDiagnosticLog.record("GESTURE","input completed $evidence generation=${origin.generation}; visual confirmation required");finish(true)}
+   override fun onCancelled(d:GestureDescription?){PersistentDiagnosticLog.record("GESTURE","input cancelled $evidence generation=${origin.generation}");finish(false)}
   },null)
   if(!accepted)finish(false)
  }
  fun dispatchValidatedSwipe(x1:Float,y1:Float,x2:Float,y2:Float,onComplete:(Boolean)->Unit) {
+  if(de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.blocksOtherInput){PersistentDiagnosticLog.record("GESTURE","swipe rejected: Growth Guide foreground recovery owns input");onComplete(false);return}
   val origin=validOrigin();val a=origin?.geometry?.map(x1.toDouble(),y1.toDouble());val b=origin?.geometry?.map(x2.toDouble(),y2.toDouble())
   if(origin==null || a==null || b==null || controlOverlayBounds().any { it.intersectsSegment(a,b) }){PersistentDiagnosticLog.record("GESTURE","swipe rejected: invalid geometry/target or overlay obstruction");onComplete(false);return}
   PersistentDiagnosticLog.record("GESTURE","swipe local=$x1,$y1->$x2,$y2 display=$a->$b generation=${origin.generation}")
   dispatchMappedGesture(Path().apply{moveTo(a.x.toFloat(),a.y.toFloat());lineTo(b.x.toFloat(),b.y.toFloat())},420,origin,onComplete)
  }
- fun dispatchBack(onComplete:(Boolean)->Unit={}){val ok=performGlobalAction(GLOBAL_ACTION_BACK);de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","back result=$ok");onComplete(ok)}
+ fun dispatchBack(onComplete:(Boolean)->Unit={}){if(de.robinthor.digiworldexplorer.feed.StageFailedFrameAnalyzer.blocksOtherInput){PersistentDiagnosticLog.record("GESTURE","back rejected: Growth Guide foreground recovery owns input");onComplete(false);return};val ok=performGlobalAction(GLOBAL_ACTION_BACK);de.robinthor.digiworldexplorer.diagnostics.PersistentDiagnosticLog.record("GESTURE","back result=$ok");onComplete(ok)}
  fun dispatchSafeRandomizedTap(x:Float,y:Float,onComplete:(Boolean)->Unit){
   // Ein dp Varianz ist auf allen Zielbuttons weit innerhalb des erkannten Mittelpunkts.
   val geometry=validOrigin()?.geometry ?: run { onComplete(false);return }

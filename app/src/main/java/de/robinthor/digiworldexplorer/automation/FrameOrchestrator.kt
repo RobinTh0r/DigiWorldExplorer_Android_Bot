@@ -28,6 +28,10 @@ data class FrameProbe(
  * safety property, not merely an optimization: at most one analyzer can act on a given frame.
  */
 object FrameOrchestrator {
+    /** Specific positively recognized foreground blockers precede even exclusive
+     * sessions; an ordinary unknown/loading frame must still stay with its owner. */
+    fun withForeground(interruption:FrameProbe,normal:()->FrameOwner):FrameOwner =
+        if(interruption.enabled && interruption.analyze())interruption.owner else normal()
     fun resolve(captureBlocked: Boolean, probes: List<FrameProbe>, activeSession: FrameProbe? = null): FrameOwner {
         if (captureBlocked) return FrameOwner.CAPTURE_BLOCKED
         // Ownership spans transitions, not just positively recognized individual images. A task

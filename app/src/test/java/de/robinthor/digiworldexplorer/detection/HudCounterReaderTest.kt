@@ -12,6 +12,27 @@ import javax.imageio.ImageIO
  * Segmentierung und Normierung stabil bleiben, wenn an der Erkennung geschraubt wird.
  */
 class HudCounterReaderTest {
+    @Test fun nativeThousandsSeparatorDoesNotHideProvenPositiveDashStock() {
+        val (w,h,px)=frame("dws_native_thousands.png")
+        val hud=HudCounterReader.read(w,h,px,GridBounds(69,926,1331,1963),updatedActionRow=true)
+        assertEquals("Unrecognized suffix must not invent exact 1148",1000,hud.dash)
+        assertTrue(hud.dashMinimumOnly)
+        assertTrue(hud.dashBox!!.right>=430)
+    }
+    @Test fun erasedThousandsStockDoesNotFallBackToPositiveBroomOrClaws() {
+        val (w,h,px)=frame("dws_native_thousands.png")
+        for(y in 2660..2750)for(x in 250..600)px[y*w+x]=0xff879bb7.toInt()
+        assertEquals(null,HudCounterReader.read(w,h,px,GridBounds(69,926,1331,1963),updatedActionRow=true).dash)
+    }
+    @Test fun detachedSeparatorCannotIncreaseTheNumberOfStockDigits() {
+        val (w,h,px)=frame("dws_native_thousands.png")
+        // Detach the original comma and paint a smaller, isolated separator at
+        // its actual lower baseline. This is a modified fixture, not a live test.
+        for(y in 2680..2745)for(x in 313..330)px[y*w+x]=0xff879bb7.toInt()
+        for(y in 2720..2737)for(x in 320..326)px[y*w+x]=0xffffffff.toInt()
+        val hud=HudCounterReader.read(w,h,px,GridBounds(69,926,1331,1963),updatedActionRow=true)
+        assertTrue("separator must never prove 10000 instead of 1148: $hud",hud.dash==null || hud.dash!!<=1148)
+    }
     @Test fun readsStockAfterFirstActualDash() {
         val (w,h,px)=frame("dws_1_5_dash_270.png")
         val hud=HudCounterReader.read(w,h,px,GridBounds(83,349,621,801),updatedActionRow=true)

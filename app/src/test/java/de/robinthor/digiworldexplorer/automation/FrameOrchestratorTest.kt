@@ -5,6 +5,24 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class FrameOrchestratorTest {
+    @Test fun foregroundGuidePreemptsEveryExclusiveOwnerWithoutCallingItsActions() {
+        for(owner in listOf(FrameOwner.DUNGEON,FrameOwner.BOND,FrameOwner.SUMMON,FrameOwner.NETWORK_DEFENSE,FrameOwner.WORLD_SEARCH)) {
+            var called=false
+            val actual=FrameOrchestrator.withForeground(FrameProbe(FrameOwner.STAGE_FAILED){true}) {
+                called=true;owner
+            }
+            assertEquals(FrameOwner.STAGE_FAILED,actual);assertTrue(!called)
+        }
+    }
+    @Test fun absentOrDisabledGuideKeepsTheExistingSessionIncludingLoadingFrames() {
+        for(enabled in listOf(false,true)) {
+            var called=false
+            val actual=FrameOrchestrator.withForeground(FrameProbe(FrameOwner.STAGE_FAILED,enabled){false}) {
+                called=true;FrameOwner.BOND
+            }
+            assertEquals(FrameOwner.BOND,actual);assertTrue(called)
+        }
+    }
     @Test fun loadingFramesStayWithSessionAndNeverInvokeFalseTitleOrSummonProbe() {
         val actions = mutableListOf<String>()
         val ambient = listOf(
